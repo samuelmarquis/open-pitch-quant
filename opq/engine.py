@@ -1,11 +1,17 @@
-"""M0 — "everything is a nail."
+"""The spectral pitch-mapping engine.
 
-The simplest thing that makes the sound: STFT analysis, per-bin instantaneous
-frequency via phase differences (Bernsee), spectral-peak detection with
-regions of influence (Laroche & Dolson), and EVERY peak independently
-translated to the nearest allowed target pitch. No grouping, no objects, no
-residual layer: noise gets tonalized, harmonics snap separately. This is the
-lower bound on quality and the upper bound on kaleidoscope.
+STFT analysis, per-bin instantaneous frequency via phase differences
+(Bernsee), spectral-peak detection with regions of influence
+(Laroche & Dolson), then one of two ASSIGNMENT strategies:
+
+  assign="peak"  (M0) — every peak independently snaps to the nearest
+      allowed target. No objects: noise tonalizes, harmonics snap
+      separately. Maximum kaleidoscope.
+  assign="group" (M1) — greedy multi-F0 grouping (Klapuri-style harmonic
+      summation with cancellation): up to `voices` harmonic objects per
+      frame; each object's members move together by their FUNDAMENTAL's
+      snap ratio (harmonic coherence). Unowned peaks follow the `unowned`
+      policy: "map" = M0 treatment, "dry" = residual layer (verbatim).
 
 Mapping modes (octave scope of the held-note set, after PITCHMAP's Edit Mode):
   repeat — held notes define allowed PITCH CLASSES in all octaves
@@ -64,6 +70,92 @@ def _region_bounds(mag, peaks, n_bins):
     return bounds
 
 
+def _wmedian(v, w):
+    """Weighted median."""
+    o = np.argsort(v)
+    cw = np.cumsum(w[o])
+    return float(v[o][min(np.searchsorted(cw, 0.5 * cw[-1]), len(v) - 1)])
+
+
+def _harmonic_objects(peaks, mag, f_true, voices=6, n_harm=20,
+                      fmin_f0=55.0, fmax_f0=1046.5, tol_cents=45.0):
+    """Greedy iterative multi-F0 grouping over detected peaks.
+
+    Klapuri-flavored: harmonic-summation salience on a semitone candidate
+    grid, pick the best candidate, claim its peaks (cancellation), repeat
+    up to `voices` times or until salience collapses (<5% of the first
+    object's). Requires >=3 harmonic hits per object (ghost suppression).
+    f0 refined robustly: weighted median over LOW harmonics (cross-object
+    comb collisions live in the high harmonics — e.g. C's h16 is 0.4 cents
+    from E's h13), then re-claim all peaks against the refined comb at
+    tight tolerance and take the weighted median of the inliers.
+
+    Returns (f0s, owner): refined fundamental per object, and for each
+    peak an object index or -1 (unowned).
+    """
+    pk_f = f_true[peaks].astype(float)
+    pk_m = mag[peaks].astype(float)
+    n_pk = len(peaks)
+    owner = np.full(n_pk, -1, dtype=int)
+    if n_pk == 0:
+        return [], owner
+
+    lo = int(np.ceil(69 + 12 * np.log2(fmin_f0 / 440.0)))
+    hi = int(np.floor(69 + 12 * np.log2(fmax_f0 / 440.0)))
+    cand = 440.0 * 2.0 ** ((np.arange(lo, hi + 1) - 69) / 12.0)
+    harm = np.arange(1, n_harm + 1)
+    log_fh = np.log(np.outer(cand, harm))  # (C, H)
+    w_h = 1.0 / harm ** 0.9
+    tol = tol_cents / 1200.0 * np.log(2.0)
+    log_pk = np.log(np.maximum(pk_f, 1e-9))
+
+    avail = pk_m.copy()
+    f0s = []
+    first_sal = None
+    for _ in range(voices):
+        lp = np.where(avail > 0, log_pk, np.inf)
+        d = np.abs(log_fh[:, :, None] - lp[None, None, :])  # (C, H, P)
+        j = np.argmin(d, axis=2)  # nearest available peak per (cand, harm)
+        dmin = np.take_along_axis(d, j[:, :, None], axis=2)[:, :, 0]
+        hit = dmin < tol
+        sal = (np.where(hit, avail[j], 0.0) * w_h[None, :]).sum(axis=1)
+        sal = np.where(hit.sum(axis=1) >= 3, sal, 0.0)  # ghost suppression
+        c = int(np.argmax(sal))
+        if sal[c] <= 0:
+            break
+        if first_sal is None:
+            first_sal = sal[c]
+        elif sal[c] < 0.05 * first_sal:
+            break
+        # claimed peaks (dedupe: one peak may match several harmonic slots)
+        jj0 = np.array(sorted({int(j[c, hidx]) for hidx in np.flatnonzero(hit[c])}))
+        hh0 = np.maximum(np.round(pk_f[jj0] / cand[c]), 1.0)
+        # initial f0: weighted median over LOW harmonics only
+        low = hh0 <= 6
+        sel = jj0[low] if low.sum() >= 2 else jj0
+        hsel = hh0[low] if low.sum() >= 2 else hh0
+        f0e = _wmedian(pk_f[sel] / hsel, avail[sel])
+        # re-claim ALL available peaks against the refined comb, tight tol
+        hh = np.round(pk_f / f0e)
+        dev = np.abs(np.log(np.maximum(pk_f, 1e-9)
+                            / (np.maximum(hh, 1.0) * f0e)))
+        inl = (hh >= 1) & (hh <= n_harm) & (avail > 0) \
+            & (dev < 30.0 / 1200.0 * np.log(2.0))
+        if inl.sum() < 3:
+            avail[jj0] = 0.0  # burn the evidence, try next candidate
+            continue
+        f0r = _wmedian(pk_f[inl] / hh[inl], avail[inl])
+        for idx in np.flatnonzero(inl):
+            if owner[idx] == -1:
+                owner[idx] = len(f0s)
+        # burn ONLY confirmed inliers — coarse claims the refined comb
+        # rejected stay available for other objects (they're often another
+        # object's harmonics: C's slot h5 sits 26 cents from E's h4)
+        avail[inl] = 0.0
+        f0s.append(f0r)
+    return f0s, owner
+
+
 def process(
     x,
     sr,
@@ -79,6 +171,9 @@ def process(
     tonality_gate=None,
     tonality_mode="fresh",
     phase_lock=True,
+    assign="peak",
+    voices=6,
+    unowned="map",
 ):
     """Run the M0 remap over mono signal x. Returns y, same length.
 
@@ -111,6 +206,12 @@ def process(
                          micro-pitch re-injection is M3. False = legacy
                          per-bin free-running accumulators (watery/shimmery;
                          kept for A/B — the shimmer may be a feature).
+      assign           — "peak" (M0, independent snapping) or "group"
+                         (M1, harmonic objects; see module docstring)
+      voices           — max simultaneous objects for assign="group"
+                         (PITCHMAP's Electrify is this knob, inverted)
+      unowned          — assign="group" only: peaks no object claims are
+                         "map"ped M0-style or left "dry" (residual layer)
     """
     win = np.hanning(n_fft)
     n_bins = n_fft // 2 + 1
@@ -165,9 +266,27 @@ def process(
             # per-region mapping decisions (shared by both synthesis paths)
             regions = []
             peaks = _find_peaks(mag, rel_floor_db)
+            bounds = _region_bounds(mag, peaks, n_bins)
             log_grid = np.log(grid)
-            for p, (lo, hi) in zip(peaks, _region_bounds(mag, peaks, n_bins)):
+
+            owner = None
+            if assign == "group" and len(peaks):
+                f0s, owner = _harmonic_objects(peaks, mag, f_true, voices)
+                ratios = [
+                    grid[np.argmin(np.abs(log_grid - np.log(f0)))] / f0
+                    for f0 in f0s
+                ]
+
+            for i, (p, (lo, hi)) in enumerate(zip(peaks, bounds)):
                 fp = f_true[p]
+                if owner is not None and owner[i] >= 0:
+                    # harmonic member: move with its object's fundamental
+                    df = fp * (ratios[owner[i]] - 1.0)
+                    regions.append((p, lo, hi, fp, df, False))
+                    continue
+                if owner is not None and unowned == "dry":
+                    regions.append((p, lo, hi, fp, 0.0, False))  # residual
+                    continue
                 mappable = fmin < fp < sr / 2 * 0.95
                 if fmax_map is not None:
                     mappable = mappable and fp <= fmax_map

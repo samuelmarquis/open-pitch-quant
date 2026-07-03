@@ -156,3 +156,31 @@ destination — the per-peak assignment's structural weakness. M1 grouping
 gives those regions one owner, one shift ratio, one phase story; expected to
 fix. (c) Gate-bypass clip quieter overall — energy accounting between paths
 needs an eye (dry-passthrough vs mapped-region loudness).
+
+---
+
+## Batch 005 — M1: harmonic grouping / objects are born (2026-07-03)
+
+Engine: `--assign group` — greedy Klapuri-style multi-F0 (semitone salience
+grid, claim-and-cancel, ≤ `--voices` objects/frame, ≥3 harmonic hits,
+robust weighted-median f0 refinement, burn-only-inliers). Each object's
+harmonics move together by the FUNDAMENTAL's snap ratio. Unowned peaks:
+`--unowned map` (M0 treatment) or `dry` (residual layer). Verified: triad
+fundamentals 0.0¢; harmonic coherence fingerprint measured (C's h5 lands at
+5×f0, −11¢ off-grid; E's h4 at 4×f0, 0¢ — partials follow their OWNERS now).
+`out/listen-005/`.
+
+| file | the question |
+|---|---|
+| `audio178__group-dry.wav` | THE root-warble test: one owner for the low end — is the phase interaction gone? Residual (breath) stays dry. |
+| `audio178__group-map.wav` | same grouping, unowned content mapped (gate 2.5 fresh) — the "PITCHMAP mode" |
+| `amen__group-dry.wav` / `__group-map.wav` | drums as objects: kick/tom fundamentals grouped & moved coherently; does map keep the beloved 002 character, does dry sound like PITCHMAP's "leaves drums virtually untouched"? |
+| `resoguitar__group-dry.wav` | dense tonal strings: coherent retune vs 003's per-peak kaleidoscope |
+| `05_chordchange__group-dry.wav` | transitions with objects: does the switch bloom or lurch now? |
+
+**Specific asks:** (1) vocal root warble — fixed / better / same? (2) which
+unowned policy per material (dry for vocals, map for drums?); (3) does group
+mode LOSE any of the kaleidoscope magic you liked — should `assign` itself
+eventually be a blend knob rather than a switch?
+
+**Verdict:** *(pending)*
