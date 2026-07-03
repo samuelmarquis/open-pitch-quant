@@ -183,4 +183,24 @@ unowned policy per material (dry for vocals, map for drums?); (3) does group
 mode LOSE any of the kaleidoscope magic you liked — should `assign` itself
 eventually be a blend knob rather than a switch?
 
+**Verdict:** *(superseded by batch 006 — same engine, full material suite)*
+
+---
+
+## Batch 006 — full suite through M1 (2026-07-03)
+
+Per user request the whole material suite renders every batch from now on:
+`tools/render_batch.py <batch>` → 8 sources × variants {group-dry,
+group-map}. New sources join with chroma-informed targets: audio116 →
+C-E-G; memories & when → their native D-F#-A# AUGMENTED triad; falter →
+A-C-E over its big A2 bass; prism → F#2-C#3-G#3. `out/listen-006/`.
+
+Batch 005's asks carry over (root warble; dry-vs-map per material;
+does grouping lose kaleidoscope magic), plus:
+
+**New asks:** (4) first impressions on the four never-heard sources —
+which material does the engine flatter, which does it embarrass?
+(5) the CIRCLES clips retuned toward their own augmented triad — does
+near-mapping read as "tightened" or does even this small map feel processed?
+
 **Verdict:** *(pending)*
