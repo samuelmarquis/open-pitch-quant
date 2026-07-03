@@ -1,0 +1,22 @@
+# audio & MIDI are generated (tools/make_probes.py), user-supplied, or
+# derived from commercial software — all stay local, out of git
+out/
+*.wav
+*.mid
+testdata/reference/
+testdata/material/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# rust (future)
+target/
+
+# nix
+result
+result-*
+
+# editor/os
+.DS_Store
