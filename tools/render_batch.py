@@ -66,6 +66,12 @@ VARIANTS = {
                           synth="stamp", feel=0.35, glide=0.06),
     "stamp-grit35": dict(_BASE, assign="group", voices=6, unowned="dry",
                          synth="stamp", grit=0.35),
+    # M4-lite: sticky-target rounding (batch 009)
+    "stamp-intel": dict(_BASE, assign="group", voices=6, unowned="dry",
+                        synth="stamp", rounding="intelligent"),
+    "stamp-musical-intel": dict(_BASE, assign="group", voices=6,
+                                unowned="dry", synth="stamp", feel=0.35,
+                                glide=0.06, rounding="intelligent"),
     # octave-semantics variant (exact held notes, no pitch-class repeat)
     "group-dry-custom": dict(_BASE, assign="group", voices=6, unowned="dry",
                              mode="custom"),

@@ -55,6 +55,9 @@ def main():
                     help="seconds of pitch glide on note starts/changes")
     ap.add_argument("--grit", type=float, default=0.0,
                     help="0..1 blend stamp purity toward translation crunch")
+    ap.add_argument("--rounding", default="nearest",
+                    choices=["nearest", "intelligent"],
+                    help="intelligent = sticky targets w/ hysteresis")
     ap.add_argument("-o", "--out", required=True)
     args = ap.parse_args()
 
@@ -84,6 +87,7 @@ def main():
         feel=args.feel,
         glide=args.glide,
         grit=args.grit,
+        rounding=args.rounding,
     )
 
     out = Path(args.out)

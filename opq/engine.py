@@ -191,6 +191,8 @@ def process(
     feel=0.0,
     glide=0.0,
     grit=0.0,
+    rounding="nearest",
+    hyst_cents=40.0,
 ):
     """Run the M0 remap over mono signal x. Returns y, same length.
 
@@ -252,6 +254,11 @@ def process(
       grit   — 0..1 (synth="stamp" only): per-partial blend between pure
                oscillator stamping (0) and fresh-phase spectral translation
                (1) — the batch-006 crunch as a character control.
+      rounding — "nearest" (always snap to closest target) or
+               "intelligent" (PITCHMAP's Xclude rounding: a track KEEPS its
+               current target unless a competitor is closer by more than
+               hyst_cents — hysteresis kills target ping-pong on wobbly
+               sources near snap boundaries)
     """
     win = np.hanning(n_fft)
     n_bins = n_fft // 2 + 1
@@ -276,6 +283,7 @@ def process(
     tracks = []
     glide_frames = glide * sr / hop
     ema_a = 1.0 - np.exp(-(hop / sr) / 0.25)  # ~250 ms reference
+    hyst = hyst_cents / 1200.0 * np.log(2.0)
 
     for t in range(n_frames):
         seg = xp[t * hop : t * hop + n_fft]
@@ -337,6 +345,13 @@ def process(
                         if dd < bestd:
                             best, bestd = trk, dd
                     tgt = grid[np.argmin(np.abs(log_grid - np.log(f0)))]
+                    if (rounding == "intelligent" and best is not None
+                            and np.min(np.abs(log_grid - np.log(best["tgt"]))) < 1e-9):
+                        # sticky target: keep the old one (if still allowed)
+                        # unless the new is closer by more than the hysteresis
+                        if (abs(np.log(f0 / best["tgt"]))
+                                < abs(np.log(f0 / tgt)) + hyst):
+                            tgt = best["tgt"]
                     if best is None:  # birth: glide starts at SOURCE pitch
                         trk = {"f0": f0, "lema": np.log(f0), "tgt": tgt,
                                "r_from": 0.0, "g0": t, "phases": {},
