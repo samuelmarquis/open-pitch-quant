@@ -355,6 +355,56 @@ neither changes it → look at MIDI-boundary re-anchors instead.
 Also: Glide default → 0 s engine-wide and in the plugin (user note;
 plugin rebuilt + reinstalled).
 
+**Verdict (2026-07-03):** "Definitely worse with half-block; notrans helps
+but I'm not sure it's the full story. Especially noticeable as amplitude
+instability where the actual pitch is far from the note we're quantizing
+to." Then the golden bug report: "I can point to it precisely — 0:09.750
+in phylovox, it's very apparent."
+
+**Interpretation & hunt:** the timestamp + measurement chase found FIVE
+distinct mechanisms, all fixed:
+1. **Semitone dead zones in the multi-F0 candidate grid** — sources
+   sitting ~50¢ off every candidate (vs 45¢ claim tolerance) made object
+   formation flicker at ~10 Hz. Measured as ripple bursts every ~1 s of a
+   scoop (= each half-semitone crossing). Fix: quarter-tone candidates +
+   live-track f0 seeding. Burst windows: −18 dB → −51 dB.
+2. **Chirp-inconsistent phase advance** — accumulators advanced at
+   endpoint frequency; moving pitch made overlapped windows disagree.
+   Fix: trapezoidal (midpoint) integration.
+3. **Whole-frame transient swaps** — hard dry↔mapped toggling at hop
+   boundaries. Fix: soft blend (flux-proportional), state keeps running;
+   hard reset only above 3× threshold.
+4. **Stamped regions discarded non-peak content** — new-note onset energy
+   lives in bins owned by old content's regions and simply vanished
+   (measured −51 dB rms where dry had −19: the note was ABSENT for
+   ~100 ms). Fixes: dual-window amplitude analysis (short window at frame
+   center for amplitudes; long window keeps freq/phase) + carry each
+   stamped region's non-mainlobe bins verbatim.
+5. **Latency lie** — true engine latency was 2N−hop (7168) while N (4096)
+   was reported and trimmed: host PDC and all offline A/Bs were 64 ms
+   misaligned (and Mix would have flammed). Fix: prime the output FIFO
+   with hop, not N. Click-verified: 0 residual samples.
+
+Post-fix, aligned: phylovox 9.75 attack lands within 2.5 dB of dry
+(was: absent). Regressions: tuning +0.2¢, vibrato skirt 48.4 dB (new
+best), scoop dead zones gone (single −26 dB event remains at the 400¢
+target switch — that's the sound of glide=0; micro-glide floor is a
+candidate if it bothers ears).
+
+---
+
+## Batch 012 — all five fixes, full suite (2026-07-03)
+
+`out/listen-012/`: full suite × {champ, formant60} through the repaired
+engine. Plugin rebuilt + reinstalled — **Ableton's delay compensation was
+64 ms wrong until now; this alone should feel different in the session.**
+
+**Specific asks:** (1) phylovox 9.750 — gone? (2) the far-from-target
+amplitude instability on vocals — gone? (3) does anything NEW poke out
+(the residual carry adds a subtle dry layer under stamped content;
+tonalization purists may notice); (4) in Live: does timing feel tight now
+(PDC fix)?
+
 **Verdict:** *(pending)*
 
 **Verdict:** *(pending)*

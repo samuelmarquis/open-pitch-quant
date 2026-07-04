@@ -113,8 +113,8 @@ struct Track {
     r_from: f64,
     g0: i64,
     seen: i64,
-    /// per harmonic number: (phase, frame last seen)
-    phases: [(f64, i64); MAX_H + 1],
+    /// per harmonic number: (phase, frame last seen, last output freq)
+    phases: [(f64, i64, f64); MAX_H + 1],
 }
 
 fn midi_freq(n: f64) -> f64 {
@@ -192,9 +192,15 @@ pub struct Engine {
     // synthesis state (shared across channels)
     note_phase: [f64; 128],
     note_seen: [i64; 128],
+    note_ft: [f64; 128],
     tracks: Vec<Track>,
     // scratch
     fft_in: Vec<f64>,
+    fft_s: Arc<dyn RealToComplex<f64>>,
+    fft_s_in: Vec<f64>,
+    spec_s: Vec<Complex64>,
+    mag_s: Vec<f64>,
+    win_s: Vec<f64>,
     spec_scratch: Vec<Complex64>,
     yt: Vec<f64>,
     env: Vec<f64>,
@@ -217,6 +223,11 @@ impl Engine {
         let mut planner = RealFftPlanner::<f64>::new();
         let fft = planner.plan_fft_forward(n_fft);
         let ifft = planner.plan_fft_inverse(n_fft);
+        let n_s = n_fft / 4; // short (amplitude) window
+        let fft_s = planner.plan_fft_forward(n_s);
+        let win_s: Vec<f64> = (0..n_s)
+            .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (n_s as f64 - 1.0)).cos())
+            .collect();
         let win: Vec<f64> = (0..n_fft)
             .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (n_fft as f64 - 1.0)).cos())
             .collect();
@@ -249,8 +260,14 @@ impl Engine {
             frame_idx: 0,
             note_phase: [0.0; 128],
             note_seen: [-2; 128],
+            note_ft: [0.0; 128],
             tracks: Vec::with_capacity(16),
             fft_in: vec![0.0; n_fft],
+            fft_s,
+            fft_s_in: vec![0.0; n_fft / 4],
+            spec_s: vec![Complex64::new(0.0, 0.0); n_fft / 8 + 1],
+            mag_s: vec![0.0; n_fft / 8 + 1],
+            win_s,
             spec_scratch: zc(),
             yt: vec![0.0; n_fft],
             env: vec![0.0; bins],
@@ -269,8 +286,14 @@ impl Engine {
             self.ola[c].iter_mut().for_each(|v| *v = 0.0);
             self.out_fifo[c].clear();
             self.dry_fifo[c].clear();
-            for _ in 0..self.n_fft {
+            // prime wet with HOP (not n_fft): an emitted OLA chunk is
+            // complete N-HOP samples after its content ends, so total
+            // latency is exactly n_fft. (Priming N made true latency
+            // 2N-hop and broke host PDC alignment by 64 ms.)
+            for _ in 0..self.hop {
                 self.out_fifo[c].push_back(0.0);
+            }
+            for _ in 0..self.n_fft {
                 self.dry_fifo[c].push_back(0.0);
             }
         }
@@ -411,7 +434,10 @@ impl Engine {
     }
 
     /// Greedy Klapuri-style multi-F0 over detected (mid-spectrum) peaks.
-    fn harmonic_objects(&self, voices: usize) -> (Vec<f64>, Vec<i32>) {
+    /// `seeds` are extra f0 candidates (live tracks' current f0s) so that
+    /// objects, once formed, follow sources continuously between grid
+    /// points instead of flickering in the dead zones.
+    fn harmonic_objects(&self, voices: usize, seeds: &[f64]) -> (Vec<f64>, Vec<i32>) {
         let pk_f: Vec<f64> = self.peaks.iter().map(|&p| self.f_true[p]).collect();
         let pk_m: Vec<f64> = self.peaks.iter().map(|&p| self.mag[p]).collect();
         let n_pk = pk_f.len();
@@ -423,7 +449,11 @@ impl Engine {
         let log_pk: Vec<f64> = pk_f.iter().map(|&f| f.max(1e-9).ln()).collect();
         let tol = 45.0 / 1200.0 * 2f64.ln();
         let tol_re = 30.0 / 1200.0 * 2f64.ln();
-        let cands: Vec<f64> = (33..=84).map(|n| midi_freq(n as f64)).collect();
+        // quarter-tone candidate grid (semitone spacing left ~50-cent dead
+        // zones vs the 45-cent claim tolerance: object formation flickered
+        // whenever a source sat between semitones) + live-track seeds
+        let mut cands: Vec<f64> = (66..=168).map(|q| midi_freq(q as f64 / 2.0)).collect();
+        cands.extend(seeds.iter().copied().filter(|f| (50.0..1100.0).contains(f)));
         let w_h: Vec<f64> = (1..=N_HARM).map(|h| 1.0 / (h as f64).powf(0.9)).collect();
 
         let mut avail = pk_m.clone();
@@ -572,6 +602,28 @@ impl Engine {
                 self.phi[c][k] = self.spec[c][k].arg();
             }
         }
+        // short-window (n_fft/4) magnitudes centered on the frame center:
+        // amplitude with ~4x better time resolution than the long window
+        // (fixes onset smear: stamped amps otherwise rise over the whole
+        // window). Frequency/phase still come from the long window.
+        {
+            let n_s = self.n_fft / 4;
+            let c0 = self.n_fft / 2 - n_s / 2;
+            for n in 0..n_s {
+                let mut acc = 0.0;
+                for c in 0..nch {
+                    acc += self.in_buf[c][c0 + n];
+                }
+                self.fft_s_in[n] = acc / nch as f64 * self.win_s[n];
+            }
+            self.fft_s
+                .process(&mut self.fft_s_in, &mut self.spec_s)
+                .expect("fft_s");
+            for k in 0..self.spec_s.len() {
+                self.mag_s[k] = self.spec_s[k].norm();
+            }
+        }
+
         // mid (decision) spectrum: complex channel average
         let mut mag_sum = 0.0;
         for k in 0..self.bins {
@@ -613,9 +665,11 @@ impl Engine {
             }
             pos / (self.prev_mag_sum + 1e-12)
         };
-        self.prev_mag_store.copy_from_slice(&self.mag);
-        self.prev_mag_sum = mag_sum;
-        let is_transient = p.transient_bypass && flux > p.flux_thresh;
+        // soft transient handling: moderate onsets crossfade toward dry
+        // while the mapped state keeps running underneath (no reset —
+        // hard swaps at frame edges read as choppiness); only STRONG
+        // onsets reset synthesis state (and thereby retrigger glide)
+        let hard_transient = p.transient_bypass && flux > 3.0 * p.flux_thresh;
 
         self.build_grid(held, p.mode);
 
@@ -625,7 +679,7 @@ impl Engine {
             for c in 0..nch {
                 self.ysyn[c].iter_mut().for_each(|v| *v = Complex64::new(0.0, 0.0));
             }
-        } else if is_transient || self.first_frame {
+        } else if hard_transient || self.first_frame {
             self.note_seen = [-2; 128];
             self.tracks.clear();
             for c in 0..nch {
@@ -633,8 +687,21 @@ impl Engine {
             }
         } else {
             self.map_frame(t, p, bin_hz);
+            if p.transient_bypass && flux > p.flux_thresh {
+                let a = (flux / p.flux_thresh - 1.0).min(1.0);
+                for c in 0..nch {
+                    for k in 0..self.bins {
+                        self.ysyn[c][k] =
+                            a * self.spec[c][k] + (1.0 - a) * self.ysyn[c][k];
+                    }
+                }
+            }
         }
         self.first_frame = false;
+        // store AFTER map_frame so the per-region attack detector compares
+        // against the actual previous frame
+        self.prev_mag_store.copy_from_slice(&self.mag);
+        self.prev_mag_sum = mag_sum;
 
         // synthesize, window, overlap-add, emit — per channel
         let inv_n = 1.0 / self.n_fft as f64;
@@ -701,10 +768,13 @@ impl Engine {
         if p.formant > 0.0 {
             self.compute_envelope();
         }
-        let (f0s, owner) = self.harmonic_objects(p.voices.max(1));
+        let seeds: Vec<f64> = self.tracks.iter().map(|trk| trk.f0).collect();
+        let (f0s, owner) = self.harmonic_objects(p.voices.max(1), &seeds);
 
         // ---- M3: match objects to tracks ----
-        let glide_frames = p.glide * self.sr / self.hop as f64;
+        // micro-glide floor (~1.5 frames): even at Glide=0, target changes
+        // ramp over ~30 ms so the OLA doesn't tear on a hard retune jump
+        let glide_frames = (p.glide * self.sr / self.hop as f64).max(1.5);
         let ema_a = 1.0 - (-(self.hop as f64 / self.sr) / 0.25).exp();
         let hyst = p.hyst_cents / 1200.0 * 2f64.ln();
         let match_tol = 2f64.ln() * 100.0 / 1200.0;
@@ -743,7 +813,7 @@ impl Engine {
                         r_from: 0.0, // birth: glide starts at SOURCE pitch
                         g0: t,
                         seen: t,
-                        phases: [(0.0, -2); MAX_H + 1],
+                        phases: [(0.0, -2, 0.0); MAX_H + 1],
                     });
                     self.tracks.len() - 1
                 }
@@ -877,7 +947,21 @@ impl Engine {
             // amplitude and analysis-phase offset (image preservation)
             let ft = fp + df;
             let dsrc = fp / bin_hz - pk as f64;
-            let ker_src = hann_kernel(dsrc, self.n_fft).max(0.1);
+            let mut ker_src = hann_kernel(dsrc, self.n_fft).max(0.1);
+            // dual-window amplitude: ratio of short-window to long-window
+            // partial amplitude (scale-calibrated x4), clamped
+            {
+                let n_s = self.n_fft / 4;
+                let bin_s = fp / (self.sr / n_s as f64);
+                let ks = bin_s.round() as usize;
+                if fp > 100.0 && ks >= 1 && ks + 1 < self.mag_s.len() {
+                    let amp_l = self.mag[pk] / ker_src;
+                    let ker_s = hann_kernel(bin_s - ks as f64, n_s).max(0.1);
+                    let amp_s = 4.0 * self.mag_s[ks] / ker_s;
+                    let r = (amp_s / amp_l.max(1e-9)).clamp(0.25, 4.0);
+                    ker_src /= r; // amp_c = mag/ker_src, so /r boosts by r
+                }
+            }
             // formant preservation: correct amplitude by the source
             // envelope evaluated at the OUTPUT vs SOURCE frequency
             let formant_gain = if p.formant > 0.0 {
@@ -892,23 +976,27 @@ impl Engine {
                 as usize;
             let phv = if let Some(ti) = trk_idx {
                 let trk = &mut self.tracks[ti];
-                let (ph0, seen) = trk.phases[h];
-                let phv = if seen == t {
-                    ph0
+                let (ph0, seen, ft_prev) = trk.phases[h];
+                let (phv, ft_store) = if seen == t {
+                    (ph0, ft_prev) // duplicate h this frame: keep first
                 } else if seen == t - 1 {
-                    ph0 + TWO_PI * ft * self.hop as f64 / self.sr
+                    // trapezoidal (chirp-consistent) phase integration
+                    (ph0 + TWO_PI * 0.5 * (ft_prev + ft) * self.hop as f64 / self.sr, ft)
                 } else {
-                    anchor
+                    (anchor, ft)
                 };
-                trk.phases[h] = (phv, t);
+                trk.phases[h] = (phv, t, ft_store);
                 phv
             } else {
                 if self.note_seen[ni] == t {
                     // already advanced this frame
                 } else if self.note_seen[ni] == t - 1 {
-                    self.note_phase[ni] += TWO_PI * ft * self.hop as f64 / self.sr;
+                    self.note_phase[ni] += TWO_PI * 0.5 * (self.note_ft[ni] + ft)
+                        * self.hop as f64 / self.sr;
+                    self.note_ft[ni] = ft;
                 } else {
                     self.note_phase[ni] = anchor;
+                    self.note_ft[ni] = ft;
                 }
                 self.note_seen[ni] = t;
                 self.note_phase[ni]
@@ -923,6 +1011,17 @@ impl Engine {
                             p.grit * self.magc[c][sk],
                             self.phi[c][sk] + ramp,
                         );
+                    }
+                }
+            }
+            // carry the region's NON-mainlobe bins verbatim at source
+            // position: onset/noise energy living between partials
+            // otherwise vanishes entirely (measured as ~25 dB "attack
+            // holes" at note starts — the batch-011 choppiness)
+            for c in 0..nch {
+                for k in lo..hi {
+                    if (k as i64 - pk as i64).unsigned_abs() as usize > 4 {
+                        self.ysyn[c][k] += self.spec[c][k];
                     }
                 }
             }
