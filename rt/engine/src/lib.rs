@@ -1,9 +1,16 @@
 //! Real-time port of the opq spectral pitch-mapping engine.
 //!
-//! Faithful port of `opq/engine.py` (the "champion" configuration only:
-//! assign=group, synth=stamp, phase_lock=true — the paths that survived
-//! listening batches 001–009). Streaming STFT with N=4096 / hop=1024,
-//! reported latency = N samples (matches PITCHMAP's 4096).
+//! Faithful port of `opq/engine.py` (the "champion" configuration:
+//! assign=group, synth=stamp, phase_lock — survivors of listening batches
+//! 001–009), restructured for streaming and NATIVE MULTICHANNEL operation:
+//! all analysis and mapping decisions are made once on the mid (channel
+//! average) spectrum; synthesis is per channel with shared partial phase
+//! accumulators plus each channel's analysis phase offset — preserving the
+//! stereo image (level AND delay panning) through retuning. The
+//! `coherence` parameter scales from exact image preservation (1.0) toward
+//! static per-partial decorrelation (0.0) as a width control.
+//!
+//! STFT N=4096 / hop=1024, reported latency = N samples (PITCHMAP's 4096).
 
 use realfft::num_complex::Complex64;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
@@ -62,6 +69,9 @@ pub struct EngineParams {
     pub hyst_cents: f64,
     /// dry/wet, 1.0 = full wet (dry path is latency-aligned)
     pub mix: f64,
+    /// 1.0 = preserve the stereo image exactly; lower values add static
+    /// per-partial inter-channel decorrelation (width effect)
+    pub coherence: f64,
 }
 
 impl Default for EngineParams {
@@ -81,6 +91,7 @@ impl Default for EngineParams {
             rounding: Rounding::Intelligent,
             hyst_cents: 40.0,
             mix: 1.0,
+            coherence: 1.0,
         }
     }
 }
@@ -101,6 +112,10 @@ fn midi_freq(n: f64) -> f64 {
     440.0 * ((n - 69.0) / 12.0).exp2()
 }
 
+fn princarg(x: f64) -> f64 {
+    (x + PI).rem_euclid(TWO_PI) - PI
+}
+
 /// Zero-phase Hann window spectrum at fractional bin offset, W(0)=1.
 fn hann_kernel(x: f64) -> f64 {
     fn diric(u: f64) -> f64 {
@@ -114,8 +129,15 @@ fn hann_kernel(x: f64) -> f64 {
     diric(x) + 0.5 * (diric(x - 1.0) + diric(x + 1.0))
 }
 
+/// Deterministic static decorrelation offset in [-1, 1] for (note, channel).
+fn decor_offset(ni: usize, ch: usize) -> f64 {
+    let h = (ni as u64)
+        .wrapping_mul(0x9E3779B97F4A7C15)
+        .wrapping_add((ch as u64).wrapping_mul(0xD1B54A32D192ED03));
+    ((h >> 40) as f64 / (1u64 << 24) as f64) * 2.0 - 1.0
+}
+
 fn wmedian(vals: &mut Vec<(f64, f64)>) -> f64 {
-    // vals: (value, weight); sorted by value, cumulative weight crossing
     vals.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     let total: f64 = vals.iter().map(|v| v.1).sum();
     let mut cw = 0.0;
@@ -130,32 +152,36 @@ fn wmedian(vals: &mut Vec<(f64, f64)>) -> f64 {
 
 pub struct Engine {
     sr: f64,
+    channels: usize,
     win: Vec<f64>,
     fft: Arc<dyn RealToComplex<f64>>,
     ifft: Arc<dyn ComplexToReal<f64>>,
-    // streaming state
-    in_buf: Vec<f64>,
-    pending: Vec<f64>,
-    ola: Vec<f64>,
-    out_fifo: VecDeque<f64>,
-    dry_fifo: VecDeque<f64>,
-    // analysis state
+    // streaming state (per channel where applicable)
+    in_buf: Vec<Vec<f64>>,
+    fill: usize,
+    ola: Vec<Vec<f64>>,
+    out_fifo: Vec<VecDeque<f64>>,
+    dry_fifo: Vec<VecDeque<f64>>,
+    // per-channel spectra
+    spec: Vec<Vec<Complex64>>,
+    phi: Vec<Vec<f64>>,
+    magc: Vec<Vec<f64>>,
+    ysyn: Vec<Vec<Complex64>>,
+    // mid (decision) spectrum
+    mag: Vec<f64>,
+    phim: Vec<f64>,
+    f_true: Vec<f64>,
     prev_phi: Vec<f64>,
     prev_mag_store: Vec<f64>,
     prev_mag_sum: f64,
     first_frame: bool,
     frame_idx: i64,
-    // synthesis state
+    // synthesis state (shared across channels)
     note_phase: [f64; 128],
     note_seen: [i64; 128],
     tracks: Vec<Track>,
     // scratch
     fft_in: Vec<f64>,
-    spec: Vec<Complex64>,
-    mag: Vec<f64>,
-    phi: Vec<f64>,
-    f_true: Vec<f64>,
-    ysyn: Vec<Complex64>,
     spec_scratch: Vec<Complex64>,
     yt: Vec<f64>,
     grid: Vec<f64>,
@@ -164,23 +190,33 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new(sr: f64) -> Self {
+    pub fn new(sr: f64, channels: usize) -> Self {
+        let channels = channels.max(1);
         let mut planner = RealFftPlanner::<f64>::new();
         let fft = planner.plan_fft_forward(N_FFT);
         let ifft = planner.plan_fft_inverse(N_FFT);
         let win: Vec<f64> = (0..N_FFT)
             .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (N_FFT as f64 - 1.0)).cos())
             .collect();
+        let zc = || vec![Complex64::new(0.0, 0.0); BINS];
         let mut e = Self {
             sr,
+            channels,
             win,
             fft,
             ifft,
-            in_buf: vec![0.0; N_FFT],
-            pending: Vec::with_capacity(HOP),
-            ola: vec![0.0; N_FFT],
-            out_fifo: VecDeque::with_capacity(2 * N_FFT),
-            dry_fifo: VecDeque::with_capacity(2 * N_FFT),
+            in_buf: vec![vec![0.0; N_FFT]; channels],
+            fill: 0,
+            ola: vec![vec![0.0; N_FFT]; channels],
+            out_fifo: vec![VecDeque::with_capacity(2 * N_FFT); channels],
+            dry_fifo: vec![VecDeque::with_capacity(2 * N_FFT); channels],
+            spec: vec![zc(); channels],
+            phi: vec![vec![0.0; BINS]; channels],
+            magc: vec![vec![0.0; BINS]; channels],
+            ysyn: vec![zc(); channels],
+            mag: vec![0.0; BINS],
+            phim: vec![0.0; BINS],
+            f_true: vec![0.0; BINS],
             prev_phi: vec![0.0; BINS],
             prev_mag_store: vec![0.0; BINS],
             prev_mag_sum: -1.0,
@@ -190,12 +226,7 @@ impl Engine {
             note_seen: [-2; 128],
             tracks: Vec::with_capacity(16),
             fft_in: vec![0.0; N_FFT],
-            spec: vec![Complex64::new(0.0, 0.0); BINS],
-            mag: vec![0.0; BINS],
-            phi: vec![0.0; BINS],
-            f_true: vec![0.0; BINS],
-            ysyn: vec![Complex64::new(0.0, 0.0); BINS],
-            spec_scratch: vec![Complex64::new(0.0, 0.0); BINS],
+            spec_scratch: zc(),
             yt: vec![0.0; N_FFT],
             grid: Vec::with_capacity(128),
             peaks: Vec::with_capacity(512),
@@ -206,16 +237,17 @@ impl Engine {
     }
 
     pub fn reset(&mut self) {
-        self.in_buf.iter_mut().for_each(|v| *v = 0.0);
-        self.pending.clear();
-        self.ola.iter_mut().for_each(|v| *v = 0.0);
-        self.out_fifo.clear();
-        self.dry_fifo.clear();
-        // prime with N_FFT zeros = constant reported latency
-        for _ in 0..N_FFT {
-            self.out_fifo.push_back(0.0);
-            self.dry_fifo.push_back(0.0);
+        for c in 0..self.channels {
+            self.in_buf[c].iter_mut().for_each(|v| *v = 0.0);
+            self.ola[c].iter_mut().for_each(|v| *v = 0.0);
+            self.out_fifo[c].clear();
+            self.dry_fifo[c].clear();
+            for _ in 0..N_FFT {
+                self.out_fifo[c].push_back(0.0);
+                self.dry_fifo[c].push_back(0.0);
+            }
         }
+        self.fill = 0;
         self.prev_phi.iter_mut().for_each(|v| *v = 0.0);
         self.prev_mag_sum = -1.0;
         self.first_frame = true;
@@ -229,18 +261,35 @@ impl Engine {
         N_FFT
     }
 
-    /// Process a block in place. `held[n]` = MIDI note n currently held.
-    pub fn process_block(&mut self, io: &mut [f32], held: &[bool; 128], p: &EngineParams) {
-        for s in io.iter_mut() {
-            let x = *s as f64;
-            self.dry_fifo.push_back(x);
-            self.pending.push(x);
-            if self.pending.len() == HOP {
-                self.run_frame(held, p);
+    /// Process channel slices in place. All slices must be equal length.
+    /// `held[n]` = MIDI note n currently held.
+    pub fn process_block(
+        &mut self,
+        io: &mut [&mut [f32]],
+        held: &[bool; 128],
+        p: &EngineParams,
+    ) {
+        let ch = self.channels.min(io.len());
+        let len = if ch > 0 { io[0].len() } else { return };
+        for i in 0..len {
+            for c in 0..ch {
+                let x = io[c][i] as f64;
+                self.dry_fifo[c].push_back(x);
+                self.in_buf[c][N_FFT - HOP + self.fill] = x;
             }
-            let wet = self.out_fifo.pop_front().unwrap_or(0.0);
-            let dry = self.dry_fifo.pop_front().unwrap_or(0.0);
-            *s = (p.mix * wet + (1.0 - p.mix) * dry) as f32;
+            self.fill += 1;
+            if self.fill == HOP {
+                self.run_frame(held, p);
+                self.fill = 0;
+                for c in 0..ch {
+                    self.in_buf[c].copy_within(HOP.., 0);
+                }
+            }
+            for c in 0..ch {
+                let wet = self.out_fifo[c].pop_front().unwrap_or(0.0);
+                let dry = self.dry_fifo[c].pop_front().unwrap_or(0.0);
+                io[c][i] = (p.mix * wet + (1.0 - p.mix) * dry) as f32;
+            }
         }
     }
 
@@ -317,7 +366,6 @@ impl Engine {
             } else {
                 let q = self.peaks[i + 1];
                 if q > p + 1 {
-                    // valley between the peaks
                     let mut vm = f64::INFINITY;
                     let mut vi = p + 1;
                     for j in p + 1..=q {
@@ -335,8 +383,7 @@ impl Engine {
         }
     }
 
-    /// Greedy Klapuri-style multi-F0 over detected peaks.
-    /// Returns refined f0 per object and per-peak owner index (-1 = none).
+    /// Greedy Klapuri-style multi-F0 over detected (mid-spectrum) peaks.
     fn harmonic_objects(&self, voices: usize) -> (Vec<f64>, Vec<i32>) {
         let pk_f: Vec<f64> = self.peaks.iter().map(|&p| self.f_true[p]).collect();
         let pk_m: Vec<f64> = self.peaks.iter().map(|&p| self.mag[p]).collect();
@@ -349,14 +396,12 @@ impl Engine {
         let log_pk: Vec<f64> = pk_f.iter().map(|&f| f.max(1e-9).ln()).collect();
         let tol = 45.0 / 1200.0 * 2f64.ln();
         let tol_re = 30.0 / 1200.0 * 2f64.ln();
-        // candidates: semitone grid, 55 Hz .. 1046.5 Hz (midi 33..=84)
         let cands: Vec<f64> = (33..=84).map(|n| midi_freq(n as f64)).collect();
         let w_h: Vec<f64> = (1..=N_HARM).map(|h| 1.0 / (h as f64).powf(0.9)).collect();
 
         let mut avail = pk_m.clone();
         let mut first_sal = -1.0f64;
         for _ in 0..voices {
-            // pick best candidate by harmonic-summation salience
             let mut best_sal = 0.0;
             let mut best_c = usize::MAX;
             let mut best_claim: Vec<usize> = Vec::new();
@@ -367,7 +412,6 @@ impl Engine {
                 claim.clear();
                 for h in 1..=N_HARM {
                     let lfh = (c * h as f64).ln();
-                    // nearest available peak
                     let mut bd = f64::INFINITY;
                     let mut bj = usize::MAX;
                     for j in 0..n_pk {
@@ -403,7 +447,6 @@ impl Engine {
             best_claim.sort_unstable();
             best_claim.dedup();
             let cand_f = cands[best_c];
-            // initial f0: weighted median over LOW harmonics
             let mut est: Vec<(f64, f64)> = Vec::new();
             for &j in &best_claim {
                 let hh = (pk_f[j] / cand_f).round().max(1.0);
@@ -419,7 +462,6 @@ impl Engine {
                 }
             }
             let f0e = wmedian(&mut est);
-            // re-claim ALL available peaks against the refined comb
             let mut inl: Vec<usize> = Vec::new();
             let mut est2: Vec<(f64, f64)> = Vec::new();
             for j in 0..n_pk {
@@ -456,30 +498,38 @@ impl Engine {
     }
 
     fn run_frame(&mut self, held: &[bool; 128], p: &EngineParams) {
-        // slide input history and take the frame
-        self.in_buf.copy_within(HOP.., 0);
-        let n0 = N_FFT - HOP;
-        self.in_buf[n0..].copy_from_slice(&self.pending);
-        self.pending.clear();
-
         let t = self.frame_idx;
         self.frame_idx += 1;
         let bin_hz = self.sr / N_FFT as f64;
+        let nch = self.channels;
 
-        for n in 0..N_FFT {
-            self.fft_in[n] = self.in_buf[n] * self.win[n];
+        // per-channel FFT
+        for c in 0..nch {
+            for n in 0..N_FFT {
+                self.fft_in[n] = self.in_buf[c][n] * self.win[n];
+            }
+            self.fft
+                .process(&mut self.fft_in, &mut self.spec[c])
+                .expect("fft");
+            for k in 0..BINS {
+                self.magc[c][k] = self.spec[c][k].norm();
+                self.phi[c][k] = self.spec[c][k].arg();
+            }
         }
-        self.fft
-            .process(&mut self.fft_in, &mut self.spec)
-            .expect("fft");
+        // mid (decision) spectrum: complex channel average
         let mut mag_sum = 0.0;
         for k in 0..BINS {
-            self.mag[k] = self.spec[k].norm();
-            self.phi[k] = self.spec[k].arg();
+            let mut acc = Complex64::new(0.0, 0.0);
+            for c in 0..nch {
+                acc += self.spec[c][k];
+            }
+            acc /= nch as f64;
+            self.mag[k] = acc.norm();
+            self.phim[k] = acc.arg();
             mag_sum += self.mag[k];
         }
 
-        // instantaneous frequency via phase differences
+        // instantaneous frequency (mid) via phase differences
         if self.first_frame {
             for k in 0..BINS {
                 self.f_true[k] = k as f64 * bin_hz;
@@ -487,82 +537,74 @@ impl Engine {
         } else {
             for k in 0..BINS {
                 let expected = TWO_PI * HOP as f64 * k as f64 / N_FFT as f64;
-                let mut d = self.phi[k] - self.prev_phi[k] - expected;
-                d = (d + PI).rem_euclid(TWO_PI) - PI;
-                self.f_true[k] = k as f64 * bin_hz + d / (TWO_PI * HOP as f64 / N_FFT as f64) * bin_hz;
+                let d = princarg(self.phim[k] - self.prev_phi[k] - expected);
+                self.f_true[k] =
+                    k as f64 * bin_hz + d / (TWO_PI * HOP as f64 / N_FFT as f64) * bin_hz;
             }
         }
-        self.prev_phi.copy_from_slice(&self.phi);
+        self.prev_phi.copy_from_slice(&self.phim);
 
-        // spectral flux onset detector
+        // spectral flux onset detector (mid)
         let flux = if self.prev_mag_sum < 0.0 {
             f64::INFINITY
         } else {
             let mut pos = 0.0;
             for k in 0..BINS {
-                let d = self.mag[k] - self.prev_mag_row(k);
+                let d = self.mag[k] - self.prev_mag_store[k];
                 if d > 0.0 {
                     pos += d;
                 }
             }
             pos / (self.prev_mag_sum + 1e-12)
         };
-        // store current mags for next frame's flux
-        self.store_prev_mag(mag_sum);
+        self.prev_mag_store.copy_from_slice(&self.mag);
+        self.prev_mag_sum = mag_sum;
         let is_transient = p.transient_bypass && flux > p.flux_thresh;
 
         self.build_grid(held, p.mode);
 
         if self.grid.is_empty() {
-            // no held notes -> silence (PITCHMAP semantics)
             self.note_seen = [-2; 128];
             self.tracks.clear();
-            for k in 0..BINS {
-                self.ysyn[k] = Complex64::new(0.0, 0.0);
+            for c in 0..nch {
+                self.ysyn[c].iter_mut().for_each(|v| *v = Complex64::new(0.0, 0.0));
             }
         } else if is_transient || self.first_frame {
-            // dry passthrough; re-anchor synthesis state
             self.note_seen = [-2; 128];
             self.tracks.clear();
-            self.ysyn.copy_from_slice(&self.spec);
+            for c in 0..nch {
+                self.ysyn[c].copy_from_slice(&self.spec[c]);
+            }
         } else {
             self.map_frame(t, p, bin_hz);
         }
         self.first_frame = false;
 
-        // synthesize, window, overlap-add
-        self.spec_scratch.copy_from_slice(&self.ysyn);
-        // realfft inverse requires bins 0 and Nyquist to be real
-        self.spec_scratch[0].im = 0.0;
-        self.spec_scratch[BINS - 1].im = 0.0;
-        self.ifft
-            .process(&mut self.spec_scratch, &mut self.yt)
-            .expect("ifft");
+        // synthesize, window, overlap-add, emit — per channel
         let inv_n = 1.0 / N_FFT as f64;
-        for n in 0..N_FFT {
-            self.ola[n] += self.yt[n] * inv_n * self.win[n];
+        for c in 0..nch {
+            self.spec_scratch.copy_from_slice(&self.ysyn[c]);
+            self.spec_scratch[0].im = 0.0;
+            self.spec_scratch[BINS - 1].im = 0.0;
+            self.ifft
+                .process(&mut self.spec_scratch, &mut self.yt)
+                .expect("ifft");
+            for n in 0..N_FFT {
+                self.ola[c][n] += self.yt[n] * inv_n * self.win[n];
+            }
+            for n in 0..HOP {
+                self.out_fifo[c].push_back(self.ola[c][n] / 1.5); // hann^2 COLA
+            }
+            self.ola[c].copy_within(HOP.., 0);
+            for n in N_FFT - HOP..N_FFT {
+                self.ola[c][n] = 0.0;
+            }
         }
-        for n in 0..HOP {
-            self.out_fifo.push_back(self.ola[n] / 1.5); // hann^2 COLA @75%
-        }
-        self.ola.copy_within(HOP.., 0);
-        for n in N_FFT - HOP..N_FFT {
-            self.ola[n] = 0.0;
-        }
-    }
-
-    // prev-mag storage (reuses yt scratch would clash; keep a dedicated vec)
-    fn prev_mag_row(&self, k: usize) -> f64 {
-        self.prev_mag_store[k]
-    }
-    fn store_prev_mag(&mut self, sum: f64) {
-        self.prev_mag_store.copy_from_slice(&self.mag);
-        self.prev_mag_sum = sum;
     }
 
     fn map_frame(&mut self, t: i64, p: &EngineParams, bin_hz: f64) {
-        // drop tracks not seen last frame FIRST, so indices taken during
-        // matching stay valid through synthesis
+        let nch = self.channels;
+        // drop stale tracks first so indices stay valid through synthesis
         self.tracks.retain(|trk| trk.seen >= t - 1);
         self.find_peaks();
         self.region_bounds();
@@ -592,10 +634,8 @@ impl Engine {
             if p.rounding == Rounding::Intelligent {
                 if let Some(ti) = best {
                     let old = self.tracks[ti].tgt;
-                    let in_grid = self
-                        .grid
-                        .iter()
-                        .any(|&g| ((g / old).ln()).abs() < 1e-9);
+                    let in_grid =
+                        self.grid.iter().any(|&g| ((g / old).ln()).abs() < 1e-9);
                     if in_grid && (f0 / old).ln().abs() < (f0 / tgt).ln().abs() + hyst {
                         tgt = old;
                     }
@@ -646,11 +686,15 @@ impl Engine {
             obj_mult.push((r_eff + p.feel * dev).exp());
             obj_trk.push(ti);
         }
-        // ---- region mapping decisions + synthesis ----
-        for k in 0..BINS {
-            self.ysyn[k] = Complex64::new(0.0, 0.0);
+
+        // ---- region mapping decisions + per-channel synthesis ----
+        for c in 0..nch {
+            self.ysyn[c]
+                .iter_mut()
+                .for_each(|v| *v = Complex64::new(0.0, 0.0));
         }
         let gate = p.tonality_gate;
+        let decor_amt = (1.0 - p.coherence).clamp(0.0, 1.0) * PI;
         let n_regions = self.peaks.len();
         for i in 0..n_regions {
             let pk = self.peaks[i];
@@ -669,7 +713,6 @@ impl Engine {
             } else if p.unowned == Unowned::Dry {
                 df = 0.0;
             } else {
-                // M0-style treatment for unowned peaks
                 let mut mappable = fp > 30.0 && fp < self.sr / 2.0 * 0.95;
                 if p.fmax_map.is_finite() {
                     mappable = mappable && fp <= p.fmax_map;
@@ -690,7 +733,6 @@ impl Engine {
                 };
             }
             if h > MAX_H {
-                // beyond phase-table reach: treat as plain mapped partial
                 trk_idx = None;
             }
 
@@ -701,28 +743,36 @@ impl Engine {
                 continue;
             }
             if df == 0.0 {
-                for k in clo..chi {
-                    self.ysyn[k] += self.spec[k]; // verbatim dry
+                for c in 0..nch {
+                    for k in clo..chi {
+                        self.ysyn[c][k] += self.spec[c][k]; // verbatim dry
+                    }
                 }
                 continue;
             }
             if noisy {
-                // mapped noise: fresh phases + deterministic shift ramp
-                let ramp = TWO_PI * df * (t as f64 * HOP as f64) / self.sr
-                    + PI * dbin as f64;
-                for k in clo..chi {
-                    let sk = (k as i64 - dbin) as usize;
-                    let ph = self.phi[sk] + ramp;
-                    self.ysyn[k] +=
-                        Complex64::from_polar(self.mag[sk], ph);
+                // mapped noise: per-channel fresh phases + shared ramp
+                let ramp =
+                    TWO_PI * df * (t as f64 * HOP as f64) / self.sr + PI * dbin as f64;
+                for c in 0..nch {
+                    for k in clo..chi {
+                        let sk = (k as i64 - dbin) as usize;
+                        self.ysyn[c][k] += Complex64::from_polar(
+                            self.magc[c][sk],
+                            self.phi[c][sk] + ramp,
+                        );
+                    }
                 }
                 continue;
             }
-            // stamped tonal partial
+            // stamped tonal partial: shared accumulator, per-channel
+            // amplitude and analysis-phase offset (image preservation)
             let ft = fp + df;
             let dsrc = fp / bin_hz - pk as f64;
-            let amp = self.mag[pk] / hann_kernel(dsrc).max(0.1);
-            let anchor = self.phi[pk] - PI * dsrc;
+            let ker_src = hann_kernel(dsrc).max(0.1);
+            let anchor = self.phim[pk] - PI * dsrc;
+            let ni = ((69.0 + 12.0 * (ft / 440.0).log2()).round() as i64).clamp(0, 127)
+                as usize;
             let phv = if let Some(ti) = trk_idx {
                 let trk = &mut self.tracks[ti];
                 let (ph0, seen) = trk.phases[h];
@@ -736,8 +786,6 @@ impl Engine {
                 trk.phases[h] = (phv, t);
                 phv
             } else {
-                let ni = ((69.0 + 12.0 * (ft / 440.0).log2()).round() as i64)
-                    .clamp(0, 127) as usize;
                 if self.note_seen[ni] == t {
                     // already advanced this frame
                 } else if self.note_seen[ni] == t - 1 {
@@ -749,25 +797,37 @@ impl Engine {
                 self.note_phase[ni]
             };
             if p.grit > 0.0 {
-                let ramp = TWO_PI * df * (t as f64 * HOP as f64) / self.sr
-                    + PI * dbin as f64;
-                for k in clo..chi {
-                    let sk = (k as i64 - dbin) as usize;
-                    self.ysyn[k] += Complex64::from_polar(
-                        p.grit * self.mag[sk],
-                        self.phi[sk] + ramp,
-                    );
+                let ramp =
+                    TWO_PI * df * (t as f64 * HOP as f64) / self.sr + PI * dbin as f64;
+                for c in 0..nch {
+                    for k in clo..chi {
+                        let sk = (k as i64 - dbin) as usize;
+                        self.ysyn[c][k] += Complex64::from_polar(
+                            p.grit * self.magc[c][sk],
+                            self.phi[c][sk] + ramp,
+                        );
+                    }
                 }
             }
             let b = ft / bin_hz;
             let k0 = ((b - 4.0).ceil() as i64).max(1) as usize;
             let k1 = ((b + 4.0).floor() as i64).min(BINS as i64 - 2) as usize;
-            for k in k0..=k1 {
-                let xoff = k as f64 - b;
-                self.ysyn[k] += Complex64::from_polar(
-                    (1.0 - p.grit) * amp * hann_kernel(xoff),
-                    phv - PI * xoff,
-                );
+            for c in 0..nch {
+                // channel's own level + phase offset from the mid reference
+                let amp_c = self.magc[c][pk] / ker_src;
+                let off_c = if nch > 1 {
+                    princarg(self.phi[c][pk] - self.phim[pk])
+                        + decor_amt * decor_offset(ni, c)
+                } else {
+                    0.0
+                };
+                for k in k0..=k1 {
+                    let xoff = k as f64 - b;
+                    self.ysyn[c][k] += Complex64::from_polar(
+                        (1.0 - p.grit) * amp_c * hann_kernel(xoff),
+                        phv + off_c - PI * xoff,
+                    );
+                }
             }
         }
     }

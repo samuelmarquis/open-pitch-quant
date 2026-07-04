@@ -1,12 +1,14 @@
-//! Offline parity harness: WAV in → engine → WAV out.
+//! Offline parity harness: WAV in → engine → WAV out (channel count
+//! preserved; stereo runs the native multichannel engine with shared
+//! decisions and image-preserving synthesis).
 //!
 //!   opq in.wav out.wav --notes C4,E4,G4 [--feel 0.35] [--glide 0.06]
 //!       [--grit 0] [--voices 6] [--unowned dry|map] [--gate 2.5]
 //!       [--gate-mode fresh|bypass] [--mode repeat|custom]
 //!       [--rounding nearest|intelligent] [--fmax 5000] [--no-transient]
+//!       [--coherence 1.0]
 //!
-//! Output is latency-compensated (N_FFT samples trimmed) so files align
-//! with the Python renders for A/B and measurement.
+//! Output is latency-compensated (N_FFT samples trimmed).
 
 use opq_engine::{Engine, EngineParams, Mode, Rounding, TonalityMode, Unowned, N_FFT};
 
@@ -51,6 +53,9 @@ fn main() {
             "--voices" => p.voices = val().parse().unwrap_or_else(|_| die("bad --voices")),
             "--gate" => p.tonality_gate = val().parse().unwrap_or_else(|_| die("bad --gate")),
             "--fmax" => p.fmax_map = val().parse().unwrap_or_else(|_| die("bad --fmax")),
+            "--coherence" => {
+                p.coherence = val().parse().unwrap_or_else(|_| die("bad --coherence"))
+            }
             "--unowned" => {
                 p.unowned = match val().as_str() {
                     "dry" => Unowned::Dry,
@@ -87,52 +92,61 @@ fn main() {
 
     let mut reader = hound::WavReader::open(in_path).unwrap_or_else(|e| die(&e.to_string()));
     let spec = reader.spec();
-    let ch = spec.channels as usize;
-    let mono: Vec<f32> = match spec.sample_format {
-        hound::SampleFormat::Float => reader
-            .samples::<f32>()
-            .map(|s| s.unwrap())
-            .collect::<Vec<f32>>()
-            .chunks(ch)
-            .map(|fr| fr.iter().sum::<f32>() / ch as f32)
-            .collect(),
+    let ch = (spec.channels as usize).min(2);
+    let interleaved: Vec<f32> = match spec.sample_format {
+        hound::SampleFormat::Float => reader.samples::<f32>().map(|s| s.unwrap()).collect(),
         hound::SampleFormat::Int => {
             let scale = 1.0 / (1i64 << (spec.bits_per_sample - 1)) as f32;
             reader
                 .samples::<i32>()
                 .map(|s| s.unwrap() as f32 * scale)
-                .collect::<Vec<f32>>()
-                .chunks(ch)
-                .map(|fr| fr.iter().sum::<f32>() / ch as f32)
                 .collect()
         }
     };
+    let n_frames = interleaved.len() / spec.channels as usize;
+    // deinterleave (first `ch` channels), plus N_FFT zero tail to flush
+    let mut chans: Vec<Vec<f32>> = (0..ch)
+        .map(|c| {
+            let mut v: Vec<f32> = (0..n_frames)
+                .map(|f| interleaved[f * spec.channels as usize + c])
+                .collect();
+            v.extend(std::iter::repeat(0.0).take(N_FFT));
+            v
+        })
+        .collect();
 
-    let mut engine = Engine::new(spec.sample_rate as f64);
-    let mut buf = mono.clone();
-    // flush tail: feed N_FFT extra zeros, then trim the N_FFT lead-in
-    buf.extend(std::iter::repeat(0.0).take(N_FFT));
-    engine.process_block(&mut buf, &held, &p);
-    let out = &buf[N_FFT..N_FFT + mono.len()];
+    let mut engine = Engine::new(spec.sample_rate as f64, ch);
+    {
+        let mut slices: Vec<&mut [f32]> = chans.iter_mut().map(|v| v.as_mut_slice()).collect();
+        engine.process_block(&mut slices, &held, &p);
+    }
 
     let wspec = hound::WavSpec {
-        channels: 1,
+        channels: ch as u16,
         sample_rate: spec.sample_rate,
         bits_per_sample: 24,
         sample_format: hound::SampleFormat::Int,
     };
+    let mut peak = 0.0f32;
+    for c in &chans {
+        for &s in &c[N_FFT..N_FFT + n_frames] {
+            peak = peak.max(s.abs());
+        }
+    }
+    let g = if peak > 0.99 { 0.99 / peak } else { 1.0 };
     let mut writer =
         hound::WavWriter::create(out_path, wspec).unwrap_or_else(|e| die(&e.to_string()));
-    let peak = out.iter().fold(0.0f32, |a, &b| a.max(b.abs()));
-    let g = if peak > 0.99 { 0.99 / peak } else { 1.0 };
-    for &s in out {
-        let v = (s * g * 8_388_607.0) as i32;
-        writer.write_sample(v).unwrap();
+    for f in 0..n_frames {
+        for c in 0..ch {
+            let v = (chans[c][N_FFT + f] * g * 8_388_607.0) as i32;
+            writer.write_sample(v).unwrap();
+        }
     }
     writer.finalize().unwrap();
     println!(
-        "wrote {out_path} ({:.2}s @ {} Hz)",
-        mono.len() as f64 / spec.sample_rate as f64,
-        spec.sample_rate
+        "wrote {out_path} ({:.2}s @ {} Hz, {}ch)",
+        n_frames as f64 / spec.sample_rate as f64,
+        spec.sample_rate,
+        ch
     );
 }

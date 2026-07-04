@@ -33,7 +33,7 @@ enum GateMode {
 
 struct OpqPlugin {
     params: Arc<OpqParams>,
-    engines: Vec<Engine>,
+    engine: Option<Engine>,
     held: [bool; 128],
 }
 
@@ -63,13 +63,15 @@ struct OpqParams {
     rounding: EnumParam<RoundMode>,
     #[id = "mix"]
     mix: FloatParam,
+    #[id = "stcoh"]
+    coherence: FloatParam,
 }
 
 impl Default for OpqPlugin {
     fn default() -> Self {
         Self {
             params: Arc::new(OpqParams::default()),
-            engines: Vec::new(),
+            engine: None,
             held: [false; 128],
         }
     }
@@ -117,6 +119,14 @@ impl Default for OpqParams {
                 .with_unit(" %")
                 .with_value_to_string(formatters::v2s_f32_percentage(0))
                 .with_string_to_value(formatters::s2v_f32_percentage()),
+            coherence: FloatParam::new(
+                "Stereo Coherence",
+                1.0,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0))
+            .with_string_to_value(formatters::s2v_f32_percentage()),
         }
     }
 }
@@ -151,6 +161,7 @@ impl OpqPlugin {
             },
             hyst_cents: 40.0,
             mix: self.params.mix.value() as f64,
+            coherence: self.params.coherence.value() as f64,
         }
     }
 }
@@ -200,15 +211,13 @@ impl Plugin for OpqPlugin {
             .main_input_channels
             .map(|n| n.get())
             .unwrap_or(2) as usize;
-        self.engines = (0..ch)
-            .map(|_| Engine::new(buffer_config.sample_rate as f64))
-            .collect();
+        self.engine = Some(Engine::new(buffer_config.sample_rate as f64, ch));
         context.set_latency_samples(N_FFT as u32);
         true
     }
 
     fn reset(&mut self) {
-        for e in &mut self.engines {
+        if let Some(e) = &mut self.engine {
             e.reset();
         }
         self.held = [false; 128];
@@ -229,10 +238,8 @@ impl Plugin for OpqPlugin {
             }
         }
         let p = self.engine_params();
-        for (ci, ch_samples) in buffer.as_slice().iter_mut().enumerate() {
-            if let Some(engine) = self.engines.get_mut(ci) {
-                engine.process_block(ch_samples, &self.held, &p);
-            }
+        if let Some(engine) = &mut self.engine {
+            engine.process_block(buffer.as_slice(), &self.held, &p);
         }
         ProcessStatus::Normal
     }

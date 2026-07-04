@@ -18,5 +18,11 @@ target/
 result
 result-*
 
+# ableton test project (user's live set)
+*Project/
+*.als
+*.asd
+
 # editor/os
 .DS_Store
+Icon?
