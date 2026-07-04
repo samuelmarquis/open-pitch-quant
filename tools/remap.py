@@ -21,6 +21,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("input")
     ap.add_argument("--midi", help="MIDI file defining the held-note sidechain")
+    ap.add_argument("--midi-stretch", type=float, default=1.0,
+                    help="scale MIDI time (fix tempo-export mismatches)")
     ap.add_argument("--notes", help="static held notes, e.g. C4,E4,G4")
     ap.add_argument("--mode", default="repeat", choices=["repeat", "custom"])
     ap.add_argument("--assign", default="peak", choices=["peak", "group"],
@@ -51,7 +53,9 @@ def main():
 
     x = io.load_audio(args.input)
     if args.midi:
-        held_fn = io.held_fn_from_breakpoints(io.midi_breakpoints(args.midi))
+        held_fn = io.held_fn_from_breakpoints(
+            io.midi_breakpoints(args.midi, stretch=args.midi_stretch)
+        )
     else:
         held_fn = io.held_fn_static(io.parse_note(n) for n in args.notes.split(","))
 

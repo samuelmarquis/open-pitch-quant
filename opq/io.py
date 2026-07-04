@@ -38,10 +38,12 @@ def parse_note(name):
     return pc + 12 * (int(name[i:]) + 1)
 
 
-def midi_breakpoints(path):
+def midi_breakpoints(path, stretch=1.0):
     """MIDI file → [(t_seconds, frozenset(held_notes)), ...], t ascending.
 
     This is the sidechain model: the held-note set as a function of time.
+    `stretch` scales MIDI time (e.g. 0.75 fixes a part exported at 120 BPM
+    against audio recorded at 160).
     """
     out = [(0.0, frozenset())]
     held = set()
@@ -54,7 +56,7 @@ def midi_breakpoints(path):
             held.discard(msg.note)
         else:
             continue
-        out.append((t, frozenset(held)))
+        out.append((t * stretch, frozenset(held)))
     return out
 
 

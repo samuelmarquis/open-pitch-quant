@@ -16,7 +16,7 @@ STFT analysis, per-bin instantaneous frequency via phase differences
 Mapping modes (octave scope of the held-note set, after PITCHMAP's Edit Mode):
   repeat — held notes define allowed PITCH CLASSES in all octaves
   custom — held notes are the only allowed targets, exact octaves
-Empty held set → identity (v0 choice; PITCHMAP's behavior undocumented).
+Empty held set → SILENCE (PITCHMAP behavior, user-confirmed 2026-07-03).
 """
 
 import numpy as np
@@ -257,7 +257,13 @@ def process(
         mag_prev = mag
         is_transient = transient_bypass and flux > flux_thresh
 
-        if grid is None or is_transient:
+        if grid is None:
+            # no held notes → silence (PITCHMAP semantics, user-confirmed);
+            # reset synthesis state so re-entry re-anchors cleanly
+            phi_syn = phi.copy()
+            note_seen.fill(-2)
+            Y = np.zeros(n_bins, dtype=complex)
+        elif is_transient:
             # pass the frame through untouched; re-anchor synthesis phases
             phi_syn = phi.copy()
             note_seen.fill(-2)  # note accumulators re-anchor on next use

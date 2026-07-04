@@ -34,7 +34,9 @@ SOURCES = {
     "when": (M / "when.wav", "D4,F#4,A#4"),                # same aug family
     "falter": (M / "falter.wav", "A2,C3,E3"),              # big A2 bass → Am
     "prism": (M / "prism_scrambler_10s.wav", "F#2,C#3,G#3"),  # sound design
-    "phylovox": (M / "phylovox.wav", M / "phylovox.mid"),  # paired MIDI part
+    # paired MIDI part; stretch 0.75 = exact 4:3 tempo-export mismatch
+    # (midi span 29.99s vs audio 22.50s — 120 vs 160 BPM)
+    "phylovox": (M / "phylovox.wav", (M / "phylovox.mid", 0.75)),
     # probes, rendered on demand via --sources:
     "p01": (P / "01_noise_vs_Cmaj.wav", P / "01_noise_vs_Cmaj.mid"),
     "p03": (P / "03_detuned_triad_vs_Cmaj.wav", P / "03_detuned_triad_vs_Cmaj.mid"),
@@ -74,7 +76,11 @@ def main():
     for s in [s.strip() for s in args.sources.split(",")]:
         path, targets = SOURCES[s]
         x = io.load_audio(path)
-        if isinstance(targets, Path):
+        if isinstance(targets, tuple):  # (midi path, time stretch)
+            held = io.held_fn_from_breakpoints(
+                io.midi_breakpoints(targets[0], stretch=targets[1])
+            )
+        elif isinstance(targets, Path):
             held = io.held_fn_from_breakpoints(io.midi_breakpoints(targets))
         else:
             held = io.held_fn_static(

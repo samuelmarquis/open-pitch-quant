@@ -208,8 +208,13 @@ time-varying MIDI sidechain test, material they know intimately. Rendered
 into this batch as `phylovox__{group-dry, group-map, group-dry-custom}`.
 Extra asks: (6) repeat (pitch-class) vs custom (exact-octave) — which
 matches the intent of this part? (7) chord-transition feel through the
-voice-leading moves (no glide/tracks yet — M3 will own this); (8) the MIDI
-has zero-held-notes gaps at the top — we pass DRY there (PITCHMAP's
-behavior in that state is undocumented): does that match expectation?
+voice-leading moves (no glide/tracks yet — M3 will own this).
+
+**Fix (same day):** first phylovox renders were misaligned — MIDI span
+29.99 s vs audio 22.50 s = exactly 4:3, a 120-vs-160 BPM export mismatch.
+MIDI time now scaled by 0.75 (squeeze-to-fit; `midi_breakpoints(stretch=)`).
+Also: user confirmed PITCHMAP outputs SILENCE with no held MIDI notes —
+engine semantics changed from dry-passthrough to silence (docs updated;
+former ask (8) resolved). Phylovox re-rendered with both changes.
 
 **Verdict:** *(pending)*

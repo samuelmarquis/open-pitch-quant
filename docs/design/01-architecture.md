@@ -55,8 +55,8 @@ Mono, offline, 48 kHz. WAV in + MIDI in → WAV out, plus debug plots/layers.
 - **Mapping**: per-object ratio from the target set. v0 modes: Repeat
   (pitch-class attraction, all octaves) and Custom (exact note); rounding
   Nearest first, then Up/Down/Intelligent (hysteresis). Zero-held-notes →
-  identity map (v0 choice; oracle render `nomidi` will tell us what PITCHMAP
-  does).
+  SILENCE (PITCHMAP behavior, user-confirmed 2026-07-03 — resolves what
+  the manual leaves undocumented).
 - **Resynthesis**: per-peak region translation by its object's ratio, rigid
   phase locking within regions, phase re-integration across frames, ISTFT/OLA.
 - **Trajectory shaping**: Feel/Glide/Threshold operate on per-object F0
