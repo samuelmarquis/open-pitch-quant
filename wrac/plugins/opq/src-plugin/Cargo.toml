@@ -49,8 +49,9 @@ vst3_subcategories = "Fx|Pitch Shift"
 vst3_component_id = "816cce6a-bf23-53c4-8d06-edec34c7e518"
 # User-visible standalone app name.
 standalone_name = "OpenPitchQuant Standalone"
-# AUv2 component type. Audio effects usually use "aufx"; instruments usually use "aumu".
-auv2_type = "aufx"
+# AUv2 component type. "aumf" (music effect) — an effect that RECEIVES MIDI.
+# Plain "aufx" has no MIDI input, so hosts hide it from MIDI routing targets.
+auv2_type = "aumf"
 # AUv2 subtype. Pick a unique 4-byte ASCII code for each plugin from the same vendor.
 auv2_subtype = "Opq1"
 # AAX category names are converted to AAX_EPlugInCategory bits.

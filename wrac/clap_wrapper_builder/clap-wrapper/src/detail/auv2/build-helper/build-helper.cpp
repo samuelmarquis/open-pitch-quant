@@ -392,6 +392,13 @@ int main(int argc, char **argv)
         {
           cppf << "AUV2_Type::aufx_effect";
         }
+        // open-pitch-quant patch: aumf (music effect) was unhandled and fell
+        // through to AUBaseFactory, whose dispatch table lacks the MIDI
+        // selectors — MusicDeviceMIDIEvent then fails with -4 (auval FAIL).
+        else if (u.type == "aumf")
+        {
+          cppf << "AUV2_Type::aumf_musiceffect";
+        }
         else
         {
           std::cout << "    + WARNING: Unable to determine AUV2_Type for instrument type '" << u.type
@@ -407,6 +414,11 @@ int main(int argc, char **argv)
         if (u.type == "aumu" || u.type == "aumi")
         {
           cppf << "AUSDK_COMPONENT_ENTRY(ausdk::AUMusicDeviceFactory, " << on << ");\n";
+        }
+        // open-pitch-quant patch: MIDI effects need MIDIEvent/SysEx dispatch.
+        else if (u.type == "aumf")
+        {
+          cppf << "AUSDK_COMPONENT_ENTRY(ausdk::AUMIDIEffectFactory, " << on << ");\n";
         }
         else
         {

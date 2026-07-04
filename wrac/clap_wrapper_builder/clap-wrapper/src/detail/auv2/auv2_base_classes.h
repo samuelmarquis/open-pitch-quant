@@ -33,7 +33,9 @@ enum class AUV2_Type : uint32_t
 {
   aufx_effect = 1,
   aumu_musicdevice = 2,
-  aumi_noteeffect = 3
+  aumi_noteeffect = 3,
+  // open-pitch-quant patch: music effect (audio through + MIDI input)
+  aumf_musiceffect = 4
 
 };
 namespace free_audio::auv2_wrapper
