@@ -79,6 +79,10 @@ pub struct EngineParams {
     /// 0..1 formant preservation: stamped partial amplitudes are corrected
     /// by the source spectral envelope sampled at the OUTPUT frequency
     pub formant: f64,
+    /// 0..1 gain on the verbatim carry of stamped regions' non-mainlobe
+    /// bins (onset/noise energy). 1 = full onset preservation but a ~-31 dB
+    /// source-pitch ghost under partials; 0 = pure stamps (attack holes)
+    pub carry: f64,
 }
 
 impl Default for EngineParams {
@@ -101,6 +105,7 @@ impl Default for EngineParams {
             coherence: 1.0,
             threshold_cents: 0.0,
             formant: 0.0,
+            carry: 1.0,
         }
     }
 }
@@ -1018,10 +1023,12 @@ impl Engine {
             // position: onset/noise energy living between partials
             // otherwise vanishes entirely (measured as ~25 dB "attack
             // holes" at note starts — the batch-011 choppiness)
-            for c in 0..nch {
-                for k in lo..hi {
-                    if (k as i64 - pk as i64).unsigned_abs() as usize > 4 {
-                        self.ysyn[c][k] += self.spec[c][k];
+            if p.carry > 0.0 {
+                for c in 0..nch {
+                    for k in lo..hi {
+                        if (k as i64 - pk as i64).unsigned_abs() as usize > 4 {
+                            self.ysyn[c][k] += p.carry * self.spec[c][k];
+                        }
                     }
                 }
             }

@@ -125,6 +125,9 @@ fn main() {
             "--formant" => {
                 p.formant = val().parse().unwrap_or_else(|_| die("bad --formant"))
             }
+            "--carry" => {
+                p.carry = val().parse().unwrap_or_else(|_| die("bad --carry"))
+            }
             "--feel" => p.feel = val().parse().unwrap_or_else(|_| die("bad --feel")),
             "--glide" => p.glide = val().parse().unwrap_or_else(|_| die("bad --glide")),
             "--grit" => p.grit = val().parse().unwrap_or_else(|_| die("bad --grit")),

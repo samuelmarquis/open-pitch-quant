@@ -43,10 +43,11 @@ DEFAULT_SOURCES = (
 
 # CLI defaults already carry the champion base: unowned=dry, fmax=5000,
 # transient bypass on, gate off, coherence 1. Variants add the rest.
-CHAMP = "--rounding intelligent --feel 0.35 --glide 0.06"
+CHAMP = "--rounding intelligent --feel 0.35"  # glide 0 per user default
 VARIANTS = {
     "champ": CHAMP,
     "formant60": CHAMP + " --formant 0.6",
+    "glide60": CHAMP + " --glide 0.06",
     "formant100": CHAMP + " --formant 1.0",
     "thresh25": CHAMP + " --threshold 25",
     "grit35": CHAMP + " --grit 0.35",
