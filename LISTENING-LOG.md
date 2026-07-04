@@ -328,6 +328,33 @@ change the sound-design character you liked? (4) plugin reinstalled with
 Threshold + Formant Preserve params — try Threshold ~20–30¢ on lightly
 detuned material.
 
+**Verdict (partial, 2026-07-03):** "Some choppiness on what I suspect are
+the edges of the blocks." → batch 011 built to discriminate.
+
+---
+
+## Batch 011 — block-edge choppiness discrimination (2026-07-03)
+
+User hypothesis: choppiness at block edges. STFT block size made runtime
+(`--blocksize`, hop = size/4; groundwork for ledger 006). Four phylovox
+renders in `out/listen-011/`:
+
+| file | tests |
+|---|---|
+| `phylovox__bs2048` | half block (hop 11.6 ms @44.1k) |
+| `phylovox__bs4096` | reference (hop 23 ms) |
+| `phylovox__bs8192` | double block (hop 46 ms) |
+| `phylovox__bs4096-notrans` | normal block, TRANSIENT BYPASS OFF — isolates dry↔mapped frame toggling, the prime suspect for "chopped at block edges" |
+
+**How to read it:** if choppiness period scales with block size → frame-
+rate mechanism confirmed; if `notrans` kills it at normal size → it's the
+transient detector toggling whole frames between dry and mapped (fix:
+crossfaded/per-band transient handling, already on the roadmap); if
+neither changes it → look at MIDI-boundary re-anchors instead.
+
+Also: Glide default → 0 s engine-wide and in the plugin (user note;
+plugin rebuilt + reinstalled).
+
 **Verdict:** *(pending)*
 
 **Verdict:** *(pending)*

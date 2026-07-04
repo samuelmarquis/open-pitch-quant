@@ -17,9 +17,8 @@ use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-pub const N_FFT: usize = 4096;
-pub const HOP: usize = 1024;
-const BINS: usize = N_FFT / 2 + 1;
+pub const N_FFT: usize = 4096; // default window size
+pub const HOP: usize = 1024; // default hop (window/4)
 const N_HARM: usize = 20;
 /// phase-table reach for owned harmonics (full-comb ownership can claim
 /// far beyond N_HARM; mis-numbered h up here only re-keys a phase slot)
@@ -93,7 +92,7 @@ impl Default for EngineParams {
             transient_bypass: true,
             flux_thresh: 0.6,
             feel: 0.35,
-            glide: 0.06,
+            glide: 0.0,
             grit: 0.0,
             mode: Mode::Repeat,
             rounding: Rounding::Intelligent,
@@ -127,15 +126,16 @@ fn princarg(x: f64) -> f64 {
 }
 
 /// Zero-phase Hann window spectrum at fractional bin offset, W(0)=1.
-fn hann_kernel(x: f64) -> f64 {
-    fn diric(u: f64) -> f64 {
-        let den = N_FFT as f64 * (PI * u / N_FFT as f64).sin();
+fn hann_kernel(x: f64, n_fft: usize) -> f64 {
+    let nf = n_fft as f64;
+    let diric = |u: f64| -> f64 {
+        let den = nf * (PI * u / nf).sin();
         if den.abs() < 1e-12 {
             1.0
         } else {
             (PI * u).sin() / den
         }
-    }
+    };
     diric(x) + 0.5 * (diric(x - 1.0) + diric(x + 1.0))
 }
 
@@ -163,6 +163,9 @@ fn wmedian(vals: &mut Vec<(f64, f64)>) -> f64 {
 pub struct Engine {
     sr: f64,
     channels: usize,
+    n_fft: usize,
+    hop: usize,
+    bins: usize,
     win: Vec<f64>,
     fft: Arc<dyn RealToComplex<f64>>,
     ifft: Arc<dyn ComplexToReal<f64>>,
@@ -203,45 +206,55 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(sr: f64, channels: usize) -> Self {
+        Self::new_sized(sr, channels, N_FFT, HOP)
+    }
+
+    /// `hop` must be `n_fft / 4` (the COLA factor assumes 75% overlap).
+    pub fn new_sized(sr: f64, channels: usize, n_fft: usize, hop: usize) -> Self {
+        assert!(hop * 4 == n_fft, "hop must be n_fft/4");
         let channels = channels.max(1);
+        let bins = n_fft / 2 + 1;
         let mut planner = RealFftPlanner::<f64>::new();
-        let fft = planner.plan_fft_forward(N_FFT);
-        let ifft = planner.plan_fft_inverse(N_FFT);
-        let win: Vec<f64> = (0..N_FFT)
-            .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (N_FFT as f64 - 1.0)).cos())
+        let fft = planner.plan_fft_forward(n_fft);
+        let ifft = planner.plan_fft_inverse(n_fft);
+        let win: Vec<f64> = (0..n_fft)
+            .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (n_fft as f64 - 1.0)).cos())
             .collect();
-        let zc = || vec![Complex64::new(0.0, 0.0); BINS];
+        let zc = || vec![Complex64::new(0.0, 0.0); bins];
         let mut e = Self {
             sr,
             channels,
+            n_fft,
+            hop,
+            bins,
             win,
             fft,
             ifft,
-            in_buf: vec![vec![0.0; N_FFT]; channels],
+            in_buf: vec![vec![0.0; n_fft]; channels],
             fill: 0,
-            ola: vec![vec![0.0; N_FFT]; channels],
-            out_fifo: vec![VecDeque::with_capacity(2 * N_FFT); channels],
-            dry_fifo: vec![VecDeque::with_capacity(2 * N_FFT); channels],
+            ola: vec![vec![0.0; n_fft]; channels],
+            out_fifo: vec![VecDeque::with_capacity(2 * n_fft); channels],
+            dry_fifo: vec![VecDeque::with_capacity(2 * n_fft); channels],
             spec: vec![zc(); channels],
-            phi: vec![vec![0.0; BINS]; channels],
-            magc: vec![vec![0.0; BINS]; channels],
+            phi: vec![vec![0.0; bins]; channels],
+            magc: vec![vec![0.0; bins]; channels],
             ysyn: vec![zc(); channels],
-            mag: vec![0.0; BINS],
-            phim: vec![0.0; BINS],
-            f_true: vec![0.0; BINS],
-            prev_phi: vec![0.0; BINS],
-            prev_mag_store: vec![0.0; BINS],
+            mag: vec![0.0; bins],
+            phim: vec![0.0; bins],
+            f_true: vec![0.0; bins],
+            prev_phi: vec![0.0; bins],
+            prev_mag_store: vec![0.0; bins],
             prev_mag_sum: -1.0,
             first_frame: true,
             frame_idx: 0,
             note_phase: [0.0; 128],
             note_seen: [-2; 128],
             tracks: Vec::with_capacity(16),
-            fft_in: vec![0.0; N_FFT],
+            fft_in: vec![0.0; n_fft],
             spec_scratch: zc(),
-            yt: vec![0.0; N_FFT],
-            env: vec![0.0; BINS],
-            env_tmp: vec![0.0; BINS],
+            yt: vec![0.0; n_fft],
+            env: vec![0.0; bins],
+            env_tmp: vec![0.0; bins],
             grid: Vec::with_capacity(128),
             peaks: Vec::with_capacity(512),
             bounds: Vec::with_capacity(512),
@@ -256,7 +269,7 @@ impl Engine {
             self.ola[c].iter_mut().for_each(|v| *v = 0.0);
             self.out_fifo[c].clear();
             self.dry_fifo[c].clear();
-            for _ in 0..N_FFT {
+            for _ in 0..self.n_fft {
                 self.out_fifo[c].push_back(0.0);
                 self.dry_fifo[c].push_back(0.0);
             }
@@ -272,7 +285,7 @@ impl Engine {
     }
 
     pub fn latency_samples(&self) -> usize {
-        N_FFT
+        self.n_fft
     }
 
     /// Process channel slices in place. All slices must be equal length.
@@ -289,14 +302,14 @@ impl Engine {
             for c in 0..ch {
                 let x = io[c][i] as f64;
                 self.dry_fifo[c].push_back(x);
-                self.in_buf[c][N_FFT - HOP + self.fill] = x;
+                self.in_buf[c][self.n_fft - self.hop + self.fill] = x;
             }
             self.fill += 1;
-            if self.fill == HOP {
+            if self.fill == self.hop {
                 self.run_frame(held, p);
                 self.fill = 0;
                 for c in 0..ch {
-                    self.in_buf[c].copy_within(HOP.., 0);
+                    self.in_buf[c].copy_within(self.hop.., 0);
                 }
             }
             for c in 0..ch {
@@ -356,7 +369,7 @@ impl Engine {
         let mag = &self.mag;
         let mx = mag.iter().cloned().fold(0.0f64, f64::max);
         let floor = (mx * 10f64.powf(-60.0 / 20.0)).max(1e-7);
-        for i in 2..BINS - 2 {
+        for i in 2..self.bins - 2 {
             let m = mag[i];
             if m > mag[i - 1]
                 && m >= mag[i + 1]
@@ -376,7 +389,7 @@ impl Engine {
             let p = self.peaks[i];
             let lo = if i == 0 { 1 } else { self.bounds[i - 1].1 };
             let hi = if i == np - 1 {
-                BINS - 1
+                self.bins - 1
             } else {
                 let q = self.peaks[i + 1];
                 if q > p + 1 {
@@ -543,25 +556,25 @@ impl Engine {
     fn run_frame(&mut self, held: &[bool; 128], p: &EngineParams) {
         let t = self.frame_idx;
         self.frame_idx += 1;
-        let bin_hz = self.sr / N_FFT as f64;
+        let bin_hz = self.sr / self.n_fft as f64;
         let nch = self.channels;
 
         // per-channel FFT
         for c in 0..nch {
-            for n in 0..N_FFT {
+            for n in 0..self.n_fft {
                 self.fft_in[n] = self.in_buf[c][n] * self.win[n];
             }
             self.fft
                 .process(&mut self.fft_in, &mut self.spec[c])
                 .expect("fft");
-            for k in 0..BINS {
+            for k in 0..self.bins {
                 self.magc[c][k] = self.spec[c][k].norm();
                 self.phi[c][k] = self.spec[c][k].arg();
             }
         }
         // mid (decision) spectrum: complex channel average
         let mut mag_sum = 0.0;
-        for k in 0..BINS {
+        for k in 0..self.bins {
             let mut acc = Complex64::new(0.0, 0.0);
             for c in 0..nch {
                 acc += self.spec[c][k];
@@ -574,15 +587,15 @@ impl Engine {
 
         // instantaneous frequency (mid) via phase differences
         if self.first_frame {
-            for k in 0..BINS {
+            for k in 0..self.bins {
                 self.f_true[k] = k as f64 * bin_hz;
             }
         } else {
-            for k in 0..BINS {
-                let expected = TWO_PI * HOP as f64 * k as f64 / N_FFT as f64;
+            for k in 0..self.bins {
+                let expected = TWO_PI * self.hop as f64 * k as f64 / self.n_fft as f64;
                 let d = princarg(self.phim[k] - self.prev_phi[k] - expected);
                 self.f_true[k] =
-                    k as f64 * bin_hz + d / (TWO_PI * HOP as f64 / N_FFT as f64) * bin_hz;
+                    k as f64 * bin_hz + d / (TWO_PI * self.hop as f64 / self.n_fft as f64) * bin_hz;
             }
         }
         self.prev_phi.copy_from_slice(&self.phim);
@@ -592,7 +605,7 @@ impl Engine {
             f64::INFINITY
         } else {
             let mut pos = 0.0;
-            for k in 0..BINS {
+            for k in 0..self.bins {
                 let d = self.mag[k] - self.prev_mag_store[k];
                 if d > 0.0 {
                     pos += d;
@@ -624,22 +637,22 @@ impl Engine {
         self.first_frame = false;
 
         // synthesize, window, overlap-add, emit — per channel
-        let inv_n = 1.0 / N_FFT as f64;
+        let inv_n = 1.0 / self.n_fft as f64;
         for c in 0..nch {
             self.spec_scratch.copy_from_slice(&self.ysyn[c]);
             self.spec_scratch[0].im = 0.0;
-            self.spec_scratch[BINS - 1].im = 0.0;
+            self.spec_scratch[self.bins - 1].im = 0.0;
             self.ifft
                 .process(&mut self.spec_scratch, &mut self.yt)
                 .expect("ifft");
-            for n in 0..N_FFT {
+            for n in 0..self.n_fft {
                 self.ola[c][n] += self.yt[n] * inv_n * self.win[n];
             }
-            for n in 0..HOP {
+            for n in 0..self.hop {
                 self.out_fifo[c].push_back(self.ola[c][n] / 1.5); // hann^2 COLA
             }
-            self.ola[c].copy_within(HOP.., 0);
-            for n in N_FFT - HOP..N_FFT {
+            self.ola[c].copy_within(self.hop.., 0);
+            for n in self.n_fft - self.hop..self.n_fft {
                 self.ola[c][n] = 0.0;
             }
         }
@@ -655,25 +668,25 @@ impl Engine {
         self.env.copy_from_slice(&self.mag);
         for _ in 0..3 {
             let mut acc = 0.0;
-            for k in 0..BINS {
+            for k in 0..self.bins {
                 acc += self.env[k];
                 self.env_tmp[k] = acc;
             }
-            for k in 0..BINS {
+            for k in 0..self.bins {
                 let lo = k.saturating_sub(W);
-                let hi = (k + W).min(BINS - 1);
+                let hi = (k + W).min(self.bins - 1);
                 let sum = self.env_tmp[hi]
                     - if lo > 0 { self.env_tmp[lo - 1] } else { 0.0 };
                 self.env[k] = sum / (hi - lo + 1) as f64;
             }
         }
-        for k in 0..BINS {
+        for k in 0..self.bins {
             self.env[k] = (self.env[k] + 1e-12).ln();
         }
     }
 
     fn env_at(&self, f: f64, bin_hz: f64) -> f64 {
-        let b = (f / bin_hz).clamp(0.0, (BINS - 2) as f64);
+        let b = (f / bin_hz).clamp(0.0, (self.bins - 2) as f64);
         let k = b as usize;
         let fr = b - k as f64;
         self.env[k] * (1.0 - fr) + self.env[k + 1] * fr
@@ -691,8 +704,8 @@ impl Engine {
         let (f0s, owner) = self.harmonic_objects(p.voices.max(1));
 
         // ---- M3: match objects to tracks ----
-        let glide_frames = p.glide * self.sr / HOP as f64;
-        let ema_a = 1.0 - (-(HOP as f64 / self.sr) / 0.25).exp();
+        let glide_frames = p.glide * self.sr / self.hop as f64;
+        let ema_a = 1.0 - (-(self.hop as f64 / self.sr) / 0.25).exp();
         let hyst = p.hyst_cents / 1200.0 * 2f64.ln();
         let match_tol = 2f64.ln() * 100.0 / 1200.0;
         let mut obj_mult: Vec<f64> = Vec::with_capacity(f0s.len());
@@ -833,7 +846,7 @@ impl Engine {
 
             let dbin = (df / bin_hz).round() as i64;
             let clo = (lo as i64 + dbin).max(1) as usize;
-            let chi = ((hi as i64 + dbin).min(BINS as i64 - 1)) as usize;
+            let chi = ((hi as i64 + dbin).min(self.bins as i64 - 1)) as usize;
             if chi <= clo {
                 continue;
             }
@@ -848,7 +861,7 @@ impl Engine {
             if noisy {
                 // mapped noise: per-channel fresh phases + shared ramp
                 let ramp =
-                    TWO_PI * df * (t as f64 * HOP as f64) / self.sr + PI * dbin as f64;
+                    TWO_PI * df * (t as f64 * self.hop as f64) / self.sr + PI * dbin as f64;
                 for c in 0..nch {
                     for k in clo..chi {
                         let sk = (k as i64 - dbin) as usize;
@@ -864,7 +877,7 @@ impl Engine {
             // amplitude and analysis-phase offset (image preservation)
             let ft = fp + df;
             let dsrc = fp / bin_hz - pk as f64;
-            let ker_src = hann_kernel(dsrc).max(0.1);
+            let ker_src = hann_kernel(dsrc, self.n_fft).max(0.1);
             // formant preservation: correct amplitude by the source
             // envelope evaluated at the OUTPUT vs SOURCE frequency
             let formant_gain = if p.formant > 0.0 {
@@ -883,7 +896,7 @@ impl Engine {
                 let phv = if seen == t {
                     ph0
                 } else if seen == t - 1 {
-                    ph0 + TWO_PI * ft * HOP as f64 / self.sr
+                    ph0 + TWO_PI * ft * self.hop as f64 / self.sr
                 } else {
                     anchor
                 };
@@ -893,7 +906,7 @@ impl Engine {
                 if self.note_seen[ni] == t {
                     // already advanced this frame
                 } else if self.note_seen[ni] == t - 1 {
-                    self.note_phase[ni] += TWO_PI * ft * HOP as f64 / self.sr;
+                    self.note_phase[ni] += TWO_PI * ft * self.hop as f64 / self.sr;
                 } else {
                     self.note_phase[ni] = anchor;
                 }
@@ -902,7 +915,7 @@ impl Engine {
             };
             if p.grit > 0.0 {
                 let ramp =
-                    TWO_PI * df * (t as f64 * HOP as f64) / self.sr + PI * dbin as f64;
+                    TWO_PI * df * (t as f64 * self.hop as f64) / self.sr + PI * dbin as f64;
                 for c in 0..nch {
                     for k in clo..chi {
                         let sk = (k as i64 - dbin) as usize;
@@ -915,7 +928,7 @@ impl Engine {
             }
             let b = ft / bin_hz;
             let k0 = ((b - 4.0).ceil() as i64).max(1) as usize;
-            let k1 = ((b + 4.0).floor() as i64).min(BINS as i64 - 2) as usize;
+            let k1 = ((b + 4.0).floor() as i64).min(self.bins as i64 - 2) as usize;
             for c in 0..nch {
                 // channel's own level + phase offset from the mid reference
                 let amp_c = self.magc[c][pk] / ker_src * formant_gain;
@@ -928,7 +941,7 @@ impl Engine {
                 for k in k0..=k1 {
                     let xoff = k as f64 - b;
                     self.ysyn[c][k] += Complex64::from_polar(
-                        (1.0 - p.grit) * amp_c * hann_kernel(xoff),
+                        (1.0 - p.grit) * amp_c * hann_kernel(xoff, self.n_fft),
                         phv + off_c - PI * xoff,
                     );
                 }

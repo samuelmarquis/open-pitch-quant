@@ -98,6 +98,7 @@ fn main() {
     let mut midi_path: Option<String> = None;
     let mut midi_stretch = 1.0f64;
     let mut stereo_out = false; // duplicate mono output to dual-mono stereo
+    let mut blocksize = N_FFT; // STFT window; hop = blocksize/4
     let mut i = 2;
     while i < args.len() {
         let key = args[i].as_str();
@@ -163,6 +164,12 @@ fn main() {
             }
             "--no-transient" => p.transient_bypass = false,
             "--stereo-out" => stereo_out = true,
+            "--blocksize" => {
+                blocksize = val().parse().unwrap_or_else(|_| die("bad --blocksize"));
+                if !blocksize.is_power_of_two() || !(1024..=16384).contains(&blocksize) {
+                    die("--blocksize must be a power of two in 1024..=16384");
+                }
+            }
             _ => die(&format!("unknown arg {key}")),
         }
         i += 1;
@@ -188,12 +195,12 @@ fn main() {
             let mut v: Vec<f32> = (0..n_frames)
                 .map(|f| interleaved[f * spec.channels as usize + c])
                 .collect();
-            v.extend(std::iter::repeat(0.0).take(N_FFT));
+            v.extend(std::iter::repeat(0.0).take(blocksize));
             v
         })
         .collect();
 
-    let mut engine = Engine::new(spec.sample_rate as f64, ch);
+    let mut engine = Engine::new_sized(spec.sample_rate as f64, ch, blocksize, blocksize / 4);
     {
         let mut slices: Vec<&mut [f32]> = chans.iter_mut().map(|v| v.as_mut_slice()).collect();
         match midi_path {
@@ -241,7 +248,7 @@ fn main() {
     };
     let mut peak = 0.0f32;
     for c in &chans {
-        for &s in &c[N_FFT..N_FFT + n_frames] {
+        for &s in &c[blocksize..blocksize + n_frames] {
             peak = peak.max(s.abs());
         }
     }
@@ -250,7 +257,7 @@ fn main() {
         hound::WavWriter::create(out_path, wspec).unwrap_or_else(|e| die(&e.to_string()));
     for f in 0..n_frames {
         for c in 0..out_ch {
-            let v = (chans[c.min(ch - 1)][N_FFT + f] * g * 8_388_607.0) as i32;
+            let v = (chans[c.min(ch - 1)][blocksize + f] * g * 8_388_607.0) as i32;
             writer.write_sample(v).unwrap();
         }
     }

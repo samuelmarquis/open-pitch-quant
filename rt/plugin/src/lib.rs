@@ -90,7 +90,7 @@ impl Default for OpqParams {
                 .with_string_to_value(formatters::s2v_f32_percentage()),
             glide: FloatParam::new(
                 "Glide",
-                0.06,
+                0.0,
                 FloatRange::Linear { min: 0.0, max: 0.5 },
             )
             .with_unit(" s"),
