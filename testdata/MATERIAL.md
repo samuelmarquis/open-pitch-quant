@@ -13,6 +13,7 @@ The offline harness normalizes on load: resample → 48 kHz, sum → mono (v0).
 | `when.wav` | 2 | 44.1k | 5.7 s | D4,F#4,A#4 | Samuel Marquis — CIRCLES, c9_treachery |
 | `falter.wav` | 2 | 44.1k | 1.6 s | A2,C3,E3 | Samuel Marquis — CIRCLES, c4_greed |
 | `prism_scrambler_10s.wav` | 2 | 48k | 10 s | F#2,C#3,G#3 | Sound Design — prism scrambler (first 10 s of long original) |
+| `phylovox.wav` + `.mid` | 2 | 44.1k | 22.5 s | paired MIDI (moving dyads/triads, F4–D#6, ~30 s) | user-supplied reference pair — material the user knows intimately; includes zero-held-notes gaps |
 
 Batch targets are chroma-informed near-maps (retune material toward its own
 tonal center — the fair quality test). Notably: both CIRCLES clips live on a

@@ -203,4 +203,13 @@ which material does the engine flatter, which does it embarrass?
 (5) the CIRCLES clips retuned toward their own augmented triad — does
 near-mapping read as "tightened" or does even this small map feel processed?
 
+**Addendum (same day):** user supplied `phylovox.{wav,mid}` — first paired
+time-varying MIDI sidechain test, material they know intimately. Rendered
+into this batch as `phylovox__{group-dry, group-map, group-dry-custom}`.
+Extra asks: (6) repeat (pitch-class) vs custom (exact-octave) — which
+matches the intent of this part? (7) chord-transition feel through the
+voice-leading moves (no glide/tracks yet — M3 will own this); (8) the MIDI
+has zero-held-notes gaps at the top — we pass DRY there (PITCHMAP's
+behavior in that state is undocumented): does that match expectation?
+
 **Verdict:** *(pending)*

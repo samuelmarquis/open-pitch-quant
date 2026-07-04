@@ -34,12 +34,15 @@ SOURCES = {
     "when": (M / "when.wav", "D4,F#4,A#4"),                # same aug family
     "falter": (M / "falter.wav", "A2,C3,E3"),              # big A2 bass → Am
     "prism": (M / "prism_scrambler_10s.wav", "F#2,C#3,G#3"),  # sound design
+    "phylovox": (M / "phylovox.wav", M / "phylovox.mid"),  # paired MIDI part
     # probes, rendered on demand via --sources:
     "p01": (P / "01_noise_vs_Cmaj.wav", P / "01_noise_vs_Cmaj.mid"),
     "p03": (P / "03_detuned_triad_vs_Cmaj.wav", P / "03_detuned_triad_vs_Cmaj.mid"),
     "p05": (P / "05_sustain_vs_chordchange.wav", P / "05_sustain_vs_chordchange.mid"),
 }
-DEFAULT_SOURCES = "resoguitar,audio178,audio116,amen,memories,when,falter,prism"
+DEFAULT_SOURCES = (
+    "resoguitar,audio178,audio116,amen,memories,when,falter,prism,phylovox"
+)
 
 _BASE = dict(fmax_map=5000.0, transient_bypass=True)
 VARIANTS = {
@@ -47,6 +50,9 @@ VARIANTS = {
     "group-dry": dict(_BASE, assign="group", voices=6, unowned="dry"),
     "group-map": dict(_BASE, assign="group", voices=6, unowned="map",
                       tonality_gate=2.5),
+    # octave-semantics variant (exact held notes, no pitch-class repeat)
+    "group-dry-custom": dict(_BASE, assign="group", voices=6, unowned="dry",
+                             mode="custom"),
     # references
     "peak": dict(_BASE, tonality_gate=2.5),   # M0.5, per-peak snapping
     "peak-raw": {},                           # naked M0 (batch-001 sound)
