@@ -125,6 +125,7 @@ impl Default for EngineParams {
 
 #[derive(Clone)]
 struct Track {
+    uid: i64,
     f0: f64,
     lema: f64,
     tgt: f64,
@@ -136,6 +137,65 @@ struct Track {
     cand_n: i64,
     /// per harmonic number: (phase, frame last seen, last output freq)
     phases: [(f64, i64, f64); MAX_H + 1],
+}
+
+/// Max pitch objects reported per [`VizFrame`].
+pub const VIZ_TRACKS: usize = 24;
+/// Analysis frames buffered for the GUI between drains.
+pub const VIZ_RING: usize = 16;
+
+/// One tracked pitch object, as seen by the analysis display.
+#[derive(Clone, Copy, Default)]
+pub struct VizTrack {
+    /// Stable identity across frames (monotonic birth counter).
+    pub id: i64,
+    /// Source fundamental (Hz).
+    pub f0: f32,
+    /// Mapping target (Hz).
+    pub tgt: f32,
+    /// Summed magnitude of spectral regions this object claimed this frame.
+    pub amp: f32,
+    /// Number of harmonic regions claimed this frame.
+    pub nh: u16,
+    /// Inside the newborn window (transition policy applies).
+    pub newborn: bool,
+}
+
+/// Per-frame analysis snapshot for the GUI. Fixed-size and `Copy` so the
+/// audio thread can publish it without allocating.
+#[derive(Clone, Copy)]
+pub struct VizFrame {
+    /// Frame index (hop counter since reset).
+    pub t: i64,
+    /// Spectral flux (onset detector value; compare to `flux_thresh`).
+    pub flux: f32,
+    /// Dry blend applied by transient handling this frame (0 = fully mapped,
+    /// 1 = fully dry / hard reset).
+    pub transient: f32,
+    /// Active target grid (bit per MIDI note).
+    pub grid_mask: u128,
+    /// Total mid-spectrum magnitude.
+    pub in_energy: f32,
+    /// Magnitude in regions no pitch object claimed (the residual layer).
+    pub res_energy: f32,
+    /// Valid entries in `tracks`.
+    pub n: u8,
+    pub tracks: [VizTrack; VIZ_TRACKS],
+}
+
+impl Default for VizFrame {
+    fn default() -> Self {
+        Self {
+            t: 0,
+            flux: 0.0,
+            transient: 0.0,
+            grid_mask: 0,
+            in_energy: 0.0,
+            res_energy: 0.0,
+            n: 0,
+            tracks: [VizTrack::default(); VIZ_TRACKS],
+        }
+    }
 }
 
 fn midi_freq(n: f64) -> f64 {
@@ -231,6 +291,12 @@ pub struct Engine {
     prev_grid_mask: u128,
     peaks: Vec<usize>,
     bounds: Vec<(usize, usize)>,
+    // analysis feed for the GUI (all fixed-capacity; no allocation in process)
+    next_uid: i64,
+    viz_ring: VecDeque<VizFrame>,
+    viz_amp: Vec<f64>,
+    viz_nh: Vec<u16>,
+    viz_res: f64,
 }
 
 impl Engine {
@@ -300,6 +366,11 @@ impl Engine {
             prev_grid_mask: 0,
             peaks: Vec::with_capacity(512),
             bounds: Vec::with_capacity(512),
+            next_uid: 0,
+            viz_ring: VecDeque::with_capacity(VIZ_RING),
+            viz_amp: Vec::with_capacity(64),
+            viz_nh: Vec::with_capacity(64),
+            viz_res: 0.0,
         };
         e.reset();
         e
@@ -330,10 +401,54 @@ impl Engine {
         self.note_phase = [0.0; 128];
         self.note_seen = [-2; 128];
         self.tracks.clear();
+        self.viz_ring.clear();
     }
 
     pub fn latency_samples(&self) -> usize {
         self.n_fft
+    }
+
+    /// Drains the oldest buffered analysis frame, if any. Call repeatedly
+    /// after `process_block` to feed a display; frames beyond [`VIZ_RING`]
+    /// are dropped oldest-first while unread.
+    pub fn viz_pop(&mut self) -> Option<VizFrame> {
+        self.viz_ring.pop_front()
+    }
+
+    fn push_viz_frame(&mut self, t: i64, flux: f64, transient: f32, mapped: bool, mag_sum: f64) {
+        let mut frame = VizFrame {
+            t,
+            flux: if flux.is_finite() { flux as f32 } else { 99.0 },
+            transient,
+            grid_mask: self.grid_mask,
+            in_energy: mag_sum as f32,
+            // on non-mapped frames everything is residual (dry or silent)
+            res_energy: if mapped { self.viz_res as f32 } else { mag_sum as f32 },
+            n: 0,
+            tracks: [VizTrack::default(); VIZ_TRACKS],
+        };
+        if mapped {
+            let mut n = 0usize;
+            for (ti, trk) in self.tracks.iter().enumerate() {
+                if trk.seen != t || n == VIZ_TRACKS {
+                    continue;
+                }
+                frame.tracks[n] = VizTrack {
+                    id: trk.uid,
+                    f0: trk.f0 as f32,
+                    tgt: trk.tgt as f32,
+                    amp: self.viz_amp.get(ti).copied().unwrap_or(0.0) as f32,
+                    nh: self.viz_nh.get(ti).copied().unwrap_or(0),
+                    newborn: t - trk.born < 2,
+                };
+                n += 1;
+            }
+            frame.n = n as u8;
+        }
+        if self.viz_ring.len() == VIZ_RING {
+            self.viz_ring.pop_front();
+        }
+        self.viz_ring.push_back(frame);
     }
 
     /// Process channel slices in place. All slices must be equal length.
@@ -704,6 +819,8 @@ impl Engine {
 
         self.build_grid(held, p.mode);
 
+        let mut viz_transient = 0.0f32;
+        let mut viz_mapped = false;
         if self.grid.is_empty() {
             self.note_seen = [-2; 128];
             self.tracks.clear();
@@ -716,10 +833,13 @@ impl Engine {
             for c in 0..nch {
                 self.ysyn[c].copy_from_slice(&self.spec[c]);
             }
+            viz_transient = 1.0;
         } else {
             self.map_frame(t, p, bin_hz);
+            viz_mapped = true;
             if p.transient_bypass && flux > p.flux_thresh {
                 let a = (flux / p.flux_thresh - 1.0).min(1.0);
+                viz_transient = a as f32;
                 for c in 0..nch {
                     for k in 0..self.bins {
                         self.ysyn[c][k] =
@@ -728,6 +848,7 @@ impl Engine {
                 }
             }
         }
+        self.push_viz_frame(t, flux, viz_transient, viz_mapped, mag_sum);
         self.first_frame = false;
         self.prev_grid_mask = self.grid_mask;
         // store AFTER map_frame so the per-region attack detector compares
@@ -838,7 +959,10 @@ impl Engine {
             }
             let ti = match best {
                 None => {
+                    let uid = self.next_uid;
+                    self.next_uid += 1;
                     self.tracks.push(Track {
+                        uid,
                         f0,
                         lema: f0.ln(),
                         tgt,
@@ -921,6 +1045,14 @@ impl Engine {
             obj_trk.push(ti);
         }
 
+        // reset per-frame viz accumulators (capacity preallocated; track
+        // count is bounded by ~2x voices, far below the reserved 64)
+        self.viz_amp.clear();
+        self.viz_amp.resize(self.tracks.len(), 0.0);
+        self.viz_nh.clear();
+        self.viz_nh.resize(self.tracks.len(), 0);
+        self.viz_res = 0.0;
+
         // ---- region mapping decisions + per-channel synthesis ----
         for c in 0..nch {
             self.ysyn[c]
@@ -972,6 +1104,13 @@ impl Engine {
             }
             if h > MAX_H {
                 trk_idx = None;
+            }
+            match trk_idx {
+                Some(ti) => {
+                    self.viz_amp[ti] += self.mag[pk];
+                    self.viz_nh[ti] += 1;
+                }
+                None => self.viz_res += self.mag[pk],
             }
 
             let dbin = (df / bin_hz).round() as i64;

@@ -81,6 +81,69 @@ fn midi_breakpoints(path: &str, stretch: f64) -> Vec<(f64, [bool; 128])> {
     out
 }
 
+type VizDump = Option<(std::io::BufWriter<std::fs::File>, f64, f64)>;
+
+/// Runs a segment through the engine. With a viz dump active, processing is
+/// chunked by hop so the 16-frame viz ring never overflows between drains.
+fn process_seg(
+    engine: &mut Engine,
+    slices: &mut [&mut [f32]],
+    held: &[bool; 128],
+    p: &EngineParams,
+    dump: &mut VizDump,
+) {
+    let Some((file, sr, hop)) = dump else {
+        engine.process_block(slices, held, p);
+        return;
+    };
+    use std::io::Write;
+    let total = slices[0].len();
+    let step = *hop as usize;
+    let mut c = 0usize;
+    while c < total {
+        let end = (c + step).min(total);
+        let mut seg: Vec<&mut [f32]> = slices.iter_mut().map(|s| &mut s[c..end]).collect();
+        engine.process_block(&mut seg, held, p);
+        while let Some(fr) = engine.viz_pop() {
+            let mut grid = String::new();
+            for n in 0..127usize {
+                if fr.grid_mask & (1u128 << n) != 0 {
+                    if !grid.is_empty() {
+                        grid.push(',');
+                    }
+                    grid.push_str(&n.to_string());
+                }
+            }
+            let mut tracks = String::new();
+            for k in 0..fr.n as usize {
+                let tr = &fr.tracks[k];
+                if k > 0 {
+                    tracks.push(',');
+                }
+                tracks.push_str(&format!(
+                    "{{\"id\":{},\"f0\":{:.2},\"tgt\":{:.2},\"amp\":{:.4},\"nh\":{},\"nb\":{}}}",
+                    tr.id, tr.f0, tr.tgt, tr.amp, tr.nh, tr.newborn
+                ));
+            }
+            writeln!(
+                file,
+                "{{\"t\":{},\"time\":{:.4},\"flux\":{:.3},\"transient\":{:.3},\"in\":{:.4},\"res\":{:.4},\"repeat\":{},\"grid\":[{}],\"tracks\":[{}]}}",
+                fr.t,
+                fr.t as f64 * *hop / *sr,
+                fr.flux.min(99.0),
+                fr.transient,
+                fr.in_energy,
+                fr.res_energy,
+                fr.grid_mask & (1u128 << 127) != 0,
+                grid,
+                tracks
+            )
+            .unwrap_or_else(|e| die(&e.to_string()));
+        }
+        c = end;
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.len() < 2 {
@@ -99,6 +162,7 @@ fn main() {
     let mut midi_stretch = 1.0f64;
     let mut stereo_out = false; // duplicate mono output to dual-mono stereo
     let mut blocksize = N_FFT; // STFT window; hop = blocksize/4
+    let mut viz_dump_path: Option<String> = None; // JSON-lines analysis trace
     let mut i = 2;
     while i < args.len() {
         let key = args[i].as_str();
@@ -174,6 +238,7 @@ fn main() {
             }
             "--no-transient" => p.transient_bypass = false,
             "--stereo-out" => stereo_out = true,
+            "--viz-dump" => viz_dump_path = Some(val()),
             "--blocksize" => {
                 blocksize = val().parse().unwrap_or_else(|_| die("bad --blocksize"));
                 if !blocksize.is_power_of_two() || !(1024..=16384).contains(&blocksize) {
@@ -211,10 +276,19 @@ fn main() {
         .collect();
 
     let mut engine = Engine::new_sized(spec.sample_rate as f64, ch, blocksize, blocksize / 4);
+    let mut viz_dump = viz_dump_path.map(|path| {
+        (
+            std::io::BufWriter::new(
+                std::fs::File::create(&path).unwrap_or_else(|e| die(&e.to_string())),
+            ),
+            spec.sample_rate as f64,
+            (blocksize / 4) as f64,
+        )
+    });
     {
         let mut slices: Vec<&mut [f32]> = chans.iter_mut().map(|v| v.as_mut_slice()).collect();
         match midi_path {
-            None => engine.process_block(&mut slices, &held, &p),
+            None => process_seg(&mut engine, &mut slices, &held, &p, &mut viz_dump),
             Some(mp) => {
                 // segment the stream at held-set breakpoints
                 let bps = midi_breakpoints(&mp, midi_stretch);
@@ -235,7 +309,7 @@ fn main() {
                             .iter_mut()
                             .map(|s| &mut s[cursor..end])
                             .collect();
-                        engine.process_block(&mut seg, &bheld, &p);
+                        process_seg(&mut engine, &mut seg, &bheld, &p, &mut viz_dump);
                         cursor = end;
                     }
                 }
@@ -243,7 +317,7 @@ fn main() {
                     let last = bps.last().map(|b| b.1).unwrap_or([false; 128]);
                     let mut seg: Vec<&mut [f32]> =
                         slices.iter_mut().map(|s| &mut s[cursor..total]).collect();
-                    engine.process_block(&mut seg, &last, &p);
+                    process_seg(&mut engine, &mut seg, &last, &p, &mut viz_dump);
                 }
             }
         }
