@@ -1,0 +1,263 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  MACOSX_DEPLOYMENT_TARGET: "11.0"
+  WRY_OBJC_SUFFIX: WracGainPlugin
+
+jobs:
+  rust-format:
+    name: Rust format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Rust version
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  rust-test:
+    name: Rust lint and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_HTTP_MULTIPLEXING: false
+
+    # Keep clippy and tests in one per-OS job so both checks share the same
+    # checkout and compiled dependency graph. Splitting them would make the CI
+    # shape look cleaner, but would duplicate setup and much of the Rust build.
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux WebView dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtkmm-3.0-dev libx11-dev libasound2-dev
+
+      - name: Show Rust version
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+
+      - name: Cargo fetch
+        run: bash .github/scripts/retry.sh cargo fetch --locked
+
+      - name: Run Clippy
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+
+      - name: Run tests
+        run: cargo test --locked --workspace
+
+  plugin-build:
+    name: VST3/AU/CLAP Validator (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_HTTP_MULTIPLEXING: false
+    needs:
+      - rust-format
+      - rust-test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build-targets: clap,vst3,standalone
+            validate-targets: clap,vst3
+            verify: |
+              test -f "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.clap"
+              test -d "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.vst3"
+              test -x "target/wrac-plugins/wrac-gain/wrac/standalone/release/WRAC Gain Standalone"
+          - os: windows-latest
+            build-targets: clap,vst3,standalone
+            validate-targets: clap,vst3
+            verify: |
+              test -f "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.clap"
+              test -d "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.vst3"
+              test -f "target/wrac-plugins/wrac-gain/wrac/standalone/release/WRAC Gain Standalone.exe"
+          - os: macos-latest
+            build-targets: clap,vst3,au,standalone
+            validate-targets: clap,vst3,au
+            verify: |
+              test -d "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.clap"
+              test -d "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.vst3"
+              test -d "target/wrac-plugins/wrac-gain/wrac/plugins/release/WRAC Gain.component"
+              test -d "target/wrac-plugins/wrac-gain/wrac/standalone/release/WRAC Gain Standalone.app"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux WebView dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtkmm-3.0-dev libx11-dev libasound2-dev
+
+      - name: Add msbuild to PATH
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: plugins/wrac-gain/src-gui/package-lock.json
+
+      - name: Show tool versions
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+          cmake --version
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            xcodebuild -version
+            /usr/bin/auval -h || true
+          fi
+
+      - name: Cargo fetch
+        run: bash .github/scripts/retry.sh cargo fetch --locked
+
+      - name: Build plugin and standalone artifacts
+        run: cargo xtask build --release --target=${{ matrix.build-targets }}
+
+      - name: Run VST3/AU/CLAP validators
+        if: matrix.validate-targets != ''
+        run: cargo xtask validate --release --target=${{ matrix.validate-targets }}
+
+      - name: Verify plugin and standalone artifacts
+        run: ${{ matrix.verify }}
+
+  aax-validation:
+    name: AAX Validator
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    env:
+      CARGO_HTTP_MULTIPLEXING: false
+      AAX_SDK_ARCHIVE_URL: ${{ vars.AAX_SDK_ARCHIVE_URL || secrets.AAX_SDK_ARCHIVE_URL }}
+      AAX_VALIDATOR_MAC_ARM64_ARCHIVE_URL: ${{ vars.AAX_VALIDATOR_MAC_ARM64_ARCHIVE_URL || secrets.AAX_VALIDATOR_MAC_ARM64_ARCHIVE_URL }}
+      AAX_VALIDATOR_WINDOWS_X86_64_ARCHIVE_URL: ${{ vars.AAX_VALIDATOR_WINDOWS_X86_64_ARCHIVE_URL || secrets.AAX_VALIDATOR_WINDOWS_X86_64_ARCHIVE_URL }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: plugins/wrac-gain/src-gui/package-lock.json
+
+      - name: Show tool versions
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+          cmake --version
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            xcodebuild -version
+          fi
+
+      - name: Require AAX archive URLs
+        run: |
+          validator_url="$AAX_VALIDATOR_MAC_ARM64_ARCHIVE_URL"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            validator_url="$AAX_VALIDATOR_WINDOWS_X86_64_ARCHIVE_URL"
+          fi
+
+          if [[ -z "$AAX_SDK_ARCHIVE_URL" ]]; then
+            echo "::error::AAX_SDK_ARCHIVE_URL is required for AAX validation."
+            exit 1
+          fi
+          if [[ -z "$validator_url" ]]; then
+            echo "::error::AAX validator archive URL is required for $RUNNER_OS."
+            exit 1
+          fi
+
+      - name: Download AAX dependencies
+        run: |
+          mkdir -p target/tools/aax-ci
+
+          validator_url="$AAX_VALIDATOR_MAC_ARM64_ARCHIVE_URL"
+          validator_archive="target/tools/aax-ci/aax-validator-dsh.tar.gz"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            validator_url="$AAX_VALIDATOR_WINDOWS_X86_64_ARCHIVE_URL"
+            validator_archive="target/tools/aax-ci/aax-validator-dsh.zip"
+          fi
+
+          curl --fail --location --retry 3 --output target/tools/aax-ci/aax-sdk.zip "$AAX_SDK_ARCHIVE_URL"
+          curl --fail --location --retry 3 --output "$validator_archive" "$validator_url"
+
+          {
+            echo "AAX_SDK_ARCHIVE=target/tools/aax-ci/aax-sdk.zip"
+            echo "AAX_VALIDATOR_DSH_ARCHIVE=$validator_archive"
+          } >> "$GITHUB_ENV"
+
+      - name: Extract AAX SDK
+        run: |
+          rm -rf target/tools/aax-sdk
+          mkdir -p target/tools/aax-sdk
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            7z x "$AAX_SDK_ARCHIVE" -otarget/tools/aax-sdk -y
+          else
+            tar -xf "$AAX_SDK_ARCHIVE" -C target/tools/aax-sdk
+          fi
+          sdk_root="$(find target/tools/aax-sdk -maxdepth 3 -type f -path '*/Interfaces/AAX.h' -print -quit)"
+          if [[ -z "$sdk_root" ]]; then
+            echo "::error::AAX SDK archive did not contain Interfaces/AAX.h."
+            exit 1
+          fi
+          sdk_root="${sdk_root%/Interfaces/AAX.h}"
+          sdk_root="$(cd "$sdk_root" && pwd -P)"
+          echo "AAX_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+
+      - name: Cargo fetch
+        run: bash .github/scripts/retry.sh cargo fetch --locked
+
+      - name: Run AAX Validator
+        run: cargo xtask validate --release --target=aax

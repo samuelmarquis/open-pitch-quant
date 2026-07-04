@@ -1,0 +1,14 @@
+/.DS_Store
+.env
+.log/
+/target/
+/vendor/
+
+/src-gui/node_modules/
+/src-gui/dist/
+/src-gui/dist.zip
+/src-plugin/target/
+
+/clap_wrapper_builder/build_*/
+
+/AGENTS.md

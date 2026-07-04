@@ -1,0 +1,50 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-wrac-gain-standalone",
+			"type": "process",
+			"command": "cargo",
+			"args": [
+				"xtask",
+				"build",
+				"--target",
+				"standalone"
+			],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "new",
+				"close": true
+			},
+			"problemMatcher": "$rustc"
+		},
+		{
+			"label": "open-wrac-gain-standalone",
+			"type": "process",
+			"command": "cargo",
+			"args": [
+				"xtask",
+				"launch"
+			],
+			"presentation": {
+				"reveal": "always",
+				"panel": "new",
+				"close": true
+			}
+		},
+		{
+			"label": "build-and-open-wrac-gain-standalone",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"build-wrac-gain-standalone",
+				"open-wrac-gain-standalone"
+			],
+			"presentation": {
+				"reveal": "always",
+				"panel": "new",
+				"close": true
+			}
+		}
+	]
+}

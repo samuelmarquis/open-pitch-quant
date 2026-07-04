@@ -1,0 +1,26 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug gain plugin standalone",
+			"type": "lldb",
+			"request": "launch",
+			"program": "${workspaceFolder}/target/wrac/standalone/debug/WRAC Gain Standalone.app/Contents/MacOS/WRAC Gain Standalone",
+			"osx": {
+				"request": "attach",
+				"program": "${workspaceFolder}/target/wrac/standalone/debug/WRAC Gain Standalone.app/Contents/MacOS/WRAC Gain Standalone",
+				"preLaunchTask": "build-and-open-wrac-gain-standalone"
+			},
+			"windows": {
+				"program": "${workspaceFolder}/target/wrac/standalone/debug/WRAC Gain Standalone.exe"
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}",
+			"env": {
+				"RUST_BACKTRACE": "1"
+			},
+			"terminal": "console",
+			"preLaunchTask": "build-wrac-gain-standalone"
+		}
+	]
+}

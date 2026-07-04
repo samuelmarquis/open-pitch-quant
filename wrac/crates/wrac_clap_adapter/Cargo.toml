@@ -1,0 +1,19 @@
+[package]
+name = "wrac_clap_adapter"
+version = "0.1.0"
+edition = "2024"
+description = "Defensive CLAP adapter for the WRAC plugin template"
+license = "MIT"
+repository = "https://github.com/novonotes/wrac-plugin-template"
+readme = "README.md"
+publish = false
+
+[dependencies]
+clap-sys = { workspace = true }
+log = "0.4"
+parking_lot = "0.12"
+wrac_host_context = { workspace = true }
+wrac_log = { workspace = true }
+
+[lints.rust]
+unreachable_pub = "deny"

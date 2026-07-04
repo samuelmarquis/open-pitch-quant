@@ -24,10 +24,13 @@
             ]))
             pkgs.ffmpeg
             pkgs.sox
-            # rust for the real-time port (rt/)
+            # rust for the real-time port (rt/) and wrac plugin (wrac/)
             pkgs.cargo
             pkgs.rustc
             pkgs.libiconv
+            # wrac stack: webview GUI build + clap-wrapper (VST3/AU)
+            pkgs.nodejs_22
+            pkgs.cmake
           ];
         };
       });
