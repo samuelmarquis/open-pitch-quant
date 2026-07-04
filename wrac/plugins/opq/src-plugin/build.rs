@@ -34,7 +34,7 @@ fn main() {
         .join("dist");
     build_frontend_bundle(FrontendBundleConfig {
         dist_dir: gui_dist_dir,
-        output_file_name: "wrac_gain_plugin_gui.zip",
+        output_file_name: "opq_plugin_gui.zip",
         rerun_if_changed: &[
             "../src-gui/index.html",
             "../src-gui/src",

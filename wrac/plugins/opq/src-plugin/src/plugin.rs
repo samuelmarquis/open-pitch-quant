@@ -11,8 +11,9 @@ pub(crate) use params::{
     PARAM_BYPASS_ID, PARAM_CARRY_ID, PARAM_COHERENCE_ID, PARAM_FEEL_ID, PARAM_FMAX_ID,
     PARAM_FORMANT_ID, PARAM_GATE_ID, PARAM_GATE_MODE_ID, PARAM_GLIDE_ID, PARAM_GRIT_ID,
     PARAM_MIX_ID, PARAM_ROUNDING_ID, PARAM_SCOPE_ID, PARAM_THRESHOLD_ID, PARAM_TRANSIENT_ID,
-    PARAM_TRANSITIONS_ID, PARAM_UNOWNED_ID, PARAM_VOICES_ID, param_clamp, param_default,
-    param_exists, parameter_infos,
+    PARAM_TRANSITIONS_ID, PARAM_UNOWNED_ID, PARAM_VOICES_ID, notify_gui_parameters, param_clamp,
+    param_default, param_exists, parameter_default_value, parameter_host_value, parameter_infos,
+    parameter_manifest_json, parameter_text_value, parameter_value_text,
 };
 
 use audio_ports::{AudioLayoutStore, OpqAudioPorts, OpqConfigurableAudioPorts};
@@ -22,11 +23,13 @@ use wrac_clap_adapter::{
     AaxDescriptor, AaxStemConfig, ActivateContext, Auv2Descriptor, NoteDialects, NotePortInfo,
     PluginAudioPortsExtension, PluginConfigurableAudioPortsExtension, PluginCore,
     PluginCoreContext, PluginDescriptor, PluginEntry, PluginFactory, PluginFeature,
-    PluginLatencyExtension, PluginNotePortsExtension, PluginParamsExtension, PluginResult,
-    PluginStateExtension, Processor, Vst3Descriptor,
+    PluginGuiExtension, PluginLatencyExtension, PluginNotePortsExtension, PluginParamsExtension,
+    PluginResult, PluginStateExtension, Processor, Vst3Descriptor,
 };
+use wrac_wxp_gui::WxpGuiController;
 
 use crate::audio::OpqAudioProcessor;
+use crate::gui::create_gui_integration;
 use crate::state::SharedState;
 
 // Generated from [package.metadata.wrac] in src-plugin/Cargo.toml.
@@ -103,19 +106,27 @@ pub(crate) struct OpqPlugin {
     audio_ports: Arc<OpqAudioPorts>,
     configurable_audio_ports: Arc<OpqConfigurableAudioPorts>,
     params: Arc<OpqParamsExtension>,
+    gui: Arc<WxpGuiController>,
     state_extension: Arc<OpqStateExtension>,
     note_ports: Arc<OpqNotePorts>,
     latency: Arc<OpqLatency>,
 }
 
 impl OpqPlugin {
-    pub(crate) fn new(_context: PluginCoreContext, descriptor: PluginDescriptor) -> Self {
+    pub(crate) fn new(context: PluginCoreContext, descriptor: PluginDescriptor) -> Self {
         let shared = Arc::new(SharedState::new());
         let audio_layout = Arc::new(AudioLayoutStore::new(2));
         let audio_ports = Arc::new(OpqAudioPorts::new(audio_layout.clone()));
         let configurable_audio_ports =
             Arc::new(OpqConfigurableAudioPorts::new(audio_layout.clone()));
         let params = Arc::new(OpqParamsExtension::new(shared.clone()));
+        let gui = create_gui_integration(
+            descriptor,
+            shared.clone(),
+            context.host_parameter_edit_notifier,
+            context.host_gui_resize_requester,
+            context.host_context,
+        );
         let state_extension = Arc::new(OpqStateExtension::new(shared.clone()));
 
         Self {
@@ -125,6 +136,7 @@ impl OpqPlugin {
             audio_ports,
             configurable_audio_ports,
             params,
+            gui: gui.controller,
             state_extension,
             note_ports: Arc::new(OpqNotePorts),
             latency: Arc::new(OpqLatency),
@@ -185,6 +197,10 @@ impl PluginCore for OpqPlugin {
 
     fn state(&self) -> Option<Arc<dyn PluginStateExtension>> {
         Some(self.state_extension.clone())
+    }
+
+    fn gui(&self) -> Option<Arc<dyn PluginGuiExtension>> {
+        Some(self.gui.clone())
     }
 
     fn latency(&self) -> Option<Arc<dyn PluginLatencyExtension>> {

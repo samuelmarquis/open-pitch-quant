@@ -3,69 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Plugin</title>
-    <!--
-      Load the entry point as a Vite module script.
-      In debug builds, the Vite dev server serves the .ts file directly.
-      In release builds, it is compiled into a bundled JS file.
-    -->
+    <title>OpenPitchQuant</title>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
     <div id="app">
-      <main class="panel">
-        <div class="header">
-          <button class="plugin-name" id="plugin-name" type="button"></button>
-          <button
-            class="header-action"
-            id="header-action"
-            type="button"
-          ></button>
-        </div>
-        <section class="page is-active" id="page-controls">
-          <div class="meter">
-            <button class="value" id="gain-db" type="button">0.0 dB</button>
-            <input
-              class="value value-input"
-              id="gain-input"
-              type="text"
-              hidden
-            />
+      <header id="masthead">
+        <div id="brand">
+          <h1 id="plugin-name">OPEN PITCH QUANT</h1>
+          <div id="fig-caption">
+            fig. 1 — pitch-object de-mixing on a chromatic grid
           </div>
-          <section class="knob-zone">
-            <button
-              class="knob"
-              id="gain-knob"
-              type="button"
-              aria-label="Gain knob"
-            >
-              <div class="knob-track"></div>
-              <div class="knob-indicator" id="knob-indicator"></div>
-            </button>
-          </section>
-        </section>
-        <section class="page about-page" id="page-about" hidden>
-          <h1 class="about-title" id="about-title"></h1>
-          <dl>
-            <div>
-              <dt>Plugin Name</dt>
-              <dd id="about-plugin-name"></dd>
-            </div>
-            <div>
-              <dt>Version</dt>
-              <dd id="about-version"></dd>
-            </div>
-            <div>
-              <dt>Company Name</dt>
-              <dd id="about-company-name"></dd>
-            </div>
-            <div>
-              <dt>Build</dt>
-              <dd id="about-build"></dd>
-            </div>
-          </dl>
-        </section>
-      </main>
+        </div>
+        <div id="masthead-side">
+          <div id="masthead-meta"></div>
+          <button id="bypass" type="button" title="Bypass (latency-aligned)">
+            <span class="led"></span>BYPASS
+          </button>
+        </div>
+      </header>
+      <div id="stage">
+        <div id="grove-wrap">
+          <canvas id="grove"></canvas>
+          <div id="demo-badge" hidden>demo feed · phylovox trace</div>
+        </div>
+        <aside id="rail"></aside>
+      </div>
+      <footer id="status">
+        <span id="status-left"></span>
+        <span id="status-right"></span>
+      </footer>
       <button
         class="resize-grip"
         id="resize-grip"

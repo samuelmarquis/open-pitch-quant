@@ -5,9 +5,11 @@
 //! state persistence, MIDI note-sidechain plumbing, and (soon) the WebView GUI.
 //!
 //! File layout follows the WRAC template:
-//! - `plugin.rs` : the plugin contract as seen by the host
-//! - `state.rs`  : lock-free parameter state shared across threads
-//! - `audio.rs`  : the audio-thread processor driving `opq_engine::Engine`
+//! - `plugin.rs`   : the plugin contract as seen by the host
+//! - `state.rs`    : lock-free parameter state + the analysis feed queue
+//! - `audio.rs`    : the audio-thread processor driving `opq_engine::Engine`
+//! - `gui.rs`      : WebView GUI integration; runtime/notifier under `gui/`
+//! - `commands.rs` : Rust commands callable from the WebView frontend
 //!
 //! NOTE: unlike the template, we do NOT install the assert_no_alloc global
 //! allocator. The engine currently allocates small scratch vectors during
@@ -15,6 +17,8 @@
 //! RT-allocation discipline is tracked work, not a blocker.
 
 mod audio;
+mod commands;
+mod gui;
 mod plugin;
 mod state;
 
