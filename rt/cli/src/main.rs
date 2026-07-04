@@ -132,7 +132,6 @@ fn main() {
                 p.newborn = match val().as_str() {
                     "map" => Newborn::Map,
                     "dry" => Newborn::Dry,
-                    "mute" => Newborn::Mute,
                     _ => die("bad --newborn"),
                 }
             }

@@ -405,6 +405,21 @@ amplitude instability on vocals — gone? (3) does anything NEW poke out
 tonalization purists may notice); (4) in Live: does timing feel tight now
 (PDC fix)?
 
-**Verdict:** *(pending)*
+**Verdict (2026-07-03):** "Changes the sound a LOT — not necessarily
+displeased. Much SMOOTHER — definitely what I wanted for the vocals, but
+almost smear-y at points." Then, after isolating with a tuner in Ableton
+(root-only MIDI, F→D movement): "a lot of the pitch movement in the vocal
+was making it through via FEEL, and the FORMANT shifting gave it this
+sliding character. With formant preserve at 100 and feel at 0, it stops."
+The 15.370 'dragged-up' report → decoded as real source portamento being
+faithfully re-quantized; retarget debounce kept (chord changes instant via
+grid-mask detection, source wobble damped). Transition-content policy:
+"map and dry sound subtly different in ways that I like — expose as a
+switch! (mute is no good though, nuke that one)."
+
+**Actions:** Newborn::Mute executed. "Transitions" switch (Map/Dry) added
+to engine, CLI, and plugin (default Map). Plugin rebuilt + reinstalled.
+Character interaction note for the future taste-map: Feel×Formant = the
+"sliding" vocal character; feel 0 + formant 100 = locked/hard-cut.
 
 **Verdict:** *(pending)*

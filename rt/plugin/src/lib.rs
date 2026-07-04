@@ -4,7 +4,7 @@
 //! (PITCHMAP "MIDI MAP + Xclude"); no held notes = silence.
 
 use nih_plug::prelude::*;
-use opq_engine::{Engine, EngineParams, Mode, Rounding, TonalityMode, Unowned, N_FFT};
+use opq_engine::{Engine, EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned, N_FFT};
 use std::sync::Arc;
 
 #[derive(Enum, PartialEq, Clone, Copy)]
@@ -21,6 +21,14 @@ enum RoundMode {
     Intelligent,
     #[name = "Nearest"]
     Nearest,
+}
+
+#[derive(Enum, PartialEq, Clone, Copy)]
+enum TransMode {
+    #[name = "Map (quantize instantly)"]
+    Map,
+    #[name = "Dry (pass at source pitch)"]
+    Dry,
 }
 
 #[derive(Enum, PartialEq, Clone, Copy)]
@@ -71,6 +79,8 @@ struct OpqParams {
     formant: FloatParam,
     #[id = "carry"]
     carry: FloatParam,
+    #[id = "trans"]
+    transitions: EnumParam<TransMode>,
 }
 
 impl Default for OpqPlugin {
@@ -155,6 +165,7 @@ impl Default for OpqParams {
             .with_unit(" %")
             .with_value_to_string(formatters::v2s_f32_percentage(0))
             .with_string_to_value(formatters::s2v_f32_percentage()),
+            transitions: EnumParam::new("Transitions", TransMode::Map),
         }
     }
 }
@@ -193,6 +204,10 @@ impl OpqPlugin {
             threshold_cents: self.params.threshold.value() as f64,
             formant: self.params.formant.value() as f64,
             carry: self.params.carry.value() as f64,
+            newborn: match self.params.transitions.value() {
+                TransMode::Map => Newborn::Map,
+                TransMode::Dry => Newborn::Dry,
+            },
         }
     }
 }

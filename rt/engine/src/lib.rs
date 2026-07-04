@@ -52,14 +52,13 @@ pub enum Rounding {
 
 /// What regions owned by very young (<2 frames) objects do — i.e., what
 /// ambiguous TRANSITION content (mid-portamento, note onsets) sounds like.
+/// (A third variant, Mute, was tried and executed by user decree.)
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Newborn {
     /// map immediately (faithful: every moment quantized; slides step)
     Map,
     /// pass dry (source pitch audible through transitions)
     Dry,
-    /// suppress until stable (hard cuts; brief energy dip in transitions)
-    Mute,
 }
 
 #[derive(Clone, Copy)]
@@ -119,7 +118,7 @@ impl Default for EngineParams {
             threshold_cents: 0.0,
             formant: 0.0,
             carry: 1.0,
-            newborn: Newborn::Mute,
+            newborn: Newborn::Map,
         }
     }
 }
@@ -942,13 +941,8 @@ impl Engine {
             if owner[i] >= 0 {
                 let oi = owner[i] as usize;
                 let trk = &self.tracks[obj_trk[oi]];
-                if t - trk.born < 2 && p.newborn != Newborn::Map {
-                    // newborn gating: ambiguous transition content
-                    // (mid-portamento blips, fresh onsets) — policy knob
-                    if p.newborn == Newborn::Mute {
-                        continue; // suppress until the object proves stable
-                    }
-                    df = 0.0; // Dry: pass at source pitch
+                if t - trk.born < 2 && p.newborn == Newborn::Dry {
+                    df = 0.0; // transitions pass at source pitch
                 } else {
                     df = fp * (obj_mult[oi] - 1.0);
                 }
