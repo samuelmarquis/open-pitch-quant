@@ -11,7 +11,7 @@
 //!
 //! Output is latency-compensated (N_FFT samples trimmed).
 
-use opq_engine::{Engine, EngineParams, Mode, Rounding, TonalityMode, Unowned, N_FFT};
+use opq_engine::{Engine, EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned, N_FFT};
 
 fn die(msg: &str) -> ! {
     eprintln!("error: {msg}");
@@ -127,6 +127,14 @@ fn main() {
             }
             "--carry" => {
                 p.carry = val().parse().unwrap_or_else(|_| die("bad --carry"))
+            }
+            "--newborn" => {
+                p.newborn = match val().as_str() {
+                    "map" => Newborn::Map,
+                    "dry" => Newborn::Dry,
+                    "mute" => Newborn::Mute,
+                    _ => die("bad --newborn"),
+                }
             }
             "--feel" => p.feel = val().parse().unwrap_or_else(|_| die("bad --feel")),
             "--glide" => p.glide = val().parse().unwrap_or_else(|_| die("bad --glide")),

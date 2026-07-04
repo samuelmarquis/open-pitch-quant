@@ -50,6 +50,18 @@ pub enum Rounding {
     Intelligent,
 }
 
+/// What regions owned by very young (<2 frames) objects do — i.e., what
+/// ambiguous TRANSITION content (mid-portamento, note onsets) sounds like.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Newborn {
+    /// map immediately (faithful: every moment quantized; slides step)
+    Map,
+    /// pass dry (source pitch audible through transitions)
+    Dry,
+    /// suppress until stable (hard cuts; brief energy dip in transitions)
+    Mute,
+}
+
 #[derive(Clone, Copy)]
 pub struct EngineParams {
     pub voices: usize,
@@ -83,6 +95,7 @@ pub struct EngineParams {
     /// bins (onset/noise energy). 1 = full onset preservation but a ~-31 dB
     /// source-pitch ghost under partials; 0 = pure stamps (attack holes)
     pub carry: f64,
+    pub newborn: Newborn,
 }
 
 impl Default for EngineParams {
@@ -106,6 +119,7 @@ impl Default for EngineParams {
             threshold_cents: 0.0,
             formant: 0.0,
             carry: 1.0,
+            newborn: Newborn::Mute,
         }
     }
 }
@@ -118,6 +132,9 @@ struct Track {
     r_from: f64,
     g0: i64,
     seen: i64,
+    born: i64,
+    cand: f64,
+    cand_n: i64,
     /// per harmonic number: (phase, frame last seen, last output freq)
     phases: [(f64, i64, f64); MAX_H + 1],
 }
@@ -211,6 +228,8 @@ pub struct Engine {
     env: Vec<f64>,
     env_tmp: Vec<f64>,
     grid: Vec<f64>,
+    grid_mask: u128,
+    prev_grid_mask: u128,
     peaks: Vec<usize>,
     bounds: Vec<(usize, usize)>,
 }
@@ -278,6 +297,8 @@ impl Engine {
             env: vec![0.0; bins],
             env_tmp: vec![0.0; bins],
             grid: Vec::with_capacity(128),
+            grid_mask: 0,
+            prev_grid_mask: 0,
             peaks: Vec::with_capacity(512),
             bounds: Vec::with_capacity(512),
         };
@@ -350,6 +371,12 @@ impl Engine {
 
     fn build_grid(&mut self, held: &[bool; 128], mode: Mode) {
         self.grid.clear();
+        self.grid_mask = held
+            .iter()
+            .enumerate()
+            .filter(|(_, &h)| h)
+            .fold(0u128, |m, (n, _)| m | (1u128 << n))
+            | (if mode == Mode::Repeat { 1u128 << 127 } else { 0 });
         match mode {
             Mode::Custom => {
                 for n in 0..128usize {
@@ -703,6 +730,7 @@ impl Engine {
             }
         }
         self.first_frame = false;
+        self.prev_grid_mask = self.grid_mask;
         // store AFTER map_frame so the per-region attack detector compares
         // against the actual previous frame
         self.prev_mag_store.copy_from_slice(&self.mag);
@@ -818,6 +846,9 @@ impl Engine {
                         r_from: 0.0, // birth: glide starts at SOURCE pitch
                         g0: t,
                         seen: t,
+                        born: t,
+                        cand: tgt,
+                        cand_n: 0,
                         phases: [(0.0, -2, 0.0); MAX_H + 1],
                     });
                     self.tracks.len() - 1
@@ -832,9 +863,30 @@ impl Engine {
                         r_old
                     };
                     if (tgt / trk.tgt).ln().abs() > 1e-6 {
-                        trk.r_from = r_now;
-                        trk.g0 = t;
-                        trk.tgt = tgt;
+                        // retarget DEBOUNCE: source-motion-driven target
+                        // changes must persist 3 frames (~64 ms) before
+                        // committing — a singer's portamento no longer
+                        // drags the output through intermediate targets.
+                        // MIDI-driven changes commit instantly.
+                        let grid_changed = self.grid_mask != self.prev_grid_mask;
+                        let same_cand = (tgt / trk.cand).ln().abs() < 1e-6;
+                        if same_cand {
+                            trk.cand_n += 1;
+                        } else {
+                            trk.cand = tgt;
+                            trk.cand_n = 1;
+                        }
+                        if grid_changed || trk.cand_n >= 3 {
+                            trk.r_from = r_now;
+                            trk.g0 = t;
+                            trk.tgt = tgt;
+                            trk.cand_n = 0;
+                        } else {
+                            tgt = trk.tgt; // hold current target for now
+                        }
+                    } else {
+                        trk.cand = tgt;
+                        trk.cand_n = 0;
                     }
                     trk.f0 = f0;
                     trk.lema += ema_a * (f0.ln() - trk.lema);
@@ -890,7 +942,16 @@ impl Engine {
             if owner[i] >= 0 {
                 let oi = owner[i] as usize;
                 let trk = &self.tracks[obj_trk[oi]];
-                df = fp * (obj_mult[oi] - 1.0);
+                if t - trk.born < 2 && p.newborn != Newborn::Map {
+                    // newborn gating: ambiguous transition content
+                    // (mid-portamento blips, fresh onsets) — policy knob
+                    if p.newborn == Newborn::Mute {
+                        continue; // suppress until the object proves stable
+                    }
+                    df = 0.0; // Dry: pass at source pitch
+                } else {
+                    df = fp * (obj_mult[oi] - 1.0);
+                }
                 h = ((fp / trk.f0).round() as i64).max(1) as usize;
                 trk_idx = Some(obj_trk[oi]);
             } else if p.unowned == Unowned::Dry {
