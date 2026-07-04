@@ -97,6 +97,7 @@ fn main() {
     let mut held = [false; 128];
     let mut midi_path: Option<String> = None;
     let mut midi_stretch = 1.0f64;
+    let mut stereo_out = false; // duplicate mono output to dual-mono stereo
     let mut i = 2;
     while i < args.len() {
         let key = args[i].as_str();
@@ -161,6 +162,7 @@ fn main() {
                 }
             }
             "--no-transient" => p.transient_bypass = false,
+            "--stereo-out" => stereo_out = true,
             _ => die(&format!("unknown arg {key}")),
         }
         i += 1;
@@ -230,8 +232,9 @@ fn main() {
         }
     }
 
+    let out_ch = if stereo_out && ch == 1 { 2 } else { ch };
     let wspec = hound::WavSpec {
-        channels: ch as u16,
+        channels: out_ch as u16,
         sample_rate: spec.sample_rate,
         bits_per_sample: 24,
         sample_format: hound::SampleFormat::Int,
@@ -246,8 +249,8 @@ fn main() {
     let mut writer =
         hound::WavWriter::create(out_path, wspec).unwrap_or_else(|e| die(&e.to_string()));
     for f in 0..n_frames {
-        for c in 0..ch {
-            let v = (chans[c][N_FFT + f] * g * 8_388_607.0) as i32;
+        for c in 0..out_ch {
+            let v = (chans[c.min(ch - 1)][N_FFT + f] * g * 8_388_607.0) as i32;
             writer.write_sample(v).unwrap();
         }
     }
@@ -256,6 +259,6 @@ fn main() {
         "wrote {out_path} ({:.2}s @ {} Hz, {}ch)",
         n_frames as f64 / spec.sample_rate as f64,
         spec.sample_rate,
-        ch
+        out_ch
     );
 }

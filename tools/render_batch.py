@@ -80,7 +80,8 @@ def main():
             targs = ["--notes", targets]
         for v in [v.strip() for v in args.variants.split(",")]:
             f = out / f"{s}__{v}.wav"
-            cmd = [str(BIN), str(path), str(f), *targs, *VARIANTS[v].split()]
+            cmd = [str(BIN), str(path), str(f), "--stereo-out",
+                   *targs, *VARIANTS[v].split()]
             subprocess.run(cmd, check=True, capture_output=True)
             print(f"wrote {f.relative_to(ROOT)}")
 
