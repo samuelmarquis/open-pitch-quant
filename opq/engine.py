@@ -70,6 +70,19 @@ def _region_bounds(mag, peaks, n_bins):
     return bounds
 
 
+def _hann_kernel(x, n_fft):
+    """Zero-phase Hann window spectrum at fractional bin offsets x,
+    normalized to W(0) = 1. Mainlobe support |x| < 2; small sidelobes
+    beyond (we stamp out to |x| <= 4)."""
+    def diric(u):
+        num = np.sin(np.pi * u)
+        den = n_fft * np.sin(np.pi * u / n_fft)
+        small = np.abs(den) < 1e-12
+        return np.where(small, 1.0, num / np.where(small, 1.0, den))
+
+    return diric(x) + 0.5 * (diric(x - 1) + diric(x + 1))
+
+
 def _wmedian(v, w):
     """Weighted median."""
     o = np.argsort(v)
@@ -174,6 +187,7 @@ def process(
     assign="peak",
     voices=6,
     unowned="map",
+    synth="translate",
 ):
     """Run the M0 remap over mono signal x. Returns y, same length.
 
@@ -212,6 +226,15 @@ def process(
                          (PITCHMAP's Electrify is this knob, inverted)
       unowned          — assign="group" only: peaks no object claims are
                          "map"ped M0-style or left "dry" (residual layer)
+      synth            — how tonal mapped partials are rendered:
+                         "translate" = shift analysis bins by an integer
+                             offset (legacy; scallops + dbin-toggles under
+                             vibrato → the batch-006 washiness)
+                         "stamp" = synthesize each partial by writing the
+                             analytic window kernel at its EXACT fractional
+                             output frequency with de-scalloped amplitude
+                             and accumulator phase (no integer quantization
+                             anywhere — frequency-domain oscillator bank)
     """
     win = np.hanning(n_fft)
     n_bins = n_fft // 2 + 1
@@ -333,6 +356,33 @@ def process(
                             1j * (phi[src] + TWO_PI * df * (t * hop) / sr
                                   + np.pi * dbin)
                         )
+                        continue
+                    if synth == "stamp":
+                        # frequency-domain oscillator: exact fractional
+                        # output freq, de-scalloped amplitude, accum phase
+                        ft = fp + df
+                        ni = min(max(int(round(69 + 12 * np.log2(ft / 440.0))), 0), 127)
+                        dsrc = fp / bin_hz - p
+                        amp = mag[p] / max(
+                            float(_hann_kernel(np.array([dsrc]), n_fft)[0]), 0.1
+                        )
+                        if note_seen[ni] == t:
+                            pass
+                        elif note_seen[ni] == t - 1:
+                            note_phase[ni] += TWO_PI * ft * hop / sr
+                        else:
+                            # anchor from source phase (frame-start
+                            # convention: measured phi[p] = phi0 + pi*dsrc)
+                            note_phase[ni] = phi[p] - np.pi * dsrc
+                        note_seen[ni] = t
+                        b = ft / bin_hz
+                        kk = np.arange(max(int(np.ceil(b - 4)), 1),
+                                       min(int(np.floor(b + 4)), n_bins - 2) + 1)
+                        if len(kk):
+                            xoff = kk - b
+                            Y[kk] += amp * _hann_kernel(xoff, n_fft) * np.exp(
+                                1j * (note_phase[ni] - np.pi * xoff)
+                            )
                         continue
                     ft = fp + df
                     ni = min(max(int(round(69 + 12 * np.log2(ft / 440.0))), 0), 127)

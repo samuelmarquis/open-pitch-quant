@@ -45,6 +45,10 @@ def main():
                     help="noise regions: map with fresh phases, or pass dry")
     ap.add_argument("--no-phase-lock", action="store_true",
                     help="legacy free-running phases (watery; for A/B)")
+    ap.add_argument("--synth", default="translate",
+                    choices=["translate", "stamp"],
+                    help="tonal partial rendering (stamp = fractional-freq "
+                         "kernel synthesis, no integer-bin artifacts)")
     ap.add_argument("-o", "--out", required=True)
     args = ap.parse_args()
 
@@ -70,6 +74,7 @@ def main():
         assign=args.assign,
         voices=args.voices,
         unowned=args.unowned,
+        synth=args.synth,
     )
 
     out = Path(args.out)

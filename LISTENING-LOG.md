@@ -217,4 +217,44 @@ Also: user confirmed PITCHMAP outputs SILENCE with no held MIDI notes —
 engine semantics changed from dry-passthrough to silence (docs updated;
 former ask (8) resolved). Phylovox re-rendered with both changes.
 
+**Verdict (2026-07-03):** "On monophonic input and sound design (falter,
+prism) I REALLY like the timbres we're getting. With the vocals, and really
+all of the stuff with a lot of harmonic character, there's a lot of that
+washy/warbly phase noise; both map and dry have this (and custom is just
+way out of whack). With PITCHMAP, if I hold down one note and sing around
+it a little bit, I'll get a relatively constant pitch without too much
+phase drift (manifesting like beating and amplitude-noise) in the output;
+it's quite noticeable here."
+
+**Interpretation:** the remaining washiness is integer-bin TRANSLATION
+artifacts on modulated harmonic content: as the source slides across bins,
+dbin toggles, magnitude readings scallop, lobe alignment jumps — all AM at
+vibrato/frame rate. The vibrato torture metric agrees (peak-to-skirt only
+~14 dB in lock mode). Fix: kernel STAMPING — synthesize each tonal mapped
+partial from parameters (de-scalloped amplitude, exact fractional output
+frequency, accumulator phase) by writing the analytic Hann-transform kernel
+at fractional bin positions. Custom-mode "way out of whack" = expected
+consequence of register-specific targets vs out-of-register source content;
+revisit after a Round/minimal-shift option exists.
+
+---
+
+## Batch 007 — kernel stamping vs the washiness (2026-07-03)
+
+Engine: `synth="stamp"` — tonal mapped partials rendered as frequency-domain
+oscillators (analytic Hann kernel at exact fractional bins, de-scalloped
+amplitude, accumulator phase). Vibrato torture: skirt 13.7→45.0 dB, AM depth
+8.8→0.6 dB, low band −0.9→−0.0 dB. Regressions: fundamentals 0.0¢,
+coherence fingerprint intact. `out/listen-007/`: full suite ×
+{group-dry-stamp, group-map-stamp} — A/B directly against the same names
+in listen-006.
+
+**Specific asks:** (1) vocals/harmonic material — is the washy beating
+gone (the sing-around-a-held-note test)? (2) falter & prism — did the
+REALLY-liked timbres survive the synthesis change, or did stamping
+over-clean them? (3) if stamping wins overall but loses grit somewhere,
+`synth` becomes a per-region blend candidate rather than a switch.
+
+**Verdict:** *(pending)*
+
 **Verdict:** *(pending)*
