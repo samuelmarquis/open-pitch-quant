@@ -188,6 +188,9 @@ def process(
     voices=6,
     unowned="map",
     synth="translate",
+    feel=0.0,
+    glide=0.0,
+    grit=0.0,
 ):
     """Run the M0 remap over mono signal x. Returns y, same length.
 
@@ -235,6 +238,20 @@ def process(
                              output frequency with de-scalloped amplitude
                              and accumulator phase (no integer quantization
                              anywhere — frequency-domain oscillator bank)
+
+    M3 options (object TRACKS across frames; assign="group" only):
+      feel   — 0..1: re-introduce the track's micro-pitch deviation
+               (vibrato, drift vs a ~250 ms moving reference) on top of the
+               mapped target. 0 = fully quantized, 1 = all intonation
+               detail preserved while still mapped. (PITCHMAP's FEEL.)
+      glide  — seconds: on track birth, pitch ramps from the SOURCE pitch
+               to the target; on target change (chord change under a
+               sustained track), ramps from wherever it currently is.
+               Tracks die on transients, so glide re-triggers after hits
+               (matches the manual's note). 0 = off. (PITCHMAP's GLIDE.)
+      grit   — 0..1 (synth="stamp" only): per-partial blend between pure
+               oscillator stamping (0) and fresh-phase spectral translation
+               (1) — the batch-006 crunch as a character control.
     """
     win = np.hanning(n_fft)
     n_bins = n_fft // 2 + 1
@@ -253,6 +270,12 @@ def process(
     # destinations are quantized, unlike source bins under vibrato)
     note_phase = np.zeros(128)
     note_seen = np.full(128, -2, dtype=int)
+    # M3 object-track state (assign="group"): tracks matched frame-to-frame
+    # by f0 proximity; each carries a pitch reference (EMA) for Feel, glide
+    # state, and per-harmonic phase accumulators for stamping
+    tracks = []
+    glide_frames = glide * sr / hop
+    ema_a = 1.0 - np.exp(-(hop / sr) / 0.25)  # ~250 ms reference
 
     for t in range(n_frames):
         seg = xp[t * hop : t * hop + n_fft]
@@ -285,11 +308,13 @@ def process(
             # reset synthesis state so re-entry re-anchors cleanly
             phi_syn = phi.copy()
             note_seen.fill(-2)
+            tracks.clear()
             Y = np.zeros(n_bins, dtype=complex)
         elif is_transient:
             # pass the frame through untouched; re-anchor synthesis phases
             phi_syn = phi.copy()
             note_seen.fill(-2)  # note accumulators re-anchor on next use
+            tracks.clear()  # glide re-triggers after transients (manual)
             Y = X
         else:
             # per-region mapping decisions (shared by both synthesis paths)
@@ -299,22 +324,64 @@ def process(
             log_grid = np.log(grid)
 
             owner = None
+            obj_mult, obj_trk = [], []
             if assign == "group" and len(peaks):
                 f0s, owner = _harmonic_objects(peaks, mag, f_true, voices)
-                ratios = [
-                    grid[np.argmin(np.abs(log_grid - np.log(f0)))] / f0
-                    for f0 in f0s
-                ]
+                # ---- M3: match objects to tracks by f0 proximity ----
+                for f0 in f0s:
+                    best, bestd = None, np.log(2) * 100.0 / 1200.0
+                    for trk in tracks:
+                        if trk["seen"] == t:
+                            continue
+                        dd = abs(np.log(f0 / trk["f0"]))
+                        if dd < bestd:
+                            best, bestd = trk, dd
+                    tgt = grid[np.argmin(np.abs(log_grid - np.log(f0)))]
+                    if best is None:  # birth: glide starts at SOURCE pitch
+                        trk = {"f0": f0, "lema": np.log(f0), "tgt": tgt,
+                               "r_from": 0.0, "g0": t, "phases": {},
+                               "seen": t}
+                        tracks.append(trk)
+                    else:
+                        trk = best
+                        # effective ratio now (pre-update): target changes
+                        # glide FROM wherever the pitch currently sits
+                        r_old = np.log(trk["tgt"] / trk["f0"])
+                        if glide_frames > 0:
+                            prog = min(1.0, (t - trk["g0"]) / glide_frames)
+                            r_now = trk["r_from"] + (r_old - trk["r_from"]) * prog
+                        else:
+                            r_now = r_old
+                        if abs(np.log(tgt / trk["tgt"])) > 1e-6:
+                            trk["r_from"] = r_now
+                            trk["g0"] = t
+                            trk["tgt"] = tgt
+                        trk["f0"] = f0
+                        trk["lema"] += ema_a * (np.log(f0) - trk["lema"])
+                        trk["seen"] = t
+                    r_to = np.log(trk["tgt"] / trk["f0"])
+                    if glide_frames > 0:
+                        prog = min(1.0, (t - trk["g0"]) / glide_frames)
+                        r_eff = trk["r_from"] + (r_to - trk["r_from"]) * prog
+                    else:
+                        r_eff = r_to
+                    dev = np.log(trk["f0"]) - trk["lema"]  # micro-pitch
+                    obj_mult.append(float(np.exp(r_eff + feel * dev)))
+                    obj_trk.append(trk)
+                tracks[:] = [trk for trk in tracks if trk["seen"] == t]
 
             for i, (p, (lo, hi)) in enumerate(zip(peaks, bounds)):
                 fp = f_true[p]
                 if owner is not None and owner[i] >= 0:
                     # harmonic member: move with its object's fundamental
-                    df = fp * (ratios[owner[i]] - 1.0)
-                    regions.append((p, lo, hi, fp, df, False))
+                    oi = owner[i]
+                    trk = obj_trk[oi]
+                    df = fp * (obj_mult[oi] - 1.0)
+                    h = max(int(round(fp / trk["f0"])), 1)
+                    regions.append((p, lo, hi, fp, df, False, trk, h))
                     continue
                 if owner is not None and unowned == "dry":
-                    regions.append((p, lo, hi, fp, 0.0, False))  # residual
+                    regions.append((p, lo, hi, fp, 0.0, False, None, 0))
                     continue
                 mappable = fmin < fp < sr / 2 * 0.95
                 if fmax_map is not None:
@@ -330,7 +397,7 @@ def process(
                     df = ft - fp
                 else:
                     df = 0.0
-                regions.append((p, lo, hi, fp, df, noisy))
+                regions.append((p, lo, hi, fp, df, noisy, None, 0))
 
             if phase_lock:
                 # rigid phase locking with per-TARGET-NOTE accumulators:
@@ -339,7 +406,7 @@ def process(
                 # vibrato); intra-region analysis phase offsets preserved.
                 # Unmapped regions pass through VERBATIM (fully transparent).
                 Y = np.zeros(n_bins, dtype=complex)
-                for p, lo, hi, fp, df, noisy in regions:
+                for p, lo, hi, fp, df, noisy, trk, h in regions:
                     dbin = int(round(df / bin_hz))
                     clo, chi = max(lo + dbin, 1), min(hi + dbin, n_bins - 1)
                     if chi <= clo:
@@ -361,28 +428,45 @@ def process(
                         # frequency-domain oscillator: exact fractional
                         # output freq, de-scalloped amplitude, accum phase
                         ft = fp + df
-                        ni = min(max(int(round(69 + 12 * np.log2(ft / 440.0))), 0), 127)
                         dsrc = fp / bin_hz - p
                         amp = mag[p] / max(
                             float(_hann_kernel(np.array([dsrc]), n_fft)[0]), 0.1
                         )
-                        if note_seen[ni] == t:
-                            pass
-                        elif note_seen[ni] == t - 1:
-                            note_phase[ni] += TWO_PI * ft * hop / sr
+                        anchor = phi[p] - np.pi * dsrc
+                        if trk is not None:
+                            # phase lives on the TRACK, per harmonic number
+                            entry = trk["phases"].get(h)
+                            if entry is not None and entry[1] == t:
+                                phv = entry[0]  # duplicate h this frame
+                            elif entry is not None and entry[1] == t - 1:
+                                phv = entry[0] + TWO_PI * ft * hop / sr
+                            else:
+                                phv = anchor
+                            trk["phases"][h] = (phv, t)
                         else:
-                            # anchor from source phase (frame-start
-                            # convention: measured phi[p] = phi0 + pi*dsrc)
-                            note_phase[ni] = phi[p] - np.pi * dsrc
-                        note_seen[ni] = t
+                            ni = min(max(int(round(69 + 12 * np.log2(ft / 440.0))), 0), 127)
+                            if note_seen[ni] == t:
+                                pass
+                            elif note_seen[ni] == t - 1:
+                                note_phase[ni] += TWO_PI * ft * hop / sr
+                            else:
+                                note_phase[ni] = anchor
+                            note_seen[ni] = t
+                            phv = note_phase[ni]
+                        if grit > 0.0:
+                            # character blend: fresh-phase translation crunch
+                            Y[dst] += grit * mag[src] * np.exp(
+                                1j * (phi[src] + TWO_PI * df * (t * hop) / sr
+                                      + np.pi * dbin)
+                            )
                         b = ft / bin_hz
                         kk = np.arange(max(int(np.ceil(b - 4)), 1),
                                        min(int(np.floor(b + 4)), n_bins - 2) + 1)
                         if len(kk):
                             xoff = kk - b
-                            Y[kk] += amp * _hann_kernel(xoff, n_fft) * np.exp(
-                                1j * (note_phase[ni] - np.pi * xoff)
-                            )
+                            Y[kk] += (1.0 - grit) * amp * _hann_kernel(
+                                xoff, n_fft
+                            ) * np.exp(1j * (phv - np.pi * xoff))
                         continue
                     ft = fp + df
                     ni = min(max(int(round(69 + 12 * np.log2(ft / 440.0))), 0), 127)
@@ -403,7 +487,7 @@ def process(
                 out_mag = np.zeros(n_bins)
                 out_freq = bin_centers.copy()
                 best = np.zeros(n_bins)
-                for p, lo, hi, fp, df, noisy in regions:
+                for p, lo, hi, fp, df, noisy, trk, h in regions:
                     dbin = int(round(df / bin_hz))
                     clo, chi = max(lo + dbin, 1), min(hi + dbin, n_bins - 1)
                     if chi <= clo:

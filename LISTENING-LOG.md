@@ -255,6 +255,42 @@ REALLY-liked timbres survive the synthesis change, or did stamping
 over-clean them? (3) if stamping wins overall but loses grit somewhere,
 `synth` becomes a per-region blend candidate rather than a switch.
 
+**Verdict (2026-07-03):** "YEAH. YEAH. YEAH YEAH YEAH [...] WE HAVE THE
+ALGORITHM. THIS IS IT! (maybe there's some subtle refinement you want to
+do, but this is basically there). HIT M3 LET'S SEE IT (but a character
+blending knob would still probably be cool)."
+
+**Interpretation:** kernel stamping + grouping + phase lock + transient
+bypass + tonality gate = the core engine, confirmed. Direction: M3 (object
+tracks → Feel, Glide) plus a `grit` character-blend knob (stamp purity vs
+translation crunch, per partial).
+
+---
+
+## Batch 008 — M3: tracks, Feel, Glide + the grit knob (2026-07-03)
+
+Objects now persist across frames as TRACKS (matched by f0, ±100¢), each
+carrying a ~250 ms pitch reference, glide state, and per-harmonic phase
+accumulators. Three knobs born:
+- **feel** (0..1): re-inject the track's micro-pitch deviation on target.
+  Verified dose-response: 0 → 1.4¢ output wobble, 0.6 → 23¢, 1.0 → 44¢
+  (input ~40¢).
+- **glide** (s): ramp source→target at birth, current→new-target on chord
+  change; tracks die on transients so glide re-triggers per hit (manual
+  semantics). Verified: probe-05 switch goes instant → smooth ramp.
+- **grit** (0..1): character blend, stamp purity → translation crunch.
+
+`out/listen-008/`, full suite × {stamp-feel60, stamp-glide120,
+stamp-musical (feel .35 + glide .06), stamp-grit35}. Compare against 007's
+group-dry-stamp (= all knobs at 0).
+
+**Specific asks:** (1) feel on vocals/phylovox — does 0.6 read as "alive"
+vs 007's quantized? where's your taste point? (2) glide-120 on phylovox's
+chord moves — musical or seasick? (3) stamp-musical — is this combined
+setting the new daily-driver default? (4) grit-35 on falter/prism — is
+this the character axis you wanted? (5) any track-instability artifacts
+(pitch reference drifting audibly, glide re-triggering mid-note)?
+
 **Verdict:** *(pending)*
 
 **Verdict:** *(pending)*

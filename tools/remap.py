@@ -49,6 +49,12 @@ def main():
                     choices=["translate", "stamp"],
                     help="tonal partial rendering (stamp = fractional-freq "
                          "kernel synthesis, no integer-bin artifacts)")
+    ap.add_argument("--feel", type=float, default=0.0,
+                    help="0..1 re-inject micro-pitch deviation (group mode)")
+    ap.add_argument("--glide", type=float, default=0.0,
+                    help="seconds of pitch glide on note starts/changes")
+    ap.add_argument("--grit", type=float, default=0.0,
+                    help="0..1 blend stamp purity toward translation crunch")
     ap.add_argument("-o", "--out", required=True)
     args = ap.parse_args()
 
@@ -75,6 +81,9 @@ def main():
         voices=args.voices,
         unowned=args.unowned,
         synth=args.synth,
+        feel=args.feel,
+        glide=args.glide,
+        grit=args.grit,
     )
 
     out = Path(args.out)

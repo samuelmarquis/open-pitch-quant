@@ -52,11 +52,20 @@ VARIANTS = {
     "group-dry": dict(_BASE, assign="group", voices=6, unowned="dry"),
     "group-map": dict(_BASE, assign="group", voices=6, unowned="map",
                       tonality_gate=2.5),
-    # kernel-stamping synthesis (anti-washiness, batch 007)
+    # kernel-stamping synthesis (anti-washiness, batch 007) — THE ALGORITHM
     "group-dry-stamp": dict(_BASE, assign="group", voices=6, unowned="dry",
                             synth="stamp"),
     "group-map-stamp": dict(_BASE, assign="group", voices=6, unowned="map",
                             tonality_gate=2.5, synth="stamp"),
+    # M3 knobs on the stamp champion (batch 008)
+    "stamp-feel60": dict(_BASE, assign="group", voices=6, unowned="dry",
+                         synth="stamp", feel=0.6),
+    "stamp-glide120": dict(_BASE, assign="group", voices=6, unowned="dry",
+                           synth="stamp", glide=0.12),
+    "stamp-musical": dict(_BASE, assign="group", voices=6, unowned="dry",
+                          synth="stamp", feel=0.35, glide=0.06),
+    "stamp-grit35": dict(_BASE, assign="group", voices=6, unowned="dry",
+                         synth="stamp", grit=0.35),
     # octave-semantics variant (exact held notes, no pitch-class repeat)
     "group-dry-custom": dict(_BASE, assign="group", voices=6, unowned="dry",
                              mode="custom"),
