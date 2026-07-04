@@ -24,6 +24,10 @@
             ]))
             pkgs.ffmpeg
             pkgs.sox
+            # rust for the real-time port (rt/)
+            pkgs.cargo
+            pkgs.rustc
+            pkgs.libiconv
           ];
         };
       });

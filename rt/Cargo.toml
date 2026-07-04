@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = ["engine", "cli", "plugin", "xtask"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

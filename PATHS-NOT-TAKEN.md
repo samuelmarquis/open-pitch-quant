@@ -125,4 +125,29 @@ maximally different.
 
 ---
 
+## 004 — nice-plug (the community successor to nih-plug)
+
+**What:** codeberg.org/RustAudio/nice-plug — community-led fork of nih-plug
+(surfaced by the user, 2026-07-03): active development (commits days ago),
+tagged releases + crates.io publication (`nice-plug = "0.1"`), ISC, same
+architecture (Params derive, Plugin trait, xtask bundling, `nice_export_*!`
+macros).
+
+**Why deferred (2026-07-03):** For the first plugin build, nih-plug's exact
+API is a known quantity and its VST3 export is battle-proven in Ableton;
+nice-plug's API drift is unmeasured and its advantages (releases, active
+maintenance) pay off later, not tonight.
+
+**What hides there:** versioned dependencies (better nix reproducibility than
+a git rev), ongoing maintenance as rustc/OS move, possibly permissively
+licensed VST3 bindings (unverified — would matter for licensing), polyphonic
+note-expression support per its README (MPE-driven per-note detuned targets
+is a corner we already covet).
+
+**Re-entry notes:** Migration is near-mechanical (crate + macro renames +
+small trait drift). Revisit when: nih-plug bitrots, we want MPE, or we cut a
+versioned release of the plugin.
+
+---
+
 *(next entry goes here)*
