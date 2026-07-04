@@ -2,11 +2,12 @@
 //! preserved; stereo runs the native multichannel engine with shared
 //! decisions and image-preserving synthesis).
 //!
-//!   opq in.wav out.wav --notes C4,E4,G4 [--feel 0.35] [--glide 0.06]
-//!       [--grit 0] [--voices 6] [--unowned dry|map] [--gate 2.5]
-//!       [--gate-mode fresh|bypass] [--mode repeat|custom]
-//!       [--rounding nearest|intelligent] [--fmax 5000] [--no-transient]
-//!       [--coherence 1.0]
+//!   opq in.wav out.wav (--notes C4,E4,G4 | --midi part.mid) [--feel 0.35]
+//!       [--midi-stretch 1.0] [--glide 0.06] [--grit 0] [--voices 6]
+//!       [--unowned dry|map] [--gate 2.5] [--gate-mode fresh|bypass]
+//!       [--mode repeat|custom] [--rounding nearest|intelligent]
+//!       [--fmax 5000] [--no-transient] [--coherence 1.0]
+//!       [--threshold 0] [--formant 0]
 //!
 //! Output is latency-compensated (N_FFT samples trimmed).
 
@@ -15,6 +16,69 @@ use opq_engine::{Engine, EngineParams, Mode, Rounding, TonalityMode, Unowned, N_
 fn die(msg: &str) -> ! {
     eprintln!("error: {msg}");
     std::process::exit(1)
+}
+
+/// MIDI file → [(t_seconds, held[128])] breakpoints, honoring tempo map.
+fn midi_breakpoints(path: &str, stretch: f64) -> Vec<(f64, [bool; 128])> {
+    let data = std::fs::read(path).unwrap_or_else(|e| die(&e.to_string()));
+    let smf = midly::Smf::parse(&data).unwrap_or_else(|e| die(&e.to_string()));
+    let ppq = match smf.header.timing {
+        midly::Timing::Metrical(n) => n.as_int() as f64,
+        _ => die("SMPTE-timed MIDI unsupported"),
+    };
+    enum Ev {
+        Tempo(u32),
+        On(u8),
+        Off(u8),
+    }
+    let mut evs: Vec<(u64, Ev)> = Vec::new();
+    for track in &smf.tracks {
+        let mut tick = 0u64;
+        for e in track {
+            tick += e.delta.as_int() as u64;
+            match e.kind {
+                midly::TrackEventKind::Meta(midly::MetaMessage::Tempo(t)) => {
+                    evs.push((tick, Ev::Tempo(t.as_int())))
+                }
+                midly::TrackEventKind::Midi { message, .. } => match message {
+                    midly::MidiMessage::NoteOn { key, vel } => {
+                        if vel.as_int() > 0 {
+                            evs.push((tick, Ev::On(key.as_int())))
+                        } else {
+                            evs.push((tick, Ev::Off(key.as_int())))
+                        }
+                    }
+                    midly::MidiMessage::NoteOff { key, .. } => {
+                        evs.push((tick, Ev::Off(key.as_int())))
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+    }
+    evs.sort_by_key(|e| e.0);
+    let mut out: Vec<(f64, [bool; 128])> = vec![(0.0, [false; 128])];
+    let mut held = [false; 128];
+    let mut tempo = 500_000f64; // µs per quarter
+    let mut last_tick = 0u64;
+    let mut t = 0.0f64;
+    for (tick, ev) in evs {
+        t += (tick - last_tick) as f64 * tempo / (ppq * 1e6);
+        last_tick = tick;
+        match ev {
+            Ev::Tempo(us) => tempo = us as f64,
+            Ev::On(n) => {
+                held[n as usize] = true;
+                out.push((t * stretch, held));
+            }
+            Ev::Off(n) => {
+                held[n as usize] = false;
+                out.push((t * stretch, held));
+            }
+        }
+    }
+    out
 }
 
 fn main() {
@@ -31,6 +95,8 @@ fn main() {
         ..EngineParams::default()
     };
     let mut held = [false; 128];
+    let mut midi_path: Option<String> = None;
+    let mut midi_stretch = 1.0f64;
     let mut i = 2;
     while i < args.len() {
         let key = args[i].as_str();
@@ -46,6 +112,16 @@ fn main() {
                         None => die("bad note name"),
                     }
                 }
+            }
+            "--midi" => midi_path = Some(val()),
+            "--midi-stretch" => {
+                midi_stretch = val().parse().unwrap_or_else(|_| die("bad --midi-stretch"))
+            }
+            "--threshold" => {
+                p.threshold_cents = val().parse().unwrap_or_else(|_| die("bad --threshold"))
+            }
+            "--formant" => {
+                p.formant = val().parse().unwrap_or_else(|_| die("bad --formant"))
             }
             "--feel" => p.feel = val().parse().unwrap_or_else(|_| die("bad --feel")),
             "--glide" => p.glide = val().parse().unwrap_or_else(|_| die("bad --glide")),
@@ -118,7 +194,40 @@ fn main() {
     let mut engine = Engine::new(spec.sample_rate as f64, ch);
     {
         let mut slices: Vec<&mut [f32]> = chans.iter_mut().map(|v| v.as_mut_slice()).collect();
-        engine.process_block(&mut slices, &held, &p);
+        match midi_path {
+            None => engine.process_block(&mut slices, &held, &p),
+            Some(mp) => {
+                // segment the stream at held-set breakpoints
+                let bps = midi_breakpoints(&mp, midi_stretch);
+                let sr = spec.sample_rate as f64;
+                let total = slices[0].len();
+                let mut cursor = 0usize;
+                for (bi, &(bt, bheld)) in bps.iter().enumerate() {
+                    let start = ((bt * sr).round() as usize).min(total).max(cursor);
+                    let end = if bi + 1 < bps.len() {
+                        (((bps[bi + 1].0) * sr).round() as usize).min(total)
+                    } else {
+                        total
+                    };
+                    // fill any gap before this breakpoint with previous state
+                    let _ = start;
+                    if end > cursor {
+                        let mut seg: Vec<&mut [f32]> = slices
+                            .iter_mut()
+                            .map(|s| &mut s[cursor..end])
+                            .collect();
+                        engine.process_block(&mut seg, &bheld, &p);
+                        cursor = end;
+                    }
+                }
+                if cursor < total {
+                    let last = bps.last().map(|b| b.1).unwrap_or([false; 128]);
+                    let mut seg: Vec<&mut [f32]> =
+                        slices.iter_mut().map(|s| &mut s[cursor..total]).collect();
+                    engine.process_block(&mut seg, &last, &p);
+                }
+            }
+        }
     }
 
     let wspec = hound::WavSpec {

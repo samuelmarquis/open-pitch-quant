@@ -260,6 +260,12 @@ ALGORITHM. THIS IS IT! (maybe there's some subtle refinement you want to
 do, but this is basically there). HIT M3 LET'S SEE IT (but a character
 blending knob would still probably be cool)."
 
+*(Batches 008/009 verdicts arrived as gameplay: M3 knobs approved, "sounds
+really good", intelligent rounding requested & shipped, then RT port
+requested: "definitely ready for RT". RT stereo verdict: "totally
+left/right decoherent" → native multichannel engine + coherence knob →
+"having a TON of fun, damn close to PITCHMAP".)*
+
 **Interpretation:** kernel stamping + grouping + phase lock + transient
 bypass + tonality gate = the core engine, confirmed. Direction: M3 (object
 tracks → Feel, Glide) plus a `grit` character-blend knob (stamp purity vs
@@ -290,6 +296,37 @@ chord moves — musical or seasick? (3) stamp-musical — is this combined
 setting the new daily-driver default? (4) grit-35 on falter/prism — is
 this the character axis you wanted? (5) any track-instability artifacts
 (pitch reference drifting audibly, glide re-triggering mid-note)?
+
+**Verdict:** approved in gameplay (see batch 007 addendum).
+
+---
+
+## Batch 010 — Rust-canonical: full-comb, Threshold, Formant (2026-07-03)
+
+The Rust engine is now the sole canonical implementation; this batch is
+the first rendered through it (`tools/render_batch.py` → `rt` CLI).
+Engine additions, all measurement-verified:
+- **Full-comb ownership**: objects claim their ENTIRE comb (h to Nyquist,
+  competitive assignment across objects — greedy version measurably stole
+  G's h20 for C, output at 7772 Hz; fixed → 7840/7849/8110 all correctly
+  owned). Upper spectrum no longer stranded in the residual.
+- **Threshold** (PITCHMAP knob, non-global flavor): +20¢ saw with
+  thresh=30 passes at +20.1¢; with thresh=10 corrects to 0.0¢.
+- **Formant Preserve** 0..1: source-envelope resampling at output freq
+  (linear-domain blur — log-domain first attempt was valley-dominated and
+  inert). Test bump at 900 Hz, pitch +500¢: formant 0 → bump moves
+  (−4.6 dB ratio), 0.5 → between (−0.9), 1.0 → bump stays (+2.9).
+- Regression: triad fundamentals 0.0¢.
+
+`out/listen-010/`: full suite × {champ, formant60, formant100}.
+
+**Specific asks:** (1) vocals/phylovox with full-comb ownership — did the
+top end "come along" now (compare against listen-007/009 of same
+sources)? (2) formant60/100 on vocals pitched far — chipmunk gone? what's
+the taste point? (3) formant on prism/falter — does envelope-locking
+change the sound-design character you liked? (4) plugin reinstalled with
+Threshold + Formant Preserve params — try Threshold ~20–30¢ on lightly
+detuned material.
 
 **Verdict:** *(pending)*
 

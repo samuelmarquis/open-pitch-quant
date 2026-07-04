@@ -65,6 +65,10 @@ struct OpqParams {
     mix: FloatParam,
     #[id = "stcoh"]
     coherence: FloatParam,
+    #[id = "thresh"]
+    threshold: FloatParam,
+    #[id = "formant"]
+    formant: FloatParam,
 }
 
 impl Default for OpqPlugin {
@@ -127,6 +131,20 @@ impl Default for OpqParams {
             .with_unit(" %")
             .with_value_to_string(formatters::v2s_f32_percentage(0))
             .with_string_to_value(formatters::s2v_f32_percentage()),
+            threshold: FloatParam::new(
+                "Threshold",
+                0.0,
+                FloatRange::Linear { min: 0.0, max: 100.0 },
+            )
+            .with_unit(" ct"),
+            formant: FloatParam::new(
+                "Formant Preserve",
+                0.0,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            )
+            .with_unit(" %")
+            .with_value_to_string(formatters::v2s_f32_percentage(0))
+            .with_string_to_value(formatters::s2v_f32_percentage()),
         }
     }
 }
@@ -162,6 +180,8 @@ impl OpqPlugin {
             hyst_cents: 40.0,
             mix: self.params.mix.value() as f64,
             coherence: self.params.coherence.value() as f64,
+            threshold_cents: self.params.threshold.value() as f64,
+            formant: self.params.formant.value() as f64,
         }
     }
 }

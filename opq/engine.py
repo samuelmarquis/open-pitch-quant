@@ -1,4 +1,10 @@
-"""The spectral pitch-mapping engine.
+"""The spectral pitch-mapping engine — FROZEN PROTOTYPE LAB.
+
+As of 2026-07-03 the Rust engine (rt/engine) is the sole canonical
+implementation; this module is kept as the algorithm-exploration lab and
+historical record. New features land in Rust first; anything prototyped
+here must be ported before it counts. Known drift vs Rust: mono only, no
+stereo coherence, no full-comb ownership, no Threshold, no formant.
 
 STFT analysis, per-bin instantaneous frequency via phase differences
 (Bernsee), spectral-peak detection with regions of influence

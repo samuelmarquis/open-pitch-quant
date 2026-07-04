@@ -21,7 +21,9 @@ pub const N_FFT: usize = 4096;
 pub const HOP: usize = 1024;
 const BINS: usize = N_FFT / 2 + 1;
 const N_HARM: usize = 20;
-const MAX_H: usize = N_HARM + 2;
+/// phase-table reach for owned harmonics (full-comb ownership can claim
+/// far beyond N_HARM; mis-numbered h up here only re-keys a phase slot)
+const MAX_H: usize = 64;
 const TWO_PI: f64 = std::f64::consts::TAU;
 const PI: f64 = std::f64::consts::PI;
 
@@ -72,6 +74,12 @@ pub struct EngineParams {
     /// 1.0 = preserve the stereo image exactly; lower values add static
     /// per-partial inter-channel decorrelation (width effect)
     pub coherence: f64,
+    /// bypass objects already within this many cents of their (untransposed)
+    /// chromatic pitch; 0 = off (PITCHMAP's THRESHOLD, non-global flavor)
+    pub threshold_cents: f64,
+    /// 0..1 formant preservation: stamped partial amplitudes are corrected
+    /// by the source spectral envelope sampled at the OUTPUT frequency
+    pub formant: f64,
 }
 
 impl Default for EngineParams {
@@ -92,6 +100,8 @@ impl Default for EngineParams {
             hyst_cents: 40.0,
             mix: 1.0,
             coherence: 1.0,
+            threshold_cents: 0.0,
+            formant: 0.0,
         }
     }
 }
@@ -184,6 +194,8 @@ pub struct Engine {
     fft_in: Vec<f64>,
     spec_scratch: Vec<Complex64>,
     yt: Vec<f64>,
+    env: Vec<f64>,
+    env_tmp: Vec<f64>,
     grid: Vec<f64>,
     peaks: Vec<usize>,
     bounds: Vec<(usize, usize)>,
@@ -228,6 +240,8 @@ impl Engine {
             fft_in: vec![0.0; N_FFT],
             spec_scratch: zc(),
             yt: vec![0.0; N_FFT],
+            env: vec![0.0; BINS],
+            env_tmp: vec![0.0; BINS],
             grid: Vec::with_capacity(128),
             peaks: Vec::with_capacity(512),
             bounds: Vec::with_capacity(512),
@@ -494,6 +508,35 @@ impl Engine {
             }
             f0s.push(f0r);
         }
+        // FULL-COMB ownership post-pass: assign each leftover peak to the
+        // object whose comb explains it best (COMPETITIVE, not greedy —
+        // adjacent combs' teeth are only ~17 cents apart at high h, so
+        // first-object-wins steals other objects' genuine harmonics).
+        // A mis-numbered h only re-keys a phase slot — df comes from f0.
+        let tol_ext = 22.0 / 1200.0 * 2f64.ln();
+        let nyq = self.sr / 2.0 * 0.95;
+        for j in 0..n_pk {
+            if avail[j] <= 0.0 {
+                continue;
+            }
+            let mut best_o = -1i32;
+            let mut best_d = tol_ext;
+            for (oi, &f0r) in f0s.iter().enumerate() {
+                let hh = (pk_f[j] / f0r).round();
+                if hh < 1.0 || hh * f0r > nyq {
+                    continue;
+                }
+                let dev = (pk_f[j].max(1e-9) / (hh * f0r)).ln().abs();
+                if dev < best_d {
+                    best_d = dev;
+                    best_o = oi as i32;
+                }
+            }
+            if best_o >= 0 {
+                owner[j] = best_o;
+                avail[j] = 0.0;
+            }
+        }
         (f0s, owner)
     }
 
@@ -602,12 +645,49 @@ impl Engine {
         }
     }
 
+    /// Smoothed spectral envelope of the mid spectrum (formant reference):
+    /// 3x box blur of LINEAR magnitude (~41 bins ≈ 480 Hz @48k) — linear
+    /// domain so partial energy dominates, not the -180 dB valleys — then
+    /// stored as log for cheap ratio math.
+    fn compute_envelope(&mut self) {
+        const W: usize = 10; // half-width (~245 Hz/pass: resolves
+        // formant-scale bumps while bridging harmonic spacing)
+        self.env.copy_from_slice(&self.mag);
+        for _ in 0..3 {
+            let mut acc = 0.0;
+            for k in 0..BINS {
+                acc += self.env[k];
+                self.env_tmp[k] = acc;
+            }
+            for k in 0..BINS {
+                let lo = k.saturating_sub(W);
+                let hi = (k + W).min(BINS - 1);
+                let sum = self.env_tmp[hi]
+                    - if lo > 0 { self.env_tmp[lo - 1] } else { 0.0 };
+                self.env[k] = sum / (hi - lo + 1) as f64;
+            }
+        }
+        for k in 0..BINS {
+            self.env[k] = (self.env[k] + 1e-12).ln();
+        }
+    }
+
+    fn env_at(&self, f: f64, bin_hz: f64) -> f64 {
+        let b = (f / bin_hz).clamp(0.0, (BINS - 2) as f64);
+        let k = b as usize;
+        let fr = b - k as f64;
+        self.env[k] * (1.0 - fr) + self.env[k + 1] * fr
+    }
+
     fn map_frame(&mut self, t: i64, p: &EngineParams, bin_hz: f64) {
         let nch = self.channels;
         // drop stale tracks first so indices stay valid through synthesis
         self.tracks.retain(|trk| trk.seen >= t - 1);
         self.find_peaks();
         self.region_bounds();
+        if p.formant > 0.0 {
+            self.compute_envelope();
+        }
         let (f0s, owner) = self.harmonic_objects(p.voices.max(1));
 
         // ---- M3: match objects to tracks ----
@@ -675,6 +755,17 @@ impl Engine {
                 }
             };
             let trk = &self.tracks[ti];
+            // THRESHOLD: bypass objects already in tune with their own
+            // (untransposed) chromatic pitch — PITCHMAP non-global flavor
+            let mut bypass = false;
+            if p.threshold_cents > 0.0 {
+                let cents = 1200.0 / 2f64.ln();
+                let f_chrom =
+                    midi_freq((69.0 + 12.0 * (trk.f0 / 440.0).log2()).round());
+                let in_tune = (trk.f0 / f_chrom).ln().abs() * cents < p.threshold_cents;
+                let untransposed = (trk.tgt / f_chrom).ln().abs() * cents < 1.0;
+                bypass = in_tune && untransposed;
+            }
             let r_to = (trk.tgt / trk.f0).ln();
             let r_eff = if glide_frames > 0.0 {
                 let prog = ((t - trk.g0) as f64 / glide_frames).min(1.0);
@@ -683,7 +774,11 @@ impl Engine {
                 r_to
             };
             let dev = trk.f0.ln() - trk.lema;
-            obj_mult.push((r_eff + p.feel * dev).exp());
+            obj_mult.push(if bypass {
+                1.0
+            } else {
+                (r_eff + p.feel * dev).exp()
+            });
             obj_trk.push(ti);
         }
 
@@ -770,6 +865,15 @@ impl Engine {
             let ft = fp + df;
             let dsrc = fp / bin_hz - pk as f64;
             let ker_src = hann_kernel(dsrc).max(0.1);
+            // formant preservation: correct amplitude by the source
+            // envelope evaluated at the OUTPUT vs SOURCE frequency
+            let formant_gain = if p.formant > 0.0 {
+                let d_env = (self.env_at(ft, bin_hz) - self.env_at(fp, bin_hz))
+                    .clamp(-2.77, 2.77); // +-24 dB safety
+                (d_env * p.formant).exp()
+            } else {
+                1.0
+            };
             let anchor = self.phim[pk] - PI * dsrc;
             let ni = ((69.0 + 12.0 * (ft / 440.0).log2()).round() as i64).clamp(0, 127)
                 as usize;
@@ -814,7 +918,7 @@ impl Engine {
             let k1 = ((b + 4.0).floor() as i64).min(BINS as i64 - 2) as usize;
             for c in 0..nch {
                 // channel's own level + phase offset from the mid reference
-                let amp_c = self.magc[c][pk] / ker_src;
+                let amp_c = self.magc[c][pk] / ker_src * formant_gain;
                 let off_c = if nch > 1 {
                     princarg(self.phi[c][pk] - self.phim[pk])
                         + decor_amt * decor_offset(ni, c)

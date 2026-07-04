@@ -88,6 +88,13 @@ Mono, offline, 48 kHz. WAV in + MIDI in → WAV out, plus debug plots/layers.
   failure signatures match. If licensing ever cooperates, render the probe
   suite per testdata/probes/README.md into testdata/reference/.
 
+## 2b. Canonical implementation (updated 2026-07-03)
+
+The Rust engine (`rt/engine`) is the **sole canonical implementation**.
+`opq/` (Python) is a frozen prototyping lab: new ideas may be sketched
+there, but nothing counts until ported to Rust, and listening batches
+render through the Rust CLI (`tools/render_batch.py` drives it).
+
 ## 3. Deliberate divergences from the reference (v0)
 
 - Offline-first; latency unconstrained until M5.

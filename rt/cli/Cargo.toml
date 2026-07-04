@@ -11,3 +11,4 @@ path = "src/main.rs"
 [dependencies]
 opq-engine = { path = "../engine" }
 hound = "3"
+midly = "0.5"

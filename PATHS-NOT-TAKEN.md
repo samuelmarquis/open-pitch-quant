@@ -150,4 +150,49 @@ versioned release of the plugin.
 
 ---
 
+## 005 — Purify as a single macro knob
+
+**What:** Consolidating the noise-side controls (tonality gate threshold,
+gate mode fresh/bypass, unowned map/dry, residual output GAIN — the last
+doesn't even exist yet) into one 0–100% Purify knob à la PITCHMAP, possibly
+with the >50% region adding "resonance" character (kernel narrowing —
+ringy, NSANE-ish stamped partials).
+
+**Why deferred (2026-07-03):** User call: keep the controls decoupled while
+we're still learning what each axis does to real material. Macro-ing too
+early bakes in a taste curve we haven't earned yet.
+
+**What hides there:** one-knob usability; residual gain as a mix tool
+(drums under retuned harmony); the resonance character region; a
+PITCHMAP-faithful preset mode.
+
+**Re-entry notes:** Needs residual gain implemented first (trivial: scale
+verbatim-passthrough regions). Then Purify(x) = curve mapping onto
+(residual_gain, gate, kernel_width). Related deferred sibling: MIDI
+Bypass/de-mix mode (held notes select what PASSES) — user doesn't use it;
+skip until asked.
+
+---
+
+## 006 — Sample-rate adaptation
+
+**What:** The engine runs N=4096/hop=1024 regardless of sample rate —
+tuned for 44.1/48 kHz. At 96/192 kHz, bins double/quadruple in Hz (worse
+low-end resolution), latency halves in ms, and calibrated constants (flux
+threshold, envelope width, 5 kHz ceiling in bins) silently shift meaning.
+PITCHMAP solved this with internal SRC (v1.7+ runs its DSP at 44.1/48k and
+resamples around it).
+
+**Why deferred (2026-07-03):** Both the user's sessions and the test suite
+are 44.1/48k; correctness there is what matters this week.
+
+**Re-entry notes:** Two options: (a) scale N_FFT/HOP with rate
+(N=8192@96k) — cheap, keeps ms-latency constant, needs constants expressed
+in physical units rather than bins (mostly already true); (b) PITCHMAP-style
+internal SRC — heavier, but pins DSP behavior exactly. Prefer (a) unless
+A/B parity across rates fails. Also revisit the CHANGELOG'd nih-plug
+`buffer_config.sample_rate` pathway — engine already takes sr at init.
+
+---
+
 *(next entry goes here)*

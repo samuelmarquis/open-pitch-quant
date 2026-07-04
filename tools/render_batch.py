@@ -1,43 +1,38 @@
 #!/usr/bin/env python3
-"""Render the full material suite through named engine-variant presets.
+"""Render the full material suite through the CANONICAL Rust engine.
+
+As of 2026-07-03 this drives rt/target/release/opq (build with
+`cargo build --release -p opq-cli` in rt/). The Python engine in opq/ is a
+frozen prototyping lab and is no longer used for listening batches.
 
 Usage:
-  python3 tools/render_batch.py listen-006
-  python3 tools/render_batch.py listen-007 --variants group-dry,peak
+  python3 tools/render_batch.py listen-010
+  python3 tools/render_batch.py listen-011 --variants champ,formant100
   python3 tools/render_batch.py scratch --sources amen,audio178
-
-Writes out/<batch>/<source>__<variant>.wav for every (source, variant).
-Target-note sets are chroma-informed (see git history / MATERIAL.md) and
-deliberately near each clip's own tonal center — retuning material toward
-itself is the fair test; creative remaps are a per-experiment override.
 """
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from opq import engine, io  # noqa: E402
-
 ROOT = Path(__file__).resolve().parent.parent
+BIN = ROOT / "rt" / "target" / "release" / "opq"
 M = ROOT / "testdata" / "material"
 P = ROOT / "testdata" / "probes"
 
-# source slug → (audio path, targets: "note,note,.." or .mid Path)
+# source slug → (audio path, targets) where targets is "notes" or
+# (midi path, stretch) or midi Path
 SOURCES = {
-    "resoguitar": (M / "resoguitar13.wav", "A3,C#4,E4"),   # A-major territory
-    "audio178": (M / "audio178.wav", "D4,F#4,A4"),         # D-majorish vocal
-    "audio116": (M / "audio116.wav", "C4,E4,G4"),          # C/E dominant
-    "amen": (M / "amen02_165.wav", "C3,E3,G3"),            # drums vs C major
-    "memories": (M / "memories.wav", "A#3,D4,F#4"),        # CIRCLES: D-F#-A# aug
-    "when": (M / "when.wav", "D4,F#4,A#4"),                # same aug family
-    "falter": (M / "falter.wav", "A2,C3,E3"),              # big A2 bass → Am
-    "prism": (M / "prism_scrambler_10s.wav", "F#2,C#3,G#3"),  # sound design
-    # paired MIDI part; stretch 0.75 = exact 4:3 tempo-export mismatch
-    # (midi span 29.99s vs audio 22.50s — 120 vs 160 BPM)
+    "resoguitar": (M / "resoguitar13.wav", "A3,C#4,E4"),
+    "audio178": (M / "audio178.wav", "D4,F#4,A4"),
+    "audio116": (M / "audio116.wav", "C4,E4,G4"),
+    "amen": (M / "amen02_165.wav", "C3,E3,G3"),
+    "memories": (M / "memories.wav", "A#3,D4,F#4"),
+    "when": (M / "when.wav", "D4,F#4,A#4"),
+    "falter": (M / "falter.wav", "A2,C3,E3"),
+    "prism": (M / "prism_scrambler_10s.wav", "F#2,C#3,G#3"),
     "phylovox": (M / "phylovox.wav", (M / "phylovox.mid", 0.75)),
-    # probes, rendered on demand via --sources:
     "p01": (P / "01_noise_vs_Cmaj.wav", P / "01_noise_vs_Cmaj.mid"),
     "p03": (P / "03_detuned_triad_vs_Cmaj.wav", P / "03_detuned_triad_vs_Cmaj.mid"),
     "p05": (P / "05_sustain_vs_chordchange.wav", P / "05_sustain_vs_chordchange.mid"),
@@ -46,70 +41,47 @@ DEFAULT_SOURCES = (
     "resoguitar,audio178,audio116,amen,memories,when,falter,prism,phylovox"
 )
 
-_BASE = dict(fmax_map=5000.0, transient_bypass=True)
+# CLI defaults already carry the champion base: unowned=dry, fmax=5000,
+# transient bypass on, gate off, coherence 1. Variants add the rest.
+CHAMP = "--rounding intelligent --feel 0.35 --glide 0.06"
 VARIANTS = {
-    # current champions
-    "group-dry": dict(_BASE, assign="group", voices=6, unowned="dry"),
-    "group-map": dict(_BASE, assign="group", voices=6, unowned="map",
-                      tonality_gate=2.5),
-    # kernel-stamping synthesis (anti-washiness, batch 007) — THE ALGORITHM
-    "group-dry-stamp": dict(_BASE, assign="group", voices=6, unowned="dry",
-                            synth="stamp"),
-    "group-map-stamp": dict(_BASE, assign="group", voices=6, unowned="map",
-                            tonality_gate=2.5, synth="stamp"),
-    # M3 knobs on the stamp champion (batch 008)
-    "stamp-feel60": dict(_BASE, assign="group", voices=6, unowned="dry",
-                         synth="stamp", feel=0.6),
-    "stamp-glide120": dict(_BASE, assign="group", voices=6, unowned="dry",
-                           synth="stamp", glide=0.12),
-    "stamp-musical": dict(_BASE, assign="group", voices=6, unowned="dry",
-                          synth="stamp", feel=0.35, glide=0.06),
-    "stamp-grit35": dict(_BASE, assign="group", voices=6, unowned="dry",
-                         synth="stamp", grit=0.35),
-    # M4-lite: sticky-target rounding (batch 009)
-    "stamp-intel": dict(_BASE, assign="group", voices=6, unowned="dry",
-                        synth="stamp", rounding="intelligent"),
-    "stamp-musical-intel": dict(_BASE, assign="group", voices=6,
-                                unowned="dry", synth="stamp", feel=0.35,
-                                glide=0.06, rounding="intelligent"),
-    # octave-semantics variant (exact held notes, no pitch-class repeat)
-    "group-dry-custom": dict(_BASE, assign="group", voices=6, unowned="dry",
-                             mode="custom"),
-    # references
-    "peak": dict(_BASE, tonality_gate=2.5),   # M0.5, per-peak snapping
-    "peak-raw": {},                           # naked M0 (batch-001 sound)
+    "champ": CHAMP,
+    "formant60": CHAMP + " --formant 0.6",
+    "formant100": CHAMP + " --formant 1.0",
+    "thresh25": CHAMP + " --threshold 25",
+    "grit35": CHAMP + " --grit 0.35",
+    "map": CHAMP + " --unowned map --gate 2.5",
+    "flat": "",  # everything at zero, nearest rounding — the 007 reference
 }
-DEFAULT_VARIANTS = "group-dry,group-map"
+DEFAULT_VARIANTS = "champ,formant60,formant100"
 
 
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("batch", help="output folder name under out/")
+    ap.add_argument("batch")
     ap.add_argument("--sources", default=DEFAULT_SOURCES)
     ap.add_argument("--variants", default=DEFAULT_VARIANTS)
     args = ap.parse_args()
+
+    if not BIN.exists():
+        sys.exit(f"{BIN} missing — run: cd rt && cargo build --release -p opq-cli")
 
     out = ROOT / "out" / args.batch
     out.mkdir(parents=True, exist_ok=True)
     for s in [s.strip() for s in args.sources.split(",")]:
         path, targets = SOURCES[s]
-        x = io.load_audio(path)
-        if isinstance(targets, tuple):  # (midi path, time stretch)
-            held = io.held_fn_from_breakpoints(
-                io.midi_breakpoints(targets[0], stretch=targets[1])
-            )
+        if isinstance(targets, tuple):
+            targs = ["--midi", str(targets[0]), "--midi-stretch", str(targets[1])]
         elif isinstance(targets, Path):
-            held = io.held_fn_from_breakpoints(io.midi_breakpoints(targets))
+            targs = ["--midi", str(targets)]
         else:
-            held = io.held_fn_static(
-                io.parse_note(n) for n in targets.split(",")
-            )
+            targs = ["--notes", targets]
         for v in [v.strip() for v in args.variants.split(",")]:
-            y = engine.process(x, io.SR, held, **VARIANTS[v])
             f = out / f"{s}__{v}.wav"
-            io.save_audio(f, y)
+            cmd = [str(BIN), str(path), str(f), *targs, *VARIANTS[v].split()]
+            subprocess.run(cmd, check=True, capture_output=True)
             print(f"wrote {f.relative_to(ROOT)}")
 
 
