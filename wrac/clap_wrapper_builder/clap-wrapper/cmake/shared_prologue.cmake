@@ -106,7 +106,11 @@ endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU" AND (NOT (CMAKE_CXX_COMPILER_FRONTEND_VARIANT MATCHES "MSVC")))
     message(STATUS "clap-wrapper: using gcc/llvm-clang compile options")
 
-    target_compile_options(clap-wrapper-compile-options INTERFACE -Wall -Wextra -Wno-unused-parameter -Wpedantic)
+    target_compile_options(clap-wrapper-compile-options INTERFACE -Wall -Wextra -Wno-unused-parameter -Wpedantic
+        # open-pitch-quant patch: suppressions must FOLLOW -Wpedantic/-Wextra
+        # (which re-enable them) on the non-Xcode/CLT toolchain
+        -Wno-unknown-warning-option -Wno-gnu-statement-expression-from-macro-expansion
+        -Wno-shorten-64-to-32 -Wno-perf-constraint-implies-noexcept)
     if (WIN32)
         # CLang cant do werror on linux thanks to vst3 sdk
         if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")

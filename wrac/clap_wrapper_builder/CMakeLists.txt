@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.21)
 project(clap_wrapper_builder)
+
+# Patched for open-pitch-quant: the Xcode generator enables ObjC++ implicitly,
+# but Makefiles/Ninja (Command Line Tools only) need it explicit for the
+# AUv2 wrapper's .mm sources.
+if(APPLE)
+  enable_language(OBJC OBJCXX)
+endif()
+
 # enable_language(OBJCXX)
 
 # ---------------------------------------------------------------------------

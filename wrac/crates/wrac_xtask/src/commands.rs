@@ -460,6 +460,15 @@ pub(crate) fn configure_wrapper(
         push_cmake_arg(&mut args, generator);
     }
 
+    // Patched for open-pitch-quant: on the non-Xcode path the wrapper SDK
+    // warning suppressions must be injected at configure time (the Xcode
+    // path passes them as xcodebuild OTHER_CPLUSPLUSFLAGS at build time).
+    if ctx.platform == Platform::Macos && ctx.platform.cmake_generator() != Some("Xcode") {
+        const SUPPRESS: &str = "-Wno-unknown-warning-option             -Wno-gnu-statement-expression-from-macro-expansion             -Wno-shorten-64-to-32 -Wno-perf-constraint-implies-noexcept";
+        push_cmake_arg(&mut args, format!("-DCMAKE_CXX_FLAGS={SUPPRESS}"));
+        push_cmake_arg(&mut args, format!("-DCMAKE_OBJCXX_FLAGS={SUPPRESS}"));
+    }
+
     if cmake_configure_is_current(&build_dir, &args, &ctx.wrapper_dir)? {
         println!(
             "CMake configure is up to date for {} ({})",
@@ -502,7 +511,9 @@ pub(crate) fn build_wrapper_target(
             .arg("--config")
             .arg(profile.cmake_config());
 
-        if ctx.platform == Platform::Macos {
+        // Patched for open-pitch-quant: the extra args below are xcodebuild
+        // syntax; skip them when the generator is not Xcode (Makefiles/CLT).
+        if ctx.platform == Platform::Macos && ctx.platform.cmake_generator() == Some("Xcode") {
             // AudioUnitSDK emits GNU statement-expression and narrowing warnings in Xcode.
             // Suppress them here so template users are not pulled into wrapper SDK warnings.
             build_cmd.args([

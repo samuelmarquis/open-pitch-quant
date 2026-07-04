@@ -26,3 +26,10 @@ result-*
 # editor/os
 .DS_Store
 Icon?
+
+# clap-wrapper SDK checkouts (re-fetch: git clone into wrac/clap_wrapper_builder/
+# per wrac/.gitmodules — clap, vst3sdk [--recursive], AudioUnitSDK)
+wrac/clap_wrapper_builder/clap/
+wrac/clap_wrapper_builder/vst3sdk/
+wrac/clap_wrapper_builder/AudioUnitSDK/
+wrac/target/

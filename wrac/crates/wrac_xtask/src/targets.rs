@@ -183,7 +183,9 @@ impl Platform {
 
     pub(crate) fn cmake_generator(self) -> Option<&'static str> {
         match self {
-            Self::Macos => Some("Xcode"),
+            // Patched for open-pitch-quant: default generator works with
+            // Command Line Tools alone (no full Xcode install required).
+            Self::Macos => None,
             Self::Windows => Some("Visual Studio 17 2022"),
             Self::Linux => None,
         }
