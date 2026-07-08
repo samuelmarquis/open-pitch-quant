@@ -12,11 +12,11 @@
 
 use opq_engine::VizFrame;
 
-pub(crate) const DRUM_W: usize = 576;
-pub(crate) const DRUM_H: usize = 336; // 7 octaves x 48 px
+pub(crate) const DRUM_W: usize = 1016;
+pub(crate) const DRUM_H: usize = 384; // 8 octaves x 48 px
 
 const PX_PER_OCT: f32 = 48.0;
-const F_TOP: f32 = 4186.009; // C8; C1 lands exactly on the bottom row
+const F_TOP: f32 = 4186.009; // C8; C0 lands exactly on the bottom row
 
 // The night's palette: black field; bone white for belief; aviation amber
 // for the law and the bend; rust ochre for every refusal; gray for weather.
@@ -66,7 +66,9 @@ impl Drum {
     }
 
     /// Advance one analysis frame: scroll left a pixel, draw the new column.
-    pub(crate) fn push_frame(&mut self, fr: &VizFrame, ceiling_hz: f32) {
+    /// Returns the count of loud beliefs that ended this frame (the panel's
+    /// annunciator and counters feed on it).
+    pub(crate) fn push_frame(&mut self, fr: &VizFrame, ceiling_hz: f32) -> u32 {
         // Whole-buffer shift: row seams leak one pixel from the next row
         // into column W-1, which is exactly the column repainted below.
         self.fb.copy_within(4.., 0);
@@ -79,8 +81,8 @@ impl Drum {
         let in_e = fr.in_energy.max(1e-9);
 
         // Weather: residual magnitude, stippled into the engine's own octave
-        // bands (band b spans C_b..C_{b+1}; bands 1..=7 are on the drum).
-        for b in 1..8usize {
+        // bands (band b spans C_b..C_{b+1}; all eight are on the drum).
+        for b in 0..8usize {
             let w = (fr.res_bands[b] / in_e).clamp(0.0, 1.0);
             if w < 1e-3 {
                 continue;
@@ -174,13 +176,16 @@ impl Drum {
         // was still loud, was cut mid-word (starved, gated, or stopped) —
         // it gets the ochre terminal tick. Quiet ends are natural fades.
         let prev = std::mem::replace(&mut self.prev, now);
+        let mut cut = 0u32;
         for &(id, y, rel) in &prev {
             if rel > 0.15 && !self.prev.iter().any(|&(nid, _, _)| nid == id) {
+                cut += 1;
                 for dy in y.saturating_sub(1)..=(y + 1).min(DRUM_H - 1) {
                     self.add(x, dy, OCHRE, 1.0);
                 }
             }
         }
+        cut
     }
 }
 
@@ -285,7 +290,7 @@ mod tests {
             held[n] = true; // C minor, low
         }
 
-        let total_hops = 640usize;
+        let total_hops = 1080usize;
         let mut phases = [[0.0f64; 8]; 4];
         let mut buf_l = vec![0.0f32; hop];
         let mut buf_r = vec![0.0f32; hop];

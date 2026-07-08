@@ -199,6 +199,21 @@ pub(crate) fn parameter_infos() -> impl Iterator<Item = ParamInfo> {
     PARAM_SPECS.iter().map(|spec| spec.info)
 }
 
+/// Panel helpers: the board draws fittings from the same table the host sees.
+pub(crate) fn param_value_text(id: u32, value: f64) -> String {
+    param_spec(id)
+        .map(|s| value_to_text(s, value))
+        .unwrap_or_default()
+}
+
+pub(crate) fn param_minmax(id: u32) -> (f32, f32) {
+    param_spec(id)
+        .map(|s| (s.info.min_value as f32, s.info.max_value as f32))
+        .unwrap_or((0.0, 1.0))
+}
+
+
+
 fn value_to_text(spec: &ParameterSpec, value: f64) -> String {
     match spec.format {
         Format::Percent => format!("{:.0} %", value * 100.0),

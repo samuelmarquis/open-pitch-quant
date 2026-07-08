@@ -16,11 +16,13 @@ stem separation, ~93 ms latency, live.
   used by the listening-test bench; also dumps analysis traces
   (`--viz-dump`).
 - **`wrac/`** — the plugin: CLAP + VST3 + AU (`aumf`, so hosts route MIDI
-  to it), built on NovoNotes' WRAC template (vendored, MIT). Controls are
-  headless — hosts show their generic parameter editor. The editor window
-  is **the drum**: a fixed, unclickable transect of the tracker's belief
-  (native, no webview). See
-  [`docs/design/02-the-drum.md`](docs/design/02-the-drum.md).
+  to it), built on NovoNotes' WRAC template (vendored, MIT). The editor is
+  **the panel**: a fixed 1280×720 native control board — operable fittings
+  wired to the real parameters, a belief-transect drum, honest alarms, and
+  public-domain acoustic-instrument engravings collaged under the ink (no
+  webview, no toolkit; CPU pixels). See
+  [`docs/design/03-the-panel.md`](docs/design/03-the-panel.md) and
+  [`docs/design/assets-sources.md`](docs/design/assets-sources.md).
 - **`opq/`** — the frozen Python prototype lab (nine listened iterations;
   the Rust engine is canonical).
 - **`docs/research/`** — the PITCHMAP evidence corpus this was built

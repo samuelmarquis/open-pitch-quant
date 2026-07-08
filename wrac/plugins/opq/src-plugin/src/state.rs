@@ -32,6 +32,9 @@ pub(crate) const PARAM_SLOTS: usize = 18;
 pub(crate) struct SharedState {
     values: [AtomicF32; PARAM_SLOTS],
     viz: Mutex<VecDeque<VizFrame>>,
+    /// Sample rate bits + hop, published by the processor for panel captions.
+    sr_bits: std::sync::atomic::AtomicU32,
+    hop: std::sync::atomic::AtomicU32,
 }
 
 impl SharedState {
@@ -40,7 +43,21 @@ impl SharedState {
         Self {
             values,
             viz: Mutex::new(VecDeque::with_capacity(VIZ_QUEUE)),
+            sr_bits: std::sync::atomic::AtomicU32::new(0),
+            hop: std::sync::atomic::AtomicU32::new(0),
         }
+    }
+
+    pub(crate) fn set_engine_info(&self, sr: f32, hop: u32) {
+        self.sr_bits.store(sr.to_bits(), Ordering::Relaxed);
+        self.hop.store(hop, Ordering::Relaxed);
+    }
+
+    /// (sample rate, hop); defaults before the first processor exists.
+    pub(crate) fn engine_info(&self) -> (f32, u32) {
+        let sr = f32::from_bits(self.sr_bits.load(Ordering::Relaxed));
+        let hop = self.hop.load(Ordering::Relaxed);
+        if sr > 0.0 && hop > 0 { (sr, hop) } else { (44100.0, 1024) }
     }
 
     /// Audio thread: append this block's analysis frames. Never blocks;

@@ -1,0 +1,17 @@
+[package]
+name = "bake-assets"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Offline asset bakery for the panel. Runs once at authoring time; the
+# plugin itself never depends on any of this — it ships raw .rgba bins.
+
+[dependencies]
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+fontdue = "0.9"
+
+[profile.release]
+opt-level = 3
+
+[workspace]

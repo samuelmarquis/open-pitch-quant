@@ -22,7 +22,15 @@
 
 mod audio;
 #[cfg(target_os = "macos")]
+mod assets;
+#[cfg(target_os = "macos")]
+mod board;
+#[cfg(target_os = "macos")]
+mod canvas;
+#[cfg(target_os = "macos")]
 mod drum;
+#[cfg(target_os = "macos")]
+mod font;
 #[cfg(target_os = "macos")]
 mod gui;
 mod plugin;

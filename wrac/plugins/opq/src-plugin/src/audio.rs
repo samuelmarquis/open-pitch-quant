@@ -36,6 +36,7 @@ impl OpqAudioProcessor {
     ) -> Self {
         let channels = (channels as usize).clamp(1, MAX_CHANNELS);
         let max_frames = max_frames as usize;
+        shared.set_engine_info(sample_rate as f32, (opq_engine::N_FFT / 4) as u32);
         Self {
             shared,
             engine: Engine::new(sample_rate, channels),
