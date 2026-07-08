@@ -125,9 +125,15 @@ fn process_seg(
                     tr.id, tr.f0, tr.tgt, tr.amp, tr.nh, tr.newborn
                 ));
             }
+            let bands = fr
+                .res_bands
+                .iter()
+                .map(|b| format!("{b:.2}"))
+                .collect::<Vec<_>>()
+                .join(",");
             writeln!(
                 file,
-                "{{\"t\":{},\"time\":{:.4},\"flux\":{:.3},\"transient\":{:.3},\"in\":{:.4},\"res\":{:.4},\"repeat\":{},\"grid\":[{}],\"tracks\":[{}]}}",
+                "{{\"t\":{},\"time\":{:.4},\"flux\":{:.3},\"transient\":{:.3},\"in\":{:.4},\"res\":{:.4},\"repeat\":{},\"grid\":[{}],\"bands\":[{}],\"tracks\":[{}]}}",
                 fr.t,
                 fr.t as f64 * *hop / *sr,
                 fr.flux.min(99.0),
@@ -136,6 +142,7 @@ fn process_seg(
                 fr.res_energy,
                 fr.grid_mask & (1u128 << 127) != 0,
                 grid,
+                bands,
                 tracks
             )
             .unwrap_or_else(|e| die(&e.to_string()));

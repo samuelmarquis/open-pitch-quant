@@ -53,7 +53,7 @@ body,
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 10px 14px 8px;
+  padding: 8px 14px 7px;
   border-bottom: 1px solid var(--rule);
   position: relative;
 }
@@ -171,10 +171,10 @@ body,
 
 #rail {
   overflow-y: auto;
-  padding: 9px 10px 12px;
+  padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   background: var(--panel);
   scrollbar-width: thin;
   scrollbar-color: var(--rule) transparent;
@@ -183,7 +183,7 @@ body,
 .pgroup {
   border: 1px solid var(--rule);
   position: relative;
-  padding: 7px 7px 8px;
+  padding: 6px 7px 7px;
 }
 
 /* corner ticks — instrument-bezel */
@@ -275,7 +275,7 @@ body,
   font-weight: 700;
   letter-spacing: 1.2px;
   color: var(--dim);
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -308,40 +308,13 @@ body,
   -webkit-user-select: text;
 }
 
-.pblock-bar {
-  margin-top: 4px;
-  height: 6px;
-  border: 1px solid var(--rule);
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0 3px,
-      rgba(255, 255, 255, 0.04) 3px 4px
-    );
-  overflow: hidden;
-}
-
-.pblock-fill {
-  height: 100%;
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0 3px,
-      rgba(0, 0, 0, 0.35) 3px 4px
-    ),
-    linear-gradient(90deg, #1f6f66, var(--acid-cyan));
-  box-shadow: 0 0 6px rgba(79, 242, 210, 0.25);
-}
-
-.pgroup:nth-child(2) .pblock-fill {
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0 3px,
-      rgba(0, 0, 0, 0.35) 3px 4px
-    ),
-    linear-gradient(90deg, #6f1f5b, var(--acid-magenta));
-  box-shadow: 0 0 6px rgba(255, 63, 212, 0.25);
+.pblock-fig {
+  margin-top: 3px;
+  width: 100%;
+  height: 18px;
+  display: block;
+  border-top: 1px solid var(--rule);
+  padding-top: 2px;
 }
 
 /* ------------------------------------------------------------------- chips */
@@ -371,7 +344,7 @@ body,
   color: var(--dim);
   background: transparent;
   border: 1px solid var(--rule);
-  padding: 2px 6px;
+  padding: 1px 6px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -433,4 +406,54 @@ body,
 
 .resize-grip:hover {
   color: var(--dim);
+}
+
+
+/* ----------------------------------------------------------------- tooltip */
+
+#tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 260px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--bone);
+  background: rgba(5, 5, 5, 0.94);
+  border: 1px solid var(--dim);
+  padding: 6px 8px;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- mode switch */
+
+#mode-switch {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 3px;
+}
+
+#mode-switch button {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--dim);
+  background: rgba(5, 5, 5, 0.7);
+  border: 1px solid var(--rule);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+#mode-switch button:hover {
+  color: var(--bone);
+  border-color: var(--dim);
+}
+
+#mode-switch button.is-active {
+  color: #000;
+  background: var(--acid-cyan);
+  border-color: var(--acid-cyan);
+  font-weight: 700;
 }

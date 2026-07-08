@@ -174,6 +174,7 @@ fn viz_payload(frames: &[VizFrame], sample_rate: f32, hop: u32) -> serde_json::V
                 "res": fr.res_energy,
                 "repeat": fr.grid_mask & (1u128 << 127) != 0,
                 "grid": grid,
+                "bands": fr.res_bands.to_vec(),
                 "tracks": tracks,
             })
         })

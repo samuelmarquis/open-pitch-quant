@@ -28,6 +28,8 @@ export type VizFrame = {
   repeat: boolean;
   /** MIDI notes on the active target grid. */
   grid: number[];
+  /** Residual magnitude by octave band (C0..C8); absent in old traces. */
+  bands?: number[];
   tracks: VizTrack[];
 };
 

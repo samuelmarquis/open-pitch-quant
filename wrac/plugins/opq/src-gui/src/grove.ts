@@ -1,19 +1,40 @@
 /**
- * THE GROVE — the live analysis display.
+ * THE GROVE — the live analysis display. Two ways of seeing:
  *
- * An echogram of the engine's mind: time scrolls leftward, pitch runs
- * vertically (log). Every tracked pitch object is a jagged glyph whose shape
- * is hashed from its identity, trailing a ribbon of its OUTPUT pitch, with a
- * dashed ghost of its SOURCE pitch — the vertical stem between them at the
- * head is the remap, drawn live. Held MIDI notes are strata lines; the
- * residual layer is dust; transients flash the field dry.
+ * COSMOS (flagship): a present-tense cosmogram of the mapping itself.
+ * Pitch class is angle, octave is radius — the pitch continuum is a spiral
+ * through the wheel. Held MIDI notes are a lit constellation (Repeat mode
+ * lights whole pitch-class spokes; Custom lights single nodes). Every
+ * tracked pitch object is a star sitting at its OUTPUT pitch, tethered to
+ * a hollow ghost at its SOURCE pitch — the tether is the remap. Harmonic
+ * combs trace spirals outward from each star. The residual layer is a
+ * nebula placed by true octave-band energy; transients are shockwave
+ * rings from the core.
+ *
+ * STRATA: the time view. An echogram scrolling leftward, output ribbons +
+ * dashed source ghosts, strata for held notes, leader-line callouts.
+ *
+ * The star glyph (both modes) is a portrait of the object:
+ *   spike count = harmonics claimed this frame
+ *   size        = claimed energy
+ *   spin rate   = remap tension (cents pulled)
+ *   wobble      = source micro-pitch motion (what Feel re-injects)
+ *   hollow+rays = newborn (transition policy window)
+ *   shape       = identity (stable hash of the track id)
  */
+import { IdleFlame } from "./flame";
 import type { EngineInfo, VizFrame } from "./types";
 
+export type GroveMode = "cosmos" | "strata";
+
 const WINDOW_S = 9;
-const HEAD_X = 0.78; // "now" position as a fraction of width
+const TRAIL_S = 1.6;
+const HEAD_X = 0.78;
 const MIDI_TOP = 103;
 const MIDI_BOT = 31;
+const C_LO = 24; // C1 — cosmogram inner edge
+const C_HI = 108; // C8 — cosmogram rim
+const TAU = Math.PI * 2;
 const PALETTE = [
   "#4ff2d2",
   "#ff3fd4",
@@ -44,6 +65,7 @@ type TrailPoint = {
   srcM: number;
   outM: number;
   amp: number;
+  nh: number;
   nb: boolean;
 };
 
@@ -54,8 +76,16 @@ type Trail = {
   id: number;
 };
 
+type LiveStar = {
+  trail: Trail;
+  p: TrailPoint;
+  x: number;
+  y: number;
+  size: number;
+};
+
 function hzToMidi(hz: number): number {
-  return 69 + 12 * Math.log2(hz / 440);
+  return 69 + 12 * Math.log2(Math.max(hz, 1) / 440);
 }
 
 function noteName(midi: number): string {
@@ -63,7 +93,6 @@ function noteName(midi: number): string {
   return `${NOTE_NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`;
 }
 
-/** Deterministic 0..1 hash — stable dust fields and glyph shapes. */
 function hash01(seed: number): number {
   let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
   x ^= x >>> 13;
@@ -84,6 +113,10 @@ export class Grove {
   private h = 0;
   private stalled = true;
   private engine: EngineInfo = { sampleRate: 0, hop: 1024, latency: 4096 };
+  mode: GroveMode = "cosmos";
+  private hoverX = -1;
+  private hoverY = -1;
+  private flame = new IdleFlame();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -93,10 +126,23 @@ export class Grove {
     const observer = new ResizeObserver(() => this.resize());
     observer.observe(canvas.parentElement ?? canvas);
     this.resize();
+    canvas.addEventListener("pointermove", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      this.hoverX = event.clientX - rect.left;
+      this.hoverY = event.clientY - rect.top;
+    });
+    canvas.addEventListener("pointerleave", () => {
+      this.hoverX = -1;
+      this.hoverY = -1;
+    });
   }
 
   setEngineInfo(info: EngineInfo): void {
     this.engine = info;
+  }
+
+  setMode(mode: GroveMode): void {
+    this.mode = mode;
   }
 
   latest(): VizFrame | undefined {
@@ -111,7 +157,6 @@ export class Grove {
     for (const frame of batch) {
       const last = this.frames[this.frames.length - 1];
       if (last && frame.time < last.time - 1) {
-        // engine reset / demo loop restart — start the field over
         this.frames = [];
         this.trails.clear();
       }
@@ -132,6 +177,7 @@ export class Grove {
           srcM: hzToMidi(track.f0),
           outM: hzToMidi(track.tgt),
           amp: track.amp,
+          nh: track.nh,
           nb: track.nb,
         });
         trail.lastSeen = frame.time;
@@ -140,7 +186,6 @@ export class Grove {
     }
     const head = this.frames[this.frames.length - 1];
     if (head) this.now = head.time;
-    // prune the window
     const cutoff = this.now - WINDOW_S - 0.5;
     while (this.frames.length && this.frames[0].time < cutoff) {
       this.frames.shift();
@@ -174,17 +219,32 @@ export class Grove {
     this.canvas.style.height = `${this.h}px`;
   }
 
-  private x(time: number): number {
-    return this.w * HEAD_X - (this.now - time) * (this.w * HEAD_X) / WINDOW_S;
-  }
-
-  private y(midi: number): number {
-    return ((MIDI_TOP - midi) / (MIDI_TOP - MIDI_BOT)) * this.h;
-  }
-
   private ampN(amp: number): number {
     return Math.min(1, Math.sqrt(amp / this.ampMax));
   }
+
+  /** Live objects at the head, loudest first, capped for legibility. */
+  private liveStars(limit: number): { trail: Trail; p: TrailPoint }[] {
+    let live: { trail: Trail; p: TrailPoint }[] = [];
+    for (const trail of this.trails.values()) {
+      const p = trail.points[trail.points.length - 1];
+      if (p && this.now - p.time < 0.055) live.push({ trail, p });
+    }
+    live = live.sort((a, b) => b.p.amp - a.p.amp).slice(0, limit);
+    return live;
+  }
+
+  /** Source micro-pitch motion over the recent trail (semitone stddev). */
+  private srcMotion(trail: Trail): number {
+    const n = Math.min(trail.points.length, 7);
+    if (n < 3) return 0;
+    const pts = trail.points.slice(-n);
+    const mean = pts.reduce((s, p) => s + p.srcM, 0) / n;
+    const varr = pts.reduce((s, p) => s + (p.srcM - mean) ** 2, 0) / n;
+    return Math.sqrt(varr);
+  }
+
+  // ------------------------------------------------------------- render
 
   render(tMs: number): void {
     const { ctx } = this;
@@ -192,48 +252,330 @@ export class Grove {
     ctx.scale(this.dpr, this.dpr);
     ctx.clearRect(0, 0, this.w, this.h);
 
-    this.drawPitchField();
     const head = this.latest();
-    if (head) {
-      this.drawStrata(head);
-      this.drawDust();
-      this.drawEventMarkers();
-      this.drawTrails();
-      this.drawHeads(tMs, head);
-      this.drawCorners(head);
-    } else {
-      // fresh instance, nothing analyzed yet — say what will happen here
+    if (!head) {
+      this.flame.step(ctx, this.w, this.h, tMs);
       ctx.font = "10px ui-monospace, Menlo, monospace";
       ctx.textAlign = "center";
-      ctx.fillStyle = "rgba(242,239,230,0.35)";
+      ctx.fillStyle = "rgba(242,239,230,0.5)";
       ctx.fillText(
         "awaiting audio + MIDI — pitch objects will appear here",
         this.w / 2,
         this.h / 2,
       );
-      ctx.fillStyle = "rgba(242,239,230,0.18)";
+      ctx.fillStyle = "rgba(242,239,230,0.28)";
       ctx.fillText(
         "hold notes on the sidechain to define the grid · empty grid = silence",
         this.w / 2,
         this.h / 2 + 16,
       );
+      ctx.restore();
+      return;
     }
+
+    if (this.mode === "cosmos") {
+      this.renderCosmos(tMs, head);
+    } else {
+      this.renderStrata(tMs, head);
+    }
+    this.drawAlarm(head);
+    this.drawCorners(head);
     ctx.restore();
   }
 
-  private drawPitchField(): void {
+  // ------------------------------------------------------------- cosmos
+
+  private cGeom() {
+    const cx = this.w / 2;
+    const cy = this.h / 2;
+    const rOut = Math.min(this.w, this.h) / 2 - 34;
+    const rIn = Math.max(26, rOut * 0.1);
+    return { cx, cy, rOut, rIn };
+  }
+
+  private cAng(midi: number): number {
+    return ((((midi % 12) + 12) % 12) / 12) * TAU - Math.PI / 2;
+  }
+
+  private cRad(midi: number): number {
+    const { rOut, rIn } = this.cGeom();
+    const m = Math.min(Math.max(midi, C_LO), C_HI);
+    return rIn + ((m - C_LO) / (C_HI - C_LO)) * (rOut - rIn);
+  }
+
+  private cPos(midi: number): [number, number] {
+    const { cx, cy } = this.cGeom();
+    const a = this.cAng(midi);
+    const r = this.cRad(midi);
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+  }
+
+  private renderCosmos(tMs: number, head: VizFrame): void {
     const { ctx } = this;
-    // black-key rows, barely there — the piano is in the paper grain
+    const { cx, cy, rOut, rIn } = this.cGeom();
+
+    // --- the wheel: spokes, octave rings, the pitch spiral
+    ctx.lineWidth = 1;
+    for (let pc = 0; pc < 12; pc++) {
+      const a = this.cAng(pc);
+      ctx.strokeStyle =
+        pc === 0 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)";
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * rIn, cy + Math.sin(a) * rIn);
+      ctx.lineTo(cx + Math.cos(a) * rOut, cy + Math.sin(a) * rOut);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(242,239,230,0.34)";
+      ctx.font = "9px ui-monospace, Menlo, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        NOTE_NAMES[pc],
+        cx + Math.cos(a) * (rOut + 12),
+        cy + Math.sin(a) * (rOut + 12) + 3,
+      );
+    }
+    for (let oct = C_LO; oct <= C_HI; oct += 12) {
+      ctx.strokeStyle = "rgba(255,255,255,0.075)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.cRad(oct), 0, TAU);
+      ctx.stroke();
+      // octave scale climbs the C spoke
+      ctx.fillStyle = "rgba(242,239,230,0.22)";
+      ctx.textAlign = "left";
+      ctx.fillText(noteName(oct), cx + 3, cy - this.cRad(oct) - 2);
+    }
+    // the pitch continuum is a spiral — whisper it
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.beginPath();
+    for (let m = C_LO; m <= C_HI; m += 0.25) {
+      const [px, py] = this.cPos(m);
+      if (m === C_LO) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, rIn, 0, TAU);
+    ctx.stroke();
+
+    // --- transient shockwaves from the core
+    for (const frame of this.frames) {
+      const elapsed = this.now - frame.time;
+      if (frame.transient > 0.02 && elapsed < 0.55) {
+        const prog = elapsed / 0.55;
+        const alpha = (1 - prog) * 0.42 * frame.transient;
+        ctx.strokeStyle =
+          frame.transient >= 1
+            ? `rgba(255,226,61,${alpha})`
+            : `rgba(255,255,255,${alpha})`;
+        ctx.lineWidth = frame.transient >= 1 ? 1.6 : 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rIn + prog * (rOut - rIn), 0, TAU);
+        ctx.stroke();
+      }
+    }
+
+    // --- residual nebula, placed by octave-band energy
+    const bands = head.bands ?? [];
+    const total = head.in > 0 ? head.in : 1;
+    ctx.fillStyle = "rgba(165,175,195,0.5)";
+    const recent = this.frames.slice(-16);
+    for (const frame of recent) {
+      const fb = frame.bands ?? [];
+      const age = (this.now - frame.time) / (16 * 0.024);
+      const fade = Math.max(0, 1 - age);
+      for (let band = 0; band < 8; band++) {
+        const e = fb[band] ?? 0;
+        if (e <= 0) continue;
+        const count = Math.min(26, Math.round((e / total) * 90));
+        const mLo = 12 * band + 12;
+        for (let i = 0; i < count; i++) {
+          const rm = mLo + hash01(frame.t * 89 + band * 31 + i * 7) * 12;
+          const am = hash01(frame.t * 53 + band * 17 + i * 13) * TAU;
+          const r = this.cRad(rm);
+          ctx.globalAlpha = 0.26 * fade;
+          ctx.fillRect(
+            cx + Math.cos(am) * r,
+            cy + Math.sin(am) * r,
+            1.3,
+            1.3,
+          );
+        }
+      }
+      // old traces without bands: uniform fallback
+      if (!fb.length && frame.res > 0 && frame.in > 0) {
+        const count = Math.min(40, Math.round((frame.res / frame.in) * 46));
+        for (let i = 0; i < count; i++) {
+          const rr = rIn + hash01(frame.t * 131 + i * 7) * (rOut - rIn);
+          const am = hash01(frame.t * 197 + i * 13) * TAU;
+          ctx.globalAlpha = 0.2 * fade;
+          ctx.fillRect(cx + Math.cos(am) * rr, cy + Math.sin(am) * rr, 1.3, 1.3);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    void bands;
+
+    // --- the grid constellation
+    const occupied = new Set<number>();
+    for (const track of head.tracks) {
+      occupied.add(Math.round(hzToMidi(track.tgt)));
+    }
+    if (head.repeat) {
+      // Repeat mode: the pitch CLASS is held — light the whole spoke
+      const pcs = new Set(head.grid.map((n) => ((n % 12) + 12) % 12));
+      for (const pc of pcs) {
+        const a = this.cAng(pc);
+        ctx.strokeStyle = "rgba(255,226,61,0.13)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * rIn, cy + Math.sin(a) * rIn);
+        ctx.lineTo(cx + Math.cos(a) * rOut, cy + Math.sin(a) * rOut);
+        ctx.stroke();
+      }
+    }
+    ctx.lineWidth = 1;
+    for (const note of head.grid) {
+      if (note < C_LO || note > C_HI) continue;
+      const [px, py] = this.cPos(note);
+      const hot = occupied.has(note);
+      const s = hot ? 4.5 : 2.8;
+      ctx.strokeStyle = hot
+        ? "rgba(255,226,61,0.95)"
+        : "rgba(255,226,61,0.4)";
+      ctx.beginPath(); // diamond node
+      ctx.moveTo(px, py - s);
+      ctx.lineTo(px + s, py);
+      ctx.lineTo(px, py + s);
+      ctx.lineTo(px - s, py);
+      ctx.closePath();
+      ctx.stroke();
+      if (hot) {
+        ctx.fillStyle = "rgba(255,226,61,0.9)";
+        ctx.font = "9px ui-monospace, Menlo, monospace";
+        ctx.textAlign = "left";
+        ctx.fillText(noteName(note), px + 7, py - 6);
+      }
+    }
+
+    // --- transition arcs (comet trails between retunes)
+    for (const trail of this.trails.values()) {
+      const pts = trail.points.filter((p) => this.now - p.time < TRAIL_S);
+      if (pts.length < 2) continue;
+      ctx.strokeStyle = trail.color;
+      for (let i = 1; i < pts.length; i++) {
+        const age = (this.now - pts[i].time) / TRAIL_S;
+        ctx.globalAlpha = (1 - age) * 0.7;
+        ctx.lineWidth = 1 + 1.6 * this.ampN(pts[i].amp) * (1 - age);
+        const [x0, y0] = this.cPos(pts[i - 1].outM);
+        const [x1, y1] = this.cPos(pts[i].outM);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // --- the stars
+    const live = this.liveStars(8);
+    const stars: LiveStar[] = [];
+    for (const { trail, p } of live) {
+      const wob = Math.min(1.5, this.srcMotion(trail) * 8);
+      const [bx, by] = this.cPos(p.outM);
+      const x = bx + wob * 4 * Math.sin(tMs * 0.011 + trail.id * 2.1);
+      const y = by + wob * 4 * Math.cos(tMs * 0.013 + trail.id * 1.3);
+      const size = 8 + 16 * this.ampN(p.amp);
+      stars.push({ trail, p, x, y, size });
+    }
+
+    // harmonic combs first (under the stars): spirals through the wheel
+    for (const s of stars) {
+      ctx.strokeStyle = s.trail.color;
+      const hMax = Math.min(s.p.nh, 12);
+      for (let hh = 2; hh <= hMax; hh++) {
+        const m = s.p.outM + 12 * Math.log2(hh);
+        if (m > C_HI) break;
+        const a = this.cAng(m);
+        const r = this.cRad(m);
+        ctx.globalAlpha = 0.65 / Math.pow(hh, 0.7);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * (r - 4.5), cy + Math.sin(a) * (r - 4.5));
+        ctx.lineTo(cx + Math.cos(a) * (r + 4.5), cy + Math.sin(a) * (r + 4.5));
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // tethers: source ghost -> star. The remap, drawn.
+    for (const s of stars) {
+      const [gx, gy] = this.cPos(s.p.srcM);
+      ctx.strokeStyle = s.trail.color;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 1;
+      const mx = (gx + s.x) / 2;
+      const my = (gy + s.y) / 2;
+      const dx = mx - cx;
+      const dy = my - cy;
+      const dl = Math.hypot(dx, dy) || 1;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.quadraticCurveTo(mx + (dx / dl) * 10, my + (dy / dl) * 10, s.x, s.y);
+      ctx.stroke();
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.arc(gx, gy, 2.8, 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    for (const s of stars) {
+      const pull = (s.p.srcM - s.p.outM) * 100;
+      this.drawGlyph(s.x, s.y, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, pull, s.p.nh);
+      // whisper the target next to each star
+      ctx.fillStyle = s.trail.color;
+      ctx.globalAlpha = 0.75;
+      ctx.font = "9px ui-monospace, Menlo, monospace";
+      ctx.textAlign = "left";
+      ctx.fillText(noteName(s.p.outM), s.x + s.size + 4, s.y + 3);
+      ctx.globalAlpha = 1;
+    }
+
+    this.drawHoverCard(stars);
+
+    ctx.font = "9px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(242,239,230,0.22)";
+    ctx.fillText(
+      "cosmos: angle = pitch class · radius = octave · ○→star tether = the remap · ticks = harmonic comb",
+      6,
+      this.h - 8,
+    );
+  }
+
+  // ------------------------------------------------------------- strata
+
+  private sx(time: number): number {
+    return this.w * HEAD_X - ((this.now - time) * (this.w * HEAD_X)) / WINDOW_S;
+  }
+
+  private sy(midi: number): number {
+    return ((MIDI_TOP - midi) / (MIDI_TOP - MIDI_BOT)) * this.h;
+  }
+
+  private renderStrata(tMs: number, head: VizFrame): void {
+    const { ctx } = this;
+
     for (let m = MIDI_BOT; m <= MIDI_TOP; m++) {
       const pc = ((m % 12) + 12) % 12;
       if ([1, 3, 6, 8, 10].includes(pc)) {
-        const y0 = this.y(m + 0.5);
-        const y1 = this.y(m - 0.5);
+        const y0 = this.sy(m + 0.5);
+        const y1 = this.sy(m - 0.5);
         ctx.fillStyle = "rgba(255,255,255,0.017)";
         ctx.fillRect(0, y0, this.w, y1 - y0);
       }
       if (pc === 0) {
-        const y = this.y(m);
+        const y = this.sy(m);
         ctx.strokeStyle = "rgba(255,255,255,0.08)";
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -246,7 +588,6 @@ export class Grove {
         ctx.fillText(noteName(m), 4, y - 3);
       }
     }
-    // head line — the present moment
     const hx = this.w * HEAD_X;
     ctx.strokeStyle = "rgba(255,255,255,0.10)";
     ctx.setLineDash([1, 3]);
@@ -255,68 +596,55 @@ export class Grove {
     ctx.lineTo(hx, this.h);
     ctx.stroke();
     ctx.setLineDash([]);
-  }
 
-  private drawStrata(head: VizFrame): void {
-    const { ctx } = this;
-    if (!head.grid.length) return;
-    // which grid notes have a mapped object on them right now?
-    const occupied = new Set<number>();
-    for (const track of head.tracks) {
-      occupied.add(Math.round(hzToMidi(track.tgt)));
-    }
-    ctx.font = "9px ui-monospace, Menlo, monospace";
-    for (const note of head.grid) {
-      if (note > MIDI_TOP || note < MIDI_BOT) continue;
-      const y = this.y(note);
-      const hot = occupied.has(note);
-      ctx.strokeStyle = hot
-        ? "rgba(255,226,61,0.42)"
-        : "rgba(255,226,61,0.10)";
-      ctx.lineWidth = hot ? 1.3 : 1;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(this.w, y);
-      ctx.stroke();
-      if (hot) {
-        ctx.fillStyle = "rgba(255,226,61,0.9)";
-        ctx.textAlign = "right";
-        ctx.fillText(noteName(note), this.w - 4, y - 3);
+    // strata for the grid
+    if (head.grid.length) {
+      const occupied = new Set<number>();
+      for (const track of head.tracks) {
+        occupied.add(Math.round(hzToMidi(track.tgt)));
+      }
+      ctx.font = "9px ui-monospace, Menlo, monospace";
+      for (const note of head.grid) {
+        if (note > MIDI_TOP || note < MIDI_BOT) continue;
+        const y = this.sy(note);
+        const hot = occupied.has(note);
+        ctx.strokeStyle = hot
+          ? "rgba(255,226,61,0.42)"
+          : "rgba(255,226,61,0.10)";
+        ctx.lineWidth = hot ? 1.3 : 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(this.w, y);
+        ctx.stroke();
+        if (hot) {
+          ctx.fillStyle = "rgba(255,226,61,0.9)";
+          ctx.textAlign = "right";
+          ctx.fillText(noteName(note), this.w - 4, y - 3);
+        }
       }
     }
-  }
 
-  private drawDust(): void {
-    const { ctx } = this;
+    // dust
     ctx.fillStyle = "rgba(165,175,195,0.20)";
     const stepW = (this.w * HEAD_X) / (WINDOW_S / 0.0232);
     for (const frame of this.frames) {
       if (frame.in <= 0) continue;
       const ratio = Math.min(1, frame.res / (frame.in + 1e-6));
       const count = Math.round(ratio * 34);
-      const fx = this.x(frame.time);
+      const fx = this.sx(frame.time);
       if (fx < -20) continue;
       for (let i = 0; i < count; i++) {
         const rx = hash01(frame.t * 131 + i * 7);
         const ry = hash01(frame.t * 197 + i * 13 + 5);
-        ctx.fillRect(
-          fx + (rx - 0.5) * stepW * 7,
-          ry * this.h,
-          1.2,
-          1.2,
-        );
+        ctx.fillRect(fx + (rx - 0.5) * stepW * 7, ry * this.h, 1.2, 1.2);
       }
     }
-  }
 
-  private drawEventMarkers(): void {
-    const { ctx } = this;
+    // event seams
     let prevPcs = "";
     let prevHard = false;
     for (const frame of this.frames) {
-      const fx = this.x(frame.time);
-      // transient handling: soft blends are a faint breath of white; a hard
-      // reset draws one seam at the START of its run, marked with a burst
+      const fx = this.sx(frame.time);
       const hard = frame.transient >= 1;
       if (frame.transient > 0.02 && fx > 0) {
         if (hard && !prevHard) {
@@ -334,7 +662,7 @@ export class Grove {
           ctx.closePath();
           ctx.fill();
         } else if (!hard) {
-          ctx.strokeStyle = `rgba(255,255,255,${0.02 + 0.10 * frame.transient})`;
+          ctx.strokeStyle = `rgba(255,255,255,${0.02 + 0.1 * frame.transient})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(fx, 0);
@@ -343,7 +671,6 @@ export class Grove {
         }
       }
       prevHard = hard;
-      // chord-change seams (pitch-class set changes only)
       const pcsKey = [...new Set(frame.grid.map((n) => n % 12))]
         .sort((a, b) => a - b)
         .join(",");
@@ -359,48 +686,38 @@ export class Grove {
       }
       prevPcs = pcsKey;
     }
-  }
 
-  private drawTrails(): void {
-    const { ctx } = this;
+    // trails
     for (const trail of this.trails.values()) {
       if (trail.points.length === 1) {
-        // one-frame object: a mote, not a ribbon
         const p = trail.points[0];
         ctx.fillStyle = trail.color;
         ctx.globalAlpha = 0.7;
-        ctx.fillRect(this.x(p.time) - 1, this.y(p.outM) - 1, 2, 2);
+        ctx.fillRect(this.sx(p.time) - 1, this.sy(p.outM) - 1, 2, 2);
         ctx.globalAlpha = 1;
         continue;
       }
       if (trail.points.length < 2) continue;
-      // source ghost — the dry pitch that was, dashed and faint
       ctx.strokeStyle = trail.color;
       ctx.globalAlpha = 0.26;
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 4]);
       ctx.beginPath();
       trail.points.forEach((p, i) => {
-        const px = this.x(p.time);
-        const py = this.y(p.srcM);
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(this.sx(p.time), this.sy(p.srcM));
+        else ctx.lineTo(this.sx(p.time), this.sy(p.srcM));
       });
       ctx.stroke();
       ctx.setLineDash([]);
-
-      // mapped ribbon — glow pass then core
       for (const pass of [0, 1] as const) {
         ctx.beginPath();
         trail.points.forEach((p, i) => {
-          const px = this.x(p.time);
-          const py = this.y(p.outM);
-          if (i === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
+          if (i === 0) ctx.moveTo(this.sx(p.time), this.sy(p.outM));
+          else ctx.lineTo(this.sx(p.time), this.sy(p.outM));
         });
         if (pass === 0) {
           const headAmp = trail.points[trail.points.length - 1].amp;
-          ctx.globalAlpha = 0.30;
+          ctx.globalAlpha = 0.3;
           ctx.lineWidth = 3 + 5 * this.ampN(headAmp);
         } else {
           ctx.globalAlpha = 0.92;
@@ -410,57 +727,48 @@ export class Grove {
       }
       ctx.globalAlpha = 1;
     }
-  }
 
-  private drawHeads(tMs: number, head: VizFrame): void {
-    const { ctx } = this;
-    const hx = this.w * HEAD_X;
-    let live: { trail: Trail; p: TrailPoint }[] = [];
-    for (const trail of this.trails.values()) {
-      const p = trail.points[trail.points.length - 1];
-      if (p && this.now - p.time < 0.055) live.push({ trail, p });
-    }
-    // during dense polyphony keep the plate legible: loudest eight only
-    live = live.sort((a, b) => b.p.amp - a.p.amp).slice(0, 8);
-
-    // stems: source → target, the remap made visible
+    // heads: stems, glyphs, leader labels
+    const live = this.liveStars(8);
+    const stars: LiveStar[] = [];
     for (const { trail, p } of live) {
-      const sy = this.y(p.srcM);
-      const oy = this.y(p.outM);
-      ctx.strokeStyle = trail.color;
+      stars.push({
+        trail,
+        p,
+        x: hx,
+        y: this.sy(p.outM),
+        size: 8 + 16 * this.ampN(p.amp),
+      });
+    }
+    for (const s of stars) {
+      const sy = this.sy(s.p.srcM);
+      ctx.strokeStyle = s.trail.color;
       ctx.globalAlpha = 0.5;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(hx, sy);
-      ctx.lineTo(hx, oy);
+      ctx.lineTo(hx, s.y);
       ctx.stroke();
-      // hollow marker at the source pitch
       ctx.globalAlpha = 0.75;
       ctx.beginPath();
-      ctx.arc(hx, sy, 2.6, 0, Math.PI * 2);
+      ctx.arc(hx, sy, 2.6, 0, TAU);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-
-    // jagged glyphs at the output pitch
-    for (const { trail, p } of live) {
-      const oy = this.y(p.outM);
-      const size = 5.5 + 13 * this.ampN(p.amp);
-      this.drawGlyph(hx, oy, size, trail.id, tMs, trail.color, p.nb);
+    for (const s of stars) {
+      const pull = (s.p.srcM - s.p.outM) * 100;
+      this.drawGlyph(s.x, s.y, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, pull, s.p.nh);
     }
 
-    // right-margin label column with hairline leaders to each glyph — the
-    // callout language of the plate. The cents figure is the remap distance:
-    // how far the source was pulled to reach its target.
-    const labels = live
-      .map(({ trail, p }) => {
-        const cents = Math.round((p.srcM - p.outM) * 100);
+    const labels = stars
+      .map((s) => {
+        const cents = Math.round((s.p.srcM - s.p.outM) * 100);
         const arrow = cents >= 0 ? "↓" : "↑";
         return {
-          glyphY: this.y(p.outM),
-          y: this.y(p.outM),
-          text: `${noteName(p.outM)} ${arrow}${Math.abs(cents)}¢`,
-          color: trail.color,
+          glyphY: s.y,
+          y: s.y,
+          text: `${noteName(s.p.outM)} ${arrow}${Math.abs(cents)}¢`,
+          color: s.trail.color,
         };
       })
       .sort((a, b) => a.y - b.y);
@@ -486,17 +794,21 @@ export class Grove {
     }
     ctx.globalAlpha = 1;
 
-    // empty grid — the PITCHMAP contract, stated plainly
-    if (!head.grid.length) {
-      ctx.font = "11px ui-monospace, Menlo, monospace";
-      ctx.fillStyle = "rgba(255,84,112,0.85)";
-      ctx.textAlign = "center";
-      ctx.fillText("NO GRID HELD — OUTPUT SILENT", this.w / 2, 24);
-      ctx.strokeStyle = "rgba(255,84,112,0.4)";
-      ctx.strokeRect(this.w / 2 - 118, 12, 236, 18);
-    }
+    this.drawHoverCard(stars);
+
+    ctx.font = "9px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(242,239,230,0.22)";
+    ctx.fillText(
+      "strata: time → · pitch ↑ (log₂) · dashed = source ghost · solid = mapped · dust = residual",
+      6,
+      this.h - 8,
+    );
   }
 
+  // ----------------------------------------------------------- shared
+
+  /** The star: a portrait of the pitch object (see file header). */
   private drawGlyph(
     x: number,
     y: number,
@@ -505,10 +817,13 @@ export class Grove {
     tMs: number,
     color: string,
     newborn: boolean,
+    pullCents: number,
+    nh: number,
   ): void {
     const { ctx } = this;
-    const spikes = 7 + (((id % 5) + 5) % 5);
-    const rot = tMs * 0.0004 + id * 1.7;
+    const spikes = 5 + Math.min(nh, 19);
+    const spin = 0.00018 * (1 + Math.min(Math.abs(pullCents), 250) / 60);
+    const rot = tMs * spin + id * 1.7;
     ctx.beginPath();
     for (let i = 0; i < spikes * 2; i++) {
       const angle = rot + (i * Math.PI) / spikes;
@@ -521,7 +836,6 @@ export class Grove {
     }
     ctx.closePath();
     if (newborn) {
-      // tensorfield "source": hollow burst with rays
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.4;
       ctx.stroke();
@@ -543,6 +857,59 @@ export class Grove {
     }
   }
 
+  /** Hover a star → its full dossier. */
+  private drawHoverCard(stars: LiveStar[]): void {
+    if (this.hoverX < 0) return;
+    let best: LiveStar | undefined;
+    let bestD = 20;
+    for (const s of stars) {
+      const d = Math.hypot(s.x - this.hoverX, s.y - this.hoverY);
+      if (d < bestD) {
+        bestD = d;
+        best = s;
+      }
+    }
+    if (!best) return;
+    const { ctx } = this;
+    const cents = Math.round((best.p.srcM - best.p.outM) * 100);
+    const srcCents = Math.round((best.p.srcM - Math.round(best.p.srcM)) * 100);
+    const lines = [
+      `obj·${best.trail.id}${best.p.nb ? " · newborn" : ""}`,
+      `src ${noteName(best.p.srcM)}${srcCents >= 0 ? "+" : ""}${srcCents}¢ → ${noteName(best.p.outM)}`,
+      `pull ${cents >= 0 ? "↓" : "↑"}${Math.abs(cents)}¢ · ${best.p.nh} harmonics`,
+      `amp ${(this.ampN(best.p.amp) * 100).toFixed(0)}%`,
+    ];
+    ctx.font = "10px ui-monospace, Menlo, monospace";
+    const cardW = 176;
+    const cardH = 14 * lines.length + 10;
+    let cardX = best.x + best.size + 12;
+    let cardY = best.y - cardH / 2;
+    if (cardX + cardW > this.w - 4) cardX = best.x - best.size - 12 - cardW;
+    cardY = Math.min(Math.max(cardY, 4), this.h - cardH - 4);
+    ctx.fillStyle = "rgba(5,5,5,0.88)";
+    ctx.fillRect(cardX, cardY, cardW, cardH);
+    ctx.strokeStyle = best.trail.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cardX, cardY, cardW, cardH);
+    ctx.textAlign = "left";
+    lines.forEach((line, i) => {
+      ctx.fillStyle = i === 0 ? best.trail.color : "rgba(242,239,230,0.9)";
+      ctx.fillText(line, cardX + 7, cardY + 16 + i * 14);
+    });
+  }
+
+  private drawAlarm(head: VizFrame): void {
+    const { ctx } = this;
+    if (!head.grid.length) {
+      ctx.font = "11px ui-monospace, Menlo, monospace";
+      ctx.fillStyle = "rgba(255,84,112,0.85)";
+      ctx.textAlign = "center";
+      ctx.fillText("NO GRID HELD — OUTPUT SILENT", this.w / 2, 24);
+      ctx.strokeStyle = "rgba(255,84,112,0.4)";
+      ctx.strokeRect(this.w / 2 - 118, 12, 236, 18);
+    }
+  }
+
   private drawCorners(head: VizFrame): void {
     const { ctx } = this;
     ctx.font = "9px ui-monospace, Menlo, monospace";
@@ -554,17 +921,10 @@ export class Grove {
       this.w - 6,
       12,
     );
-    // figure legend, lower left — the plate explains itself
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(242,239,230,0.22)";
-    ctx.fillText(
-      "pitch axis: log₂ · window 9 s · dashed = source ghost · solid = mapped · dust = residual",
-      6,
-      this.h - 8,
-    );
     if (this.stalled) {
       ctx.fillStyle = "rgba(242,239,230,0.45)";
-      ctx.fillText("feed idle — transport stopped?", 6, this.h - 20);
+      ctx.textAlign = "left";
+      ctx.fillText("feed idle — transport stopped?", 6, 14);
     }
   }
 }

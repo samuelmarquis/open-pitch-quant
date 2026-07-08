@@ -9,6 +9,7 @@ import { createBridge } from "./bridge";
 import { type ControlRegistry, makeControl } from "./controls";
 import { Grove } from "./grove";
 import { installConsoleLogPipe } from "./nativeLog";
+import { attachTooltip } from "./tooltip";
 import type { FrontendRuntimeContext } from "./wracRuntime";
 import { installNativeCursorBridge, installResizeBridge } from "./wracRuntime";
 import "./style.css";
@@ -45,6 +46,35 @@ function el<T extends HTMLElement>(id: string): T {
 
 const registry: ControlRegistry = new Map();
 const grove = new Grove(el<HTMLCanvasElement>("grove"));
+
+// display mode switcher (persisted per WebView)
+for (const chip of document.querySelectorAll<HTMLButtonElement>(
+  "#mode-switch button",
+)) {
+  chip.addEventListener("click", () => {
+    const mode = chip.dataset.mode === "strata" ? "strata" : "cosmos";
+    grove.setMode(mode);
+    try {
+      localStorage.setItem("opq-mode", mode);
+    } catch {
+      /* private webview contexts may deny storage */
+    }
+    for (const other of document.querySelectorAll("#mode-switch button")) {
+      other.classList.toggle("is-active", other === chip);
+    }
+  });
+}
+const urlParams = new URLSearchParams(location.search);
+try {
+  const saved = urlParams.get("mode") ?? localStorage.getItem("opq-mode");
+  if (saved === "strata") {
+    document
+      .querySelector<HTMLButtonElement>('#mode-switch [data-mode="strata"]')
+      ?.click();
+  }
+} catch {
+  /* default mode stands */
+}
 
 function isEditableElement(target: EventTarget | null): boolean {
   return (
@@ -96,7 +126,8 @@ void (async () => {
 
   // --- rail: grouped parameter clusters -------------------------------
   const rail = el("rail");
-  for (const group of GROUPS) {
+  const ACCENTS = ["#4ff2d2", "#ff3fd4", "#ffe23d"];
+  GROUPS.forEach((group, gi) => {
     const box = document.createElement("section");
     box.className = "pgroup";
     const head = document.createElement("header");
@@ -112,11 +143,33 @@ void (async () => {
     body.className = "pgroup-body";
     for (const id of group.ids) {
       const spec = byId.get(id);
-      if (spec) body.appendChild(makeControl(spec, bridge, registry));
+      if (spec) body.appendChild(makeControl(spec, bridge, registry, ACCENTS[gi]));
     }
     box.appendChild(body);
     rail.appendChild(box);
-  }
+  });
+
+  // --- tooltips on the fixed chrome -------------------------------------
+  attachTooltip(
+    el("bypass"),
+    "Latency-aligned bypass — clickless and PDC-correct.",
+  );
+  const cosmosChip = document.querySelector<HTMLElement>(
+    '#mode-switch [data-mode="cosmos"]',
+  );
+  const strataChip = document.querySelector<HTMLElement>(
+    '#mode-switch [data-mode="strata"]',
+  );
+  if (cosmosChip)
+    attachTooltip(
+      cosmosChip,
+      "The mapping as a cosmogram: pitch class is angle, octave is radius. Stars sit at their output pitch, tethered to their source ghost.",
+    );
+  if (strataChip)
+    attachTooltip(
+      strataChip,
+      "The time view: an echogram scrolling leftward — ribbons are mapped pitch, dashes the source, dust the residual.",
+    );
 
   // --- bypass ----------------------------------------------------------
   const bypass = el<HTMLButtonElement>("bypass");
@@ -142,10 +195,13 @@ void (async () => {
   });
 
   let lastFrameAt = performance.now();
-  await bridge.onViz((frames) => {
-    lastFrameAt = performance.now();
-    grove.push(frames);
-  });
+  // ?idle keeps the feed unsubscribed — for inspecting the idle state
+  if (!urlParams.has("idle")) {
+    await bridge.onViz((frames) => {
+      lastFrameAt = performance.now();
+      grove.push(frames);
+    });
+  }
 
   const engineInfo = await bridge.engineInfo();
   grove.setEngineInfo(engineInfo);
@@ -184,7 +240,7 @@ void (async () => {
       : "—";
     statusRight.textContent = `SR ${sr} · PDC ${engineInfo.latency}${host} · opq ${metadata.version}`;
   };
-  window.setInterval(updateStatus, 200);
+  window.setInterval(updateStatus, 100);
   updateStatus();
 
   // --- render loop ------------------------------------------------------

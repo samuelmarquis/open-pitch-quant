@@ -178,6 +178,9 @@ pub struct VizFrame {
     pub in_energy: f32,
     /// Magnitude in regions no pitch object claimed (the residual layer).
     pub res_energy: f32,
+    /// Residual magnitude by octave band (C0..C8 at index 0..=7; band 7
+    /// collects everything above). All zero on non-mapped frames.
+    pub res_bands: [f32; 8],
     /// Valid entries in `tracks`.
     pub n: u8,
     pub tracks: [VizTrack; VIZ_TRACKS],
@@ -192,6 +195,7 @@ impl Default for VizFrame {
             grid_mask: 0,
             in_energy: 0.0,
             res_energy: 0.0,
+            res_bands: [0.0; 8],
             n: 0,
             tracks: [VizTrack::default(); VIZ_TRACKS],
         }
@@ -297,6 +301,7 @@ pub struct Engine {
     viz_amp: Vec<f64>,
     viz_nh: Vec<u16>,
     viz_res: f64,
+    viz_res_bands: [f64; 8],
 }
 
 impl Engine {
@@ -371,6 +376,7 @@ impl Engine {
             viz_amp: Vec::with_capacity(64),
             viz_nh: Vec::with_capacity(64),
             viz_res: 0.0,
+            viz_res_bands: [0.0; 8],
         };
         e.reset();
         e
@@ -424,6 +430,11 @@ impl Engine {
             in_energy: mag_sum as f32,
             // on non-mapped frames everything is residual (dry or silent)
             res_energy: if mapped { self.viz_res as f32 } else { mag_sum as f32 },
+            res_bands: if mapped {
+                std::array::from_fn(|i| self.viz_res_bands[i] as f32)
+            } else {
+                [0.0; 8]
+            },
             n: 0,
             tracks: [VizTrack::default(); VIZ_TRACKS],
         };
@@ -1052,6 +1063,7 @@ impl Engine {
         self.viz_nh.clear();
         self.viz_nh.resize(self.tracks.len(), 0);
         self.viz_res = 0.0;
+        self.viz_res_bands = [0.0; 8];
 
         // ---- region mapping decisions + per-channel synthesis ----
         for c in 0..nch {
@@ -1110,7 +1122,16 @@ impl Engine {
                     self.viz_amp[ti] += self.mag[pk];
                     self.viz_nh[ti] += 1;
                 }
-                None => self.viz_res += self.mag[pk],
+                None => {
+                    self.viz_res += self.mag[pk];
+                    // octave band of the region's dominant partial (C0 base)
+                    let band = if fp > 16.35 {
+                        ((fp / 16.35).log2() as usize).min(7)
+                    } else {
+                        0
+                    };
+                    self.viz_res_bands[band] += self.mag[pk];
+                }
             }
 
             let dbin = (df / bin_hz).round() as i64;
