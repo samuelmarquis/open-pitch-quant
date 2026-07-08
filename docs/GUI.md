@@ -1,8 +1,8 @@
 # The OPQ GUI — "the grove"
 
-*(v1, 2026-07-07 — round 2, after Sam's interface notes: "overly
-conventional… get creative… beat the everliving fuck out of this,
-harmoniously." Design references in `design-refs/`.)*
+*(v2, 2026-07-07 — rounds 2+3 of Sam's interface notes: "overly
+conventional… consider the outside… beat the everliving fuck out of
+this, harmoniously." Design references in `design-refs/`.)*
 
 ![cosmos](img/gui-v1-cosmos.png)
 
@@ -34,30 +34,25 @@ is an engine quantity:
 |---|---|
 | spike count | harmonics claimed this frame (`nh`) |
 | size | claimed spectral energy |
-| spin rate | remap tension — cents the source is being pulled |
-| positional wobble | source micro-pitch motion (the thing Feel re-injects) |
+| tether particle stream | remap tension — matter dragged from source to target, more and faster with pull |
+| positional wobble | the HEARD pitch: glide ramp + Feel × source deviation (Feel at 0 locks it) |
+| edge roughness | the Grit knob |
+| twinning | Coherence below 100% sunders each star into channel-twins |
 | hollow + rays | newborn (inside the transition-policy window) |
 | spike pattern & color | stable identity (hashed from the track uid) |
 
 **Hover any star** for its dossier: source pitch and detune, target,
 pull, harmonic count, relative amplitude.
 
-## Control figures
+## Controls
 
-Every continuous parameter's block face is a tiny animated
-software-rendered diagram of its own DSP mechanism (`figures.ts`): MIX
-crossfades a dry and wet comb; FEEL is a wiggle whose amplitude is the
-knob; GLIDE stretches a retune ramp; GRIT roughens a clean Hann lobe;
-VOICES is literally N filled stars; GATE raises a floor a peak must
-prove itself above; CEILING cuts a comb; THRESH is the in-tune amnesty
-band with a wandering source dot; FORMANT holds an envelope while the
-comb slides under it; CARRY fades the between-partial skirt; COHERE is a
-pair of channel phasors converging. The plugin illustrates its own
-organs — no stock widgets, no assets, all procedural.
-
-**Every control has hover text** describing the mechanism and the
+Reliquary blocks (see the Bestiary below): each continuous parameter's
+face is its Warden, crossfaded between two painted aspects by the value,
+with the readout and the Warden's italic name over a scrim. **Every
+control has hover text** naming its Warden and describing mechanism +
 musical result. Drag = coarse, shift-drag = fine, wheel = trim,
-double-click = default, click the value = type.
+double-click = default, click the value = type. (Round 2's procedural
+mechanism-diagrams were retired in round 3 — git has them.)
 
 ## Idle state
 
@@ -74,8 +69,8 @@ plugin dreaming until you give it sound.
 engine (rt/engine)          plugin (wrac/plugins/opq)         GUI (src-gui)
 VizFrame ring (16, no      audio.rs publishes via try_lock    grove.ts renders
 alloc) per hop; now    →   SharedState VecDeque (64)     →    both modes at rAF;
-with residual octave       GUI timer (33ms) drains → JSON     controls.ts + figures.ts
-bands                      over wxp Channel "viz-frames"      render the rail
+with residual octave       GUI timer (33ms) drains → JSON     controls.ts renders
+bands                      over wxp Channel "viz-frames"      the reliquary rail
 ```
 
 - Parameter manifest (`get_parameter_manifest`): Rust is the single
@@ -96,7 +91,7 @@ bands                      over wxp Channel "viz-frames"      render the rail
 - Screenshots without a browser: `tools/shot.swift` (offscreen
   WKWebView — the plugin's actual rendering engine).
 
-## The Meltdown Bestiary (v2, round 3)
+## The Meltdown Bestiary
 
 Every continuous parameter is kept by a **Warden** — a specimen generated
 by Flux (RunPod) in two painted aspects, unmulted onto the void
@@ -126,5 +121,3 @@ the star, more and faster the harder the pull. Bypass stamps the field.
 - Standalone app target needs `ibtool` (full Xcode) for its menu nib;
   CLAP/VST3/AU unaffected.
 - Star callouts cap at the loudest 8 objects (engine reports up to 24).
-- Diffusion-rendered texture skin (runpod) discussed and parked — the
-  current surface is 100% procedural; revisit if wanted.
