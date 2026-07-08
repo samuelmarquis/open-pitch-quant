@@ -96,6 +96,31 @@ bands                      over wxp Channel "viz-frames"      render the rail
 - Screenshots without a browser: `tools/shot.swift` (offscreen
   WKWebView — the plugin's actual rendering engine).
 
+## The Meltdown Bestiary (v2, round 3)
+
+Every continuous parameter is kept by a **Warden** — a specimen generated
+by Flux (RunPod) in two painted aspects, unmulted onto the void
+(luminance→alpha, so glowing edges survive), crossfaded by the value. The
+Vessel (mix, drought↔flood) · the Tremble (feel) · the Stair (glide) ·
+the Burr (grit) · the Mask (formant) · the Choir (voices) · the Door
+(gate) · the Sky (ceiling) · the Mercy (thresh) · the Burden (carry) ·
+the Twins (cohere). Three heroes (Vessel, Tremble, Burr) wake into
+WAN-2.5-generated motion while dragged. Contact sheet:
+`img/bestiary-contact.png`. Regeneration: `tools/` scripts pattern, needs
+`RUNPOD=` in `~/.env`; ~$1.50 for the full set.
+
+**The controls are the model** — the cosmos obeys them live: Feel scales
+the star's re-injected source wobble (the star renders the *heard* pitch,
+lema-EMA mirror of the engine); Glide becomes the on-screen retune ramp;
+Mix crossfades visual weight between the wet star-layer and the dry
+ghost-layer; Grit roughens every glyph's edges; Coherence at less than
+100% sunders each star into two drifting channel-twins; remap tension is
+matter — particle grains stream along each tether from source ghost into
+the star, more and faster the harder the pull. Bypass stamps the field.
+
+![bestiary](img/gui-v2-bestiary.png)
+![cosmos physics](img/gui-v2-cosmos.png)
+
 ## Known limitations
 
 - Standalone app target needs `ibtool` (full Xcode) for its menu nib;

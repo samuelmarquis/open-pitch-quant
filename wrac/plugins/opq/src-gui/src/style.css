@@ -260,6 +260,16 @@ body,
   cursor: ns-resize;
   position: relative;
   min-width: 0;
+  min-height: 58px;
+  overflow: hidden;
+}
+
+.pblock-label,
+.pblock-value,
+.pblock-input {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 4px #000, 0 1px 2px #000;
 }
 
 .pblock:hover {
@@ -308,13 +318,26 @@ body,
   -webkit-user-select: text;
 }
 
-.pblock-fig {
-  margin-top: 3px;
+.pblock-face,
+.pblock-video {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 18px;
-  display: block;
-  border-top: 1px solid var(--rule);
-  padding-top: 2px;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.pblock-warden {
+  position: absolute;
+  right: 5px;
+  bottom: 3px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 9px;
+  color: rgba(242, 239, 230, 0.55);
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
 }
 
 /* ------------------------------------------------------------------- chips */
@@ -325,6 +348,7 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  min-height: 0;
 }
 
 .pblock-choice .pblock-label {

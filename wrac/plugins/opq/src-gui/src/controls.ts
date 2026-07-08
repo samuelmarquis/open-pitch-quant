@@ -1,16 +1,32 @@
 /**
- * Parameter controls: SCADA data-blocks whose faces are FIGURES — each
- * continuous parameter renders a tiny animated diagram of its own DSP
- * mechanism (see figures.ts). Drag anywhere on a block (shift = fine),
- * wheel to trim, double-click to reset, click the value to type. Choice
- * parameters are chip rows. Ranges/labels come from the Rust manifest;
- * hover any control for what it actually does.
+ * Parameter controls: reliquary blocks. Each continuous parameter is kept
+ * by a Warden from the Meltdown Bestiary — a specimen painted in two
+ * aspects (Flux-generated, unmulted onto the void), crossfaded by the
+ * value. Three heroes wake into WAN-generated motion while dragged.
+ * Drag anywhere (shift = fine), wheel to trim, double-click to reset,
+ * click the value to type. Hover for the Warden's name and its mechanism.
  */
 import type { OpqBridge } from "./bridge";
 import { formatValue } from "./bridge";
-import { FIGURES } from "./figures";
 import { attachTooltip } from "./tooltip";
 import type { ParamSpec, ParameterState } from "./types";
+
+/** The Meltdown Bestiary: each continuous parameter is kept by a Warden,
+ * painted in two aspects. The block face crossfades between them; three
+ * heroes wake into motion while dragged. */
+const WARDENS: Record<number, { slug: string; name: string; video?: boolean }> = {
+  1: { slug: "mix", name: "the Vessel", video: true },
+  2: { slug: "feel", name: "the Tremble", video: true },
+  3: { slug: "glide", name: "the Stair" },
+  4: { slug: "grit", name: "the Burr", video: true },
+  5: { slug: "voices", name: "the Choir" },
+  7: { slug: "gate", name: "the Door" },
+  9: { slug: "ceiling", name: "the Sky" },
+  13: { slug: "cohere", name: "the Twins" },
+  14: { slug: "thresh", name: "the Mercy" },
+  15: { slug: "formant", name: "the Mask" },
+  16: { slug: "carry", name: "the Burden" },
+};
 
 /** Short faceplate labels; the mechanism lives in the tooltip. */
 const SHORT_LABELS: Record<number, string> = {
@@ -36,32 +52,26 @@ const SHORT_LABELS: Record<number, string> = {
 
 const TIPS: Record<number, string> = {
   0: "Latency-aligned bypass — the dry path runs through the same delay, so switching never clicks or phases.",
-  1: "Wet/dry balance. The dry path is delay-matched, so any blend stays phase-coherent.",
-  2: "Re-injects the source's own micro-pitch motion (vibrato, scoops) on top of the mapped note. 0% = robotic lock, 100% = the full human wobble, transposed.",
-  3: "Portamento of the remap when a target changes. Even at 0 ms a ~30 ms micro-ramp keeps retunes from tearing.",
-  4: "Crossfades each object's clean resynthesis toward a raw spectral translation — the 'wrong' algorithm, kept as a character knob.",
-  5: "How many pitch objects the de-mixer may carve per frame. Same-pitch sources fuse into one object; leftovers become residual.",
+  1: "THE VESSEL · Wet/dry balance. The dry path is delay-matched, so any blend stays phase-coherent.",
+  2: "THE TREMBLE · Re-injects the source's own micro-pitch motion (vibrato, scoops) on top of the mapped note. 0% = robotic lock, 100% = the full human wobble, transposed.",
+  3: "THE STAIR · Portamento of the remap when a target changes. Even at 0 ms a ~30 ms micro-ramp keeps retunes from tearing.",
+  4: "THE BURR · Crossfades each object's clean resynthesis toward a raw spectral translation — the 'wrong' algorithm, kept as a character knob.",
+  5: "THE CHOIR · How many pitch objects the de-mixer may carve per frame. Same-pitch sources fuse into one object; leftovers become residual.",
   6: "What happens to spectral regions no object claimed: Off = they pass dry, On = they get snapped to the grid as raw regions.",
-  7: "Tonality test for unowned regions before mapping (peak vs. surroundings). Higher = only clearly tonal content is eligible.",
+  7: "THE DOOR · Tonality test for unowned regions before mapping (peak vs. surroundings). Higher = only clearly tonal content is eligible.",
   8: "Fate of regions that fail the tonality gate: Fresh = pass dry, Bypass = excluded from mapping entirely.",
-  9: "Unowned mapping stops above this frequency — leaves air and sibilance untouched.",
+  9: "THE SKY · Unowned mapping stops above this frequency — leaves air and sibilance untouched.",
   10: "Spectral-flux onset detector: attacks blend toward dry (hard hits reset synthesis). Off = drums get mapped too — worth hearing once.",
   11: "Repeat: held pitch CLASSES apply in every octave (spokes light up in COSMOS). Custom: exactly the notes you hold.",
   12: "Intelligent adds 40¢ of hysteresis toward the current target, so vibrato stops flapping between neighbors. Nearest is memoryless.",
-  13: "100% preserves the stereo image (level AND timing) through retuning. Lower decorrelates partial phases per channel — width wash.",
-  14: "Objects already within this many cents of their own chromatic pitch pass unmapped — in-tune content stays untouched.",
-  15: "Holds the source's spectral envelope (the vowel) in place while the partials move underneath it.",
-  16: "Keeps each region's between-partial bins (breath, noise, attack) at their source position. At 0 only pure retuned partials remain.",
+  13: "THE TWINS · 100% preserves the stereo image (level AND timing) through retuning. Lower decorrelates partial phases per channel — width wash.",
+  14: "THE MERCY · Objects already within this many cents of their own chromatic pitch pass unmapped — in-tune content stays untouched.",
+  15: "THE MASK · Holds the source's spectral envelope (the vowel) in place while the partials move underneath it.",
+  16: "THE BURDEN · Keeps each region's between-partial bins (breath, noise, attack) at their source position. At 0 only pure retuned partials remain.",
   17: "Policy for a note's ambiguous first frames: Map quantizes immediately (slides step), Dry lets transitions pass at source pitch.",
 };
 
 export type ControlRegistry = Map<number, (state: ParameterState) => void>;
-
-// One shared ambient clock repaints every figure (~12 fps; canvases are tiny).
-const FIGURE_REDRAWS: (() => void)[] = [];
-window.setInterval(() => {
-  for (const redraw of FIGURE_REDRAWS) redraw();
-}, 85);
 
 export function makeControl(
   spec: ParamSpec,
@@ -104,10 +114,33 @@ function makeBlock(
   input.type = "text";
   input.hidden = true;
 
-  const fig = document.createElement("canvas");
-  fig.className = "pblock-fig";
+  const warden = WARDENS[spec.id];
+  const face = document.createElement("canvas");
+  face.className = "pblock-face";
+  const loImg = new Image();
+  const hiImg = new Image();
+  if (warden) {
+    loImg.src = `/specimens/${warden.slug}_lo.png`;
+    hiImg.src = `/specimens/${warden.slug}_hi.png`;
+  }
+  let video: HTMLVideoElement | undefined;
+  if (warden?.video) {
+    video = document.createElement("video");
+    video.className = "pblock-video";
+    video.src = `/specimens/${warden.slug}_drag.mp4`;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.hidden = true;
+    video.addEventListener("error", () => video?.remove());
+  }
+  const wardenTag = document.createElement("span");
+  wardenTag.className = "pblock-warden";
+  wardenTag.textContent = warden?.name ?? "";
 
-  root.append(label, value, input, fig);
+  root.append(face);
+  if (video) root.append(video);
+  root.append(label, value, input, wardenTag);
 
   let current = spec.default;
   let dragging = false;
@@ -115,40 +148,51 @@ function makeBlock(
   let wheelTimer = 0;
 
   const range = spec.max - spec.min;
-  const figCtx = fig.getContext("2d");
-  const renderer = FIGURES[spec.id];
-  const born = performance.now();
+  const faceCtx = face.getContext("2d");
 
-  const drawFigure = () => {
-    if (!figCtx || !renderer) return;
-    const dpr = window.devicePixelRatio || 1;
-    const cw = fig.clientWidth;
-    const ch = fig.clientHeight;
-    if (cw === 0) return;
-    if (fig.width !== cw * dpr || fig.height !== ch * dpr) {
-      fig.width = cw * dpr;
-      fig.height = ch * dpr;
-    }
-    figCtx.save();
-    figCtx.scale(dpr, dpr);
-    figCtx.clearRect(0, 0, cw, ch);
-    figCtx.lineWidth = 1;
-    renderer({
-      ctx: figCtx,
-      w: cw,
-      h: ch,
-      v: range > 0 ? (current - spec.min) / range : 0,
-      t: (performance.now() - born) / 1000,
-      color: accent,
-    });
-    figCtx.restore();
+  const coverDraw = (img: HTMLImageElement, cw: number, ch: number) => {
+    if (!faceCtx || !img.complete || img.naturalWidth === 0) return;
+    const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+    const dw = img.naturalWidth * scale;
+    const dh = img.naturalHeight * scale;
+    faceCtx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
   };
-  FIGURE_REDRAWS.push(drawFigure);
+
+  const drawFace = () => {
+    if (!faceCtx || !warden) return;
+    const dpr = window.devicePixelRatio || 1;
+    const cw = face.clientWidth;
+    const ch = face.clientHeight;
+    if (cw === 0) return;
+    if (face.width !== cw * dpr || face.height !== ch * dpr) {
+      face.width = cw * dpr;
+      face.height = ch * dpr;
+    }
+    const v = range > 0 ? (current - spec.min) / range : 0;
+    faceCtx.save();
+    faceCtx.scale(dpr, dpr);
+    faceCtx.clearRect(0, 0, cw, ch);
+    faceCtx.globalAlpha = 1 - v;
+    coverDraw(loImg, cw, ch);
+    faceCtx.globalAlpha = v;
+    coverDraw(hiImg, cw, ch);
+    // scrim so the readout stays legible over the specimen
+    faceCtx.globalAlpha = 1;
+    const scrim = faceCtx.createLinearGradient(0, 0, 0, ch);
+    scrim.addColorStop(0, "rgba(0,0,0,0.55)");
+    scrim.addColorStop(0.55, "rgba(0,0,0,0.10)");
+    scrim.addColorStop(1, "rgba(0,0,0,0.30)");
+    faceCtx.fillStyle = scrim;
+    faceCtx.fillRect(0, 0, cw, ch);
+    faceCtx.restore();
+  };
+  loImg.addEventListener("load", drawFace);
+  hiImg.addEventListener("load", drawFace);
 
   const show = (v: number, text?: string) => {
     current = v;
     value.textContent = text ?? formatValue(spec, v);
-    drawFigure();
+    drawFace();
   };
   show(spec.default);
 
@@ -189,6 +233,10 @@ function makeBlock(
     startValue = current;
     root.setPointerCapture(event.pointerId);
     root.classList.add("is-dragging");
+    if (video?.isConnected) {
+      video.hidden = false;
+      void video.play().catch(() => undefined);
+    }
     beginGesture();
   });
 
@@ -204,6 +252,10 @@ function makeBlock(
     dragging = false;
     root.releasePointerCapture(event.pointerId);
     root.classList.remove("is-dragging");
+    if (video) {
+      video.hidden = true;
+      video.pause();
+    }
     endGesture();
   };
   root.addEventListener("pointerup", finish);

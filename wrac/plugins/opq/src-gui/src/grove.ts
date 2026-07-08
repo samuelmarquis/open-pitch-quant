@@ -74,6 +74,10 @@ type Trail = {
   points: TrailPoint[];
   lastSeen: number;
   id: number;
+  /** EMA of source pitch — the reference Feel deviates from. */
+  lemaM: number;
+  /** Glide-smoothed displayed output pitch (client mirror of the ramp). */
+  renderM: number;
 };
 
 type LiveStar = {
@@ -117,6 +121,9 @@ export class Grove {
   private hoverX = -1;
   private hoverY = -1;
   private flame = new IdleFlame();
+  /** Live parameter values — the controls ARE the model; the display obeys. */
+  private params = new Map<number, number>();
+  private lastRenderMs = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -145,6 +152,14 @@ export class Grove {
     this.mode = mode;
   }
 
+  setParam(id: number, value: number): void {
+    this.params.set(id, value);
+  }
+
+  private param(id: number, fallback: number): number {
+    return this.params.get(id) ?? fallback;
+  }
+
   latest(): VizFrame | undefined {
     return this.frames[this.frames.length - 1];
   }
@@ -163,19 +178,25 @@ export class Grove {
       this.frames.push(frame);
       for (const track of frame.tracks) {
         let trail = this.trails.get(track.id);
+        const srcM = hzToMidi(track.f0);
+        const outM = hzToMidi(track.tgt);
         if (!trail) {
           trail = {
             color: PALETTE[((track.id % 8) + 8) % 8],
             points: [],
             lastSeen: frame.time,
             id: track.id,
+            lemaM: srcM,
+            renderM: outM,
           };
           this.trails.set(track.id, trail);
         }
+        // 250ms EMA at ~43 frames/s — mirrors the engine's Feel reference
+        trail.lemaM += 0.09 * (srcM - trail.lemaM);
         trail.points.push({
           time: frame.time,
-          srcM: hzToMidi(track.f0),
-          outM: hzToMidi(track.tgt),
+          srcM,
+          outM,
           amp: track.amp,
           nh: track.nh,
           nb: track.nb,
@@ -232,16 +253,6 @@ export class Grove {
     }
     live = live.sort((a, b) => b.p.amp - a.p.amp).slice(0, limit);
     return live;
-  }
-
-  /** Source micro-pitch motion over the recent trail (semitone stddev). */
-  private srcMotion(trail: Trail): number {
-    const n = Math.min(trail.points.length, 7);
-    if (n < 3) return 0;
-    const pts = trail.points.slice(-n);
-    const mean = pts.reduce((s, p) => s + p.srcM, 0) / n;
-    const varr = pts.reduce((s, p) => s + (p.srcM - mean) ** 2, 0) / n;
-    return Math.sqrt(varr);
   }
 
   // ------------------------------------------------------------- render
@@ -476,14 +487,20 @@ export class Grove {
       ctx.globalAlpha = 1;
     }
 
-    // --- the stars
+    // --- the stars, at their HONEST output pitch: the glide ramp toward
+    // the target plus Feel's re-injected source deviation. Feel at zero
+    // locks the star; Feel at one puts the full source wobble back.
+    const dt = Math.min(0.1, Math.max(0.001, (tMs - this.lastRenderMs) / 1000));
+    this.lastRenderMs = tMs;
+    const feel = this.param(2, 0.35);
+    const glide = this.param(3, 0);
+    const tau = Math.max(glide, 0.03);
     const live = this.liveStars(8);
     const stars: LiveStar[] = [];
     for (const { trail, p } of live) {
-      const wob = Math.min(1.5, this.srcMotion(trail) * 8);
-      const [bx, by] = this.cPos(p.outM);
-      const x = bx + wob * 4 * Math.sin(tMs * 0.011 + trail.id * 2.1);
-      const y = by + wob * 4 * Math.cos(tMs * 0.013 + trail.id * 1.3);
+      trail.renderM = p.outM + (trail.renderM - p.outM) * Math.exp(-dt / tau);
+      const heardM = trail.renderM + feel * (p.srcM - trail.lemaM);
+      const [x, y] = this.cPos(heardM);
       const size = 8 + 16 * this.ampN(p.amp);
       stars.push({ trail, p, x, y, size });
     }
@@ -507,34 +524,68 @@ export class Grove {
       ctx.globalAlpha = 1;
     }
 
-    // tethers: source ghost -> star. The remap, drawn.
+    // tethers: source ghost -> star, with matter being DRAGGED along them.
+    // Mix weights the two worlds: wet layer fades as the dry ghosts firm up.
+    const mix = this.param(1, 1);
+    const wetA = 0.3 + 0.7 * mix;
+    const dryA = 0.45 + 0.55 * (1 - mix);
     for (const s of stars) {
       const [gx, gy] = this.cPos(s.p.srcM);
-      ctx.strokeStyle = s.trail.color;
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = 1;
       const mx = (gx + s.x) / 2;
       const my = (gy + s.y) / 2;
       const dx = mx - cx;
       const dy = my - cy;
       const dl = Math.hypot(dx, dy) || 1;
+      const cpx = mx + (dx / dl) * 10;
+      const cpy = my + (dy / dl) * 10;
+      ctx.strokeStyle = s.trail.color;
+      ctx.globalAlpha = 0.3 * wetA;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(gx, gy);
-      ctx.quadraticCurveTo(mx + (dx / dl) * 10, my + (dy / dl) * 10, s.x, s.y);
+      ctx.quadraticCurveTo(cpx, cpy, s.x, s.y);
       ctx.stroke();
-      ctx.globalAlpha = 0.8;
+      // the pull, made of small matter: particles leave the source pitch
+      // and accelerate into the cluster at the target
+      const pull = Math.abs(s.p.srcM - s.p.outM) * 100;
+      const grains = Math.min(7, 1 + Math.floor(pull / 45));
+      ctx.fillStyle = s.trail.color;
+      for (let i = 0; i < grains; i++) {
+        let u = (tMs * 0.00030 * (1 + i * 0.11) + i * 0.371 + s.trail.id * 0.13) % 1;
+        u = Math.pow(u, 0.72); // ease: slow birth, quick arrival
+        const omu = 1 - u;
+        const px = omu * omu * gx + 2 * omu * u * cpx + u * u * s.x;
+        const py = omu * omu * gy + 2 * omu * u * cpy + u * u * s.y;
+        ctx.globalAlpha = (0.2 + 0.6 * u) * wetA;
+        const r = 0.8 + 1.8 * u;
+        ctx.fillRect(px - r / 2, py - r / 2, r, r);
+      }
+      // the source ghost — firmer as Mix leans dry
+      ctx.globalAlpha = dryA;
+      ctx.strokeStyle = s.trail.color;
       ctx.beginPath();
       ctx.arc(gx, gy, 2.8, 0, TAU);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
 
+    const grit = this.param(4, 0);
+    const cohere = this.param(13, 1);
     for (const s of stars) {
-      const pull = (s.p.srcM - s.p.outM) * 100;
-      this.drawGlyph(s.x, s.y, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, pull, s.p.nh);
+      ctx.globalAlpha = wetA;
+      if (cohere < 0.97) {
+        // the Twins sunder: the two channels drift apart
+        const off = (1 - cohere) * 5;
+        ctx.globalAlpha = wetA * 0.6;
+        this.drawGlyph(s.x - off, s.y - off * 0.6, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, grit, s.p.nh);
+        this.drawGlyph(s.x + off, s.y + off * 0.6, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, grit, s.p.nh);
+        ctx.globalAlpha = wetA;
+      } else {
+        this.drawGlyph(s.x, s.y, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, grit, s.p.nh);
+      }
       // whisper the target next to each star
       ctx.fillStyle = s.trail.color;
-      ctx.globalAlpha = 0.75;
+      ctx.globalAlpha = 0.75 * wetA;
       ctx.font = "9px ui-monospace, Menlo, monospace";
       ctx.textAlign = "left";
       ctx.fillText(noteName(s.p.outM), s.x + s.size + 4, s.y + 3);
@@ -755,9 +806,9 @@ export class Grove {
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
+    const gritS = this.param(4, 0);
     for (const s of stars) {
-      const pull = (s.p.srcM - s.p.outM) * 100;
-      this.drawGlyph(s.x, s.y, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, pull, s.p.nh);
+      this.drawGlyph(s.x, s.y, s.size, s.trail.id, tMs, s.trail.color, s.p.nb, gritS, s.p.nh);
     }
 
     const labels = stars
@@ -817,17 +868,16 @@ export class Grove {
     tMs: number,
     color: string,
     newborn: boolean,
-    pullCents: number,
+    grit: number,
     nh: number,
   ): void {
     const { ctx } = this;
     const spikes = 5 + Math.min(nh, 19);
-    const spin = 0.00018 * (1 + Math.min(Math.abs(pullCents), 250) / 60);
-    const rot = tMs * spin + id * 1.7;
+    const rot = tMs * 0.00012 + id * 1.7;
     ctx.beginPath();
     for (let i = 0; i < spikes * 2; i++) {
       const angle = rot + (i * Math.PI) / spikes;
-      const jag = 0.72 + 0.5 * hash01(id * 31 + i);
+      const jag = 0.78 + (0.3 + grit * 0.9) * (hash01(id * 31 + i) - 0.5) * 2;
       const r = i % 2 === 0 ? size * jag : size * 0.42 * jag;
       const px = x + Math.cos(angle) * r;
       const py = y + Math.sin(angle) * r;
@@ -900,6 +950,14 @@ export class Grove {
 
   private drawAlarm(head: VizFrame): void {
     const { ctx } = this;
+    if (this.param(0, 0) >= 0.5) {
+      ctx.font = "11px ui-monospace, Menlo, monospace";
+      ctx.fillStyle = "rgba(255,84,112,0.85)";
+      ctx.textAlign = "center";
+      ctx.fillText("BYPASSED — DRY SIGNAL", this.w / 2, this.h - 24);
+      ctx.strokeStyle = "rgba(255,84,112,0.4)";
+      ctx.strokeRect(this.w / 2 - 100, this.h - 36, 200, 18);
+    }
     if (!head.grid.length) {
       ctx.font = "11px ui-monospace, Menlo, monospace";
       ctx.fillStyle = "rgba(255,84,112,0.85)";

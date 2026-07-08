@@ -186,12 +186,15 @@ void (async () => {
   registry.set(0, (state) => renderBypass(state.value >= 0.5));
 
   // --- initial values + subscriptions ----------------------------------
+  // The grove hears every parameter too — the display obeys the controls.
   for (const spec of specs) {
     const state = await bridge.parameterState(spec.id);
     registry.get(spec.id)?.(state);
+    grove.setParam(spec.id, state.value);
   }
   await bridge.onParameters((state) => {
     registry.get(state.parameterId)?.(state);
+    grove.setParam(state.parameterId, state.value);
   });
 
   let lastFrameAt = performance.now();
