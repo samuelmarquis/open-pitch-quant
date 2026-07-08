@@ -1,14 +1,13 @@
 # The drum
 
-The plugin's one visual organ. A fixed 576×336 transect embedded in the
-host's editor window: log-frequency vertical (C1 at the floor, C8 at the
-roof, 48 px per octave), time scrolling leftward, one column per analysis
-frame (~43 columns/s at 44.1 kHz — the plate holds ~13 s).
-
-There is exactly one of it, and you cannot click it. The controls stay in
-the host's generic parameter editor, which is already the honest control
-surface: eighteen named, automatable parameters. The drum is not the
-machine's face; it is an instrument for watching the machine work.
+The belief transect: 1016×384, log-frequency vertical (C0 at the floor,
+C8 at the roof, 48 px per octave), time scrolling leftward, one column
+per analysis frame (~43 columns/s at 44.1 kHz — the plate holds ~24 s).
+It began life as the plugin's entire editor; it now serves as the chart
+recorder (REC-1859) at the center of [the panel](03-the-panel.md), which
+carries the controls. The law below governs the drum's rectangle
+regardless of what surrounds it: you cannot click it, and it draws only
+belief.
 
 ## The law of the drawing
 
