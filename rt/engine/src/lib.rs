@@ -153,10 +153,19 @@ pub struct VizTrack {
     pub f0: f32,
     /// Mapping target (Hz).
     pub tgt: f32,
+    /// Output fundamental actually synthesized this frame (Hz): source times
+    /// the exact per-object multiplier (glide progress + feel deviation), or
+    /// the source itself when `spared`. This is the bend, not the intent.
+    pub out: f32,
     /// Summed magnitude of spectral regions this object claimed this frame.
     pub amp: f32,
     /// Number of harmonic regions claimed this frame.
     pub nh: u16,
+    /// Bit h-1 set = harmonic h claimed a region this frame (h 1..=64).
+    pub hmask: u64,
+    /// Threshold spared this object (already in tune, untransposed target):
+    /// multiplier forced to 1.0, no correction applied.
+    pub spared: bool,
     /// Inside the newborn window (transition policy applies).
     pub newborn: bool,
 }
@@ -300,6 +309,9 @@ pub struct Engine {
     viz_ring: VecDeque<VizFrame>,
     viz_amp: Vec<f64>,
     viz_nh: Vec<u16>,
+    viz_mult: Vec<f64>,
+    viz_spared: Vec<bool>,
+    viz_hmask: Vec<u64>,
     viz_res: f64,
     viz_res_bands: [f64; 8],
 }
@@ -375,6 +387,9 @@ impl Engine {
             viz_ring: VecDeque::with_capacity(VIZ_RING),
             viz_amp: Vec::with_capacity(64),
             viz_nh: Vec::with_capacity(64),
+            viz_mult: Vec::with_capacity(64),
+            viz_spared: Vec::with_capacity(64),
+            viz_hmask: Vec::with_capacity(64),
             viz_res: 0.0,
             viz_res_bands: [0.0; 8],
         };
@@ -448,8 +463,11 @@ impl Engine {
                     id: trk.uid,
                     f0: trk.f0 as f32,
                     tgt: trk.tgt as f32,
+                    out: (trk.f0 * self.viz_mult.get(ti).copied().unwrap_or(1.0)) as f32,
                     amp: self.viz_amp.get(ti).copied().unwrap_or(0.0) as f32,
                     nh: self.viz_nh.get(ti).copied().unwrap_or(0),
+                    hmask: self.viz_hmask.get(ti).copied().unwrap_or(0),
+                    spared: self.viz_spared.get(ti).copied().unwrap_or(false),
                     newborn: t - trk.born < 2,
                 };
                 n += 1;
@@ -944,6 +962,7 @@ impl Engine {
         let match_tol = 2f64.ln() * 100.0 / 1200.0;
         let mut obj_mult: Vec<f64> = Vec::with_capacity(f0s.len());
         let mut obj_trk: Vec<usize> = Vec::with_capacity(f0s.len());
+        let mut obj_spared: Vec<bool> = Vec::with_capacity(f0s.len());
         for &f0 in &f0s {
             let mut best: Option<usize> = None;
             let mut bestd = match_tol;
@@ -1054,6 +1073,7 @@ impl Engine {
                 (r_eff + p.feel * dev).exp()
             });
             obj_trk.push(ti);
+            obj_spared.push(bypass);
         }
 
         // reset per-frame viz accumulators (capacity preallocated; track
@@ -1062,6 +1082,16 @@ impl Engine {
         self.viz_amp.resize(self.tracks.len(), 0.0);
         self.viz_nh.clear();
         self.viz_nh.resize(self.tracks.len(), 0);
+        self.viz_mult.clear();
+        self.viz_mult.resize(self.tracks.len(), 1.0);
+        self.viz_spared.clear();
+        self.viz_spared.resize(self.tracks.len(), false);
+        self.viz_hmask.clear();
+        self.viz_hmask.resize(self.tracks.len(), 0);
+        for (i, &ti) in obj_trk.iter().enumerate() {
+            self.viz_mult[ti] = obj_mult[i];
+            self.viz_spared[ti] = obj_spared[i];
+        }
         self.viz_res = 0.0;
         self.viz_res_bands = [0.0; 8];
 
@@ -1121,6 +1151,9 @@ impl Engine {
                 Some(ti) => {
                     self.viz_amp[ti] += self.mag[pk];
                     self.viz_nh[ti] += 1;
+                    if h >= 1 {
+                        self.viz_hmask[ti] |= 1u64 << (h - 1).min(63);
+                    }
                 }
                 None => {
                     self.viz_res += self.mag[pk];

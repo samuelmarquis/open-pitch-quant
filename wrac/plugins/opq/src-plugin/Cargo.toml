@@ -86,6 +86,36 @@ wrac_clap_adapter = { workspace = true }
 wrac_log = { workspace = true }
 opq-engine = { path = "../../../../rt/engine" }
 
+# The drum (native Cocoa view; no webview, no toolkit).
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = [
+    "std",
+    "block2",
+    "NSDate",
+    "NSObjCRuntime",
+    "NSRunLoop",
+    "NSString",
+    "NSTimer",
+    "objc2-core-foundation",
+] }
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSBitmapImageRep",
+    "NSGraphics",
+    "NSImage",
+    "NSImageRep",
+    "NSResponder",
+    "NSView",
+    "NSWindow",
+    "objc2-core-foundation",
+] }
+objc2-core-foundation = { version = "0.3", default-features = false, features = [
+    "std",
+    "CFCGTypes",
+] }
+
 [lints.rust]
 unreachable_pub = "deny"
 

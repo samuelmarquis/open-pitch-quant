@@ -101,7 +101,7 @@ impl Processor for OpqAudioProcessor {
                 AudioPortChannels::F32(mut chans) => {
                     for ci in 0..self.channels {
                         let dst = &mut self.scratch[ci * self.max_frames..][..frames];
-                        if let Some(mut pair) = chans.channel_pair(ci) {
+                        if let Some(pair) = chans.channel_pair(ci) {
                             if let Some(input) = pair.input() {
                                 dst.copy_from_slice(&input[..frames]);
                             }
@@ -111,7 +111,7 @@ impl Processor for OpqAudioProcessor {
                 AudioPortChannels::F64(mut chans) => {
                     for ci in 0..self.channels {
                         let dst = &mut self.scratch[ci * self.max_frames..][..frames];
-                        if let Some(mut pair) = chans.channel_pair(ci) {
+                        if let Some(pair) = chans.channel_pair(ci) {
                             if let Some(input) = pair.input() {
                                 for (d, s) in dst.iter_mut().zip(input[..frames].iter()) {
                                     *d = *s as f32;
@@ -134,6 +134,10 @@ impl Processor for OpqAudioProcessor {
                 self.engine.process_block(&mut io, &self.held, &params);
             }
         }
+
+        // 3b) Hand this block's analysis frames to the drum (never blocks).
+        self.shared
+            .publish_viz(std::iter::from_fn(|| self.engine.viz_pop()));
 
         // 4) Copy scratch to the output channels.
         {

@@ -1,5 +1,6 @@
-//! The plugin contract as seen by the host. Headless: `PluginCore::gui()`
-//! stays at its default `None`, so hosts present their generic editor.
+//! The plugin contract as seen by the host. Controls are headless (hosts
+//! present their generic editor); the editor window, where the platform has
+//! one, is the drum — a fixed observation instrument, not a control surface.
 
 use std::sync::Arc;
 
@@ -27,6 +28,11 @@ use wrac_clap_adapter::{
 };
 
 use crate::audio::OpqAudioProcessor;
+#[cfg(target_os = "macos")]
+use crate::gui::DrumGui;
+#[cfg(target_os = "macos")]
+use wrac_clap_adapter::PluginGuiExtension;
+
 use crate::state::SharedState;
 
 // Generated from [package.metadata.wrac] in src-plugin/Cargo.toml.
@@ -106,6 +112,8 @@ pub(crate) struct OpqPlugin {
     state_extension: Arc<OpqStateExtension>,
     note_ports: Arc<OpqNotePorts>,
     latency: Arc<OpqLatency>,
+    #[cfg(target_os = "macos")]
+    gui: Arc<DrumGui>,
 }
 
 impl OpqPlugin {
@@ -120,6 +128,8 @@ impl OpqPlugin {
 
         Self {
             descriptor,
+            #[cfg(target_os = "macos")]
+            gui: Arc::new(DrumGui::new(shared.clone())),
             shared,
             audio_layout,
             audio_ports,
@@ -189,5 +199,10 @@ impl PluginCore for OpqPlugin {
 
     fn latency(&self) -> Option<Arc<dyn PluginLatencyExtension>> {
         Some(self.latency.clone())
+    }
+
+    #[cfg(target_os = "macos")]
+    fn gui(&self) -> Option<Arc<dyn PluginGuiExtension>> {
+        Some(self.gui.clone())
     }
 }

@@ -1,13 +1,23 @@
-//! Parameter state shared by the audio thread and host.
+//! Parameter state shared by the audio thread and host, plus the analysis
+//! feed for the drum.
 //!
 //! One atomic per parameter, indexed by the spec table in `plugin/params.rs`.
 //! The audio thread reads a full [`opq_engine::EngineParams`] snapshot per
 //! block without taking any lock.
+//!
+//! The viz queue hands [`VizFrame`]s from the audio thread to the GUI timer.
+//! The audio side only ever `try_lock`s — under contention it drops that
+//! block's frames (a skipped drum column, never a glitch).
 
 use atomic_float::AtomicF32;
+use std::collections::VecDeque;
+use std::sync::Mutex;
 use std::sync::atomic::Ordering;
 
-use opq_engine::{EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned};
+use opq_engine::{EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned, VizFrame};
+
+/// Frames buffered between GUI drains (~1.5 s at typical hop rates).
+const VIZ_QUEUE: usize = 64;
 
 use crate::plugin::{
     PARAM_BYPASS_ID, PARAM_CARRY_ID, PARAM_COHERENCE_ID, PARAM_FEEL_ID, PARAM_FMAX_ID,
@@ -21,12 +31,36 @@ pub(crate) const PARAM_SLOTS: usize = 18;
 
 pub(crate) struct SharedState {
     values: [AtomicF32; PARAM_SLOTS],
+    viz: Mutex<VecDeque<VizFrame>>,
 }
 
 impl SharedState {
     pub(crate) fn new() -> Self {
         let values = std::array::from_fn(|i| AtomicF32::new(param_default(i as u32)));
-        Self { values }
+        Self {
+            values,
+            viz: Mutex::new(VecDeque::with_capacity(VIZ_QUEUE)),
+        }
+    }
+
+    /// Audio thread: append this block's analysis frames. Never blocks;
+    /// frames are dropped wholesale if the GUI holds the lock right now.
+    pub(crate) fn publish_viz(&self, frames: impl Iterator<Item = VizFrame>) {
+        if let Ok(mut q) = self.viz.try_lock() {
+            for fr in frames {
+                if q.len() == VIZ_QUEUE {
+                    q.pop_front();
+                }
+                q.push_back(fr);
+            }
+        }
+    }
+
+    /// GUI timer: take everything published since the last drain.
+    pub(crate) fn drain_viz(&self, into: &mut Vec<VizFrame>) {
+        if let Ok(mut q) = self.viz.lock() {
+            into.extend(q.drain(..));
+        }
     }
 
     /// Clamp + store. Returns the applied value, or None for unknown ids.

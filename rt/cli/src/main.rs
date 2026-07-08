@@ -121,8 +121,8 @@ fn process_seg(
                     tracks.push(',');
                 }
                 tracks.push_str(&format!(
-                    "{{\"id\":{},\"f0\":{:.2},\"tgt\":{:.2},\"amp\":{:.4},\"nh\":{},\"nb\":{}}}",
-                    tr.id, tr.f0, tr.tgt, tr.amp, tr.nh, tr.newborn
+                    "{{\"id\":{},\"f0\":{:.2},\"tgt\":{:.2},\"out\":{:.2},\"amp\":{:.4},\"nh\":{},\"hmask\":{},\"spared\":{},\"nb\":{}}}",
+                    tr.id, tr.f0, tr.tgt, tr.out, tr.amp, tr.nh, tr.hmask, tr.spared, tr.newborn
                 ));
             }
             let bands = fr
