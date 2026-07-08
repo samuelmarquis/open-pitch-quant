@@ -36,7 +36,6 @@ impl OpqAudioProcessor {
     ) -> Self {
         let channels = (channels as usize).clamp(1, MAX_CHANNELS);
         let max_frames = max_frames as usize;
-        shared.set_engine_info(sample_rate as f32, opq_engine::HOP as u32);
         Self {
             shared,
             engine: Engine::new(sample_rate, channels),
@@ -135,12 +134,6 @@ impl Processor for OpqAudioProcessor {
                 self.engine.process_block(&mut io, &self.held, &params);
             }
         }
-
-        // 3b) Offer analysis frames to the GUI. try_lock inside; on contention
-        // the frames stay in the engine's ring for the next block.
-        let engine = &mut self.engine;
-        self.shared
-            .publish_viz(std::iter::from_fn(|| engine.viz_pop()));
 
         // 4) Copy scratch to the output channels.
         {

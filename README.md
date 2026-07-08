@@ -5,8 +5,6 @@ An open reimplementation of the *idea* of Zynaptiq PITCHMAP — real-time
 everything pitched in the audio is pulled onto it. Chords to chords, no
 stem separation, ~93 ms latency, live.
 
-![the grove](docs/img/gui-v0-mid.png)
-
 ## What's here
 
 - **`rt/engine`** — the DSP, plain Rust. Pitch-object de-mixing on a
@@ -18,9 +16,9 @@ stem separation, ~93 ms latency, live.
   used by the listening-test bench; also dumps analysis traces
   (`--viz-dump`).
 - **`wrac/`** — the plugin: CLAP + VST3 + AU (`aumf`, so hosts route MIDI
-  to it), built on NovoNotes' WRAC template (vendored, MIT) with a
-  WebView GUI — a live display of the engine's tracked pitch objects.
-  See [`docs/GUI.md`](docs/GUI.md).
+  to it), built on NovoNotes' WRAC template (vendored, MIT). Headless —
+  hosts show their generic parameter editor. (A WebView GUI existed and
+  was torn out; an interface will return in some other medium.)
 - **`opq/`** — the frozen Python prototype lab (nine listened iterations;
   the Rust engine is canonical).
 - **`docs/research/`** — the PITCHMAP evidence corpus this was built
@@ -38,17 +36,13 @@ nix develop
 cd rt && cargo build --release
 ./target/release/opq in.wav out.wav --notes C4,E4,G4 --rounding intelligent --feel 0.35
 
-# plugin (CLAP + VST3 + AU), GUI included
-cd wrac/plugins/opq/src-gui && npm install && npm run build && cd ../../..
+# plugin (CLAP + VST3 + AU)
 cargo xtask install -p opq_plugin_wrac --release   # --release matters: debug DSP underruns
 ```
 
 macOS needs only Command Line Tools (the vendored build is patched to not
 require full Xcode; the optional standalone-app target is the one
 exception — it wants `ibtool`).
-
-GUI design work runs in a plain browser: `npm run dev` in
-`wrac/plugins/opq/src-gui` replays a real engine trace in demo mode.
 
 ## Status
 

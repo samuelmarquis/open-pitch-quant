@@ -1,9 +1,5 @@
-//! Build script that bundles `src-gui/dist` into a single zip and writes it to `OUT_DIR`
-//! for release builds.
-//!
-//! The resulting zip is embedded into the plugin binary via `include_bytes!` in `gui.rs`
-//! and served at runtime by the WebView under the `wxp-plugin://` scheme.
-//! In debug builds Vite's dev server is used instead, so this script does nothing.
+//! Build script that generates the static plugin descriptor table from
+//! `[package.metadata.wrac]` in Cargo.toml.
 
 use std::collections::HashSet;
 use std::env;
@@ -12,7 +8,6 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
-use wrac_build::{FrontendBundleConfig, build_frontend_bundle};
 
 fn main() {
     println!("cargo:rerun-if-changed=Cargo.toml");
@@ -26,25 +21,6 @@ fn main() {
     let metadata = read_wrac_metadata(&manifest_path).expect("failed to read WRAC metadata");
     write_plugin_products(&metadata, &out_dir)
         .expect("failed to write WRAC plugin product metadata");
-
-    let gui_dist_dir = manifest_dir
-        .parent()
-        .expect("src-plugin must have a parent directory")
-        .join("src-gui")
-        .join("dist");
-    build_frontend_bundle(FrontendBundleConfig {
-        dist_dir: gui_dist_dir,
-        output_file_name: "opq_plugin_gui.zip",
-        rerun_if_changed: &[
-            "../src-gui/index.html",
-            "../src-gui/src",
-            "../src-gui/package.json",
-            "../src-gui/vite.config.ts",
-        ],
-        missing_dist_build_command:
-            "Run `npm install && npm run build` in src-gui before release builds.",
-    })
-    .expect("failed to create frontend zip");
 }
 
 fn write_plugin_products(metadata: &WracMetadata, out_dir: &Path) -> io::Result<()> {

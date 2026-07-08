@@ -2,14 +2,13 @@
 //!
 //! The DSP lives in the shared `opq-engine` crate (also used by the nih-plug
 //! build and the offline CLI). This crate is the WRAC/CLAP shell: parameters,
-//! state persistence, MIDI note-sidechain plumbing, and (soon) the WebView GUI.
+//! state persistence, and MIDI note-sidechain plumbing. Deliberately headless
+//! — hosts show their generic parameter editor.
 //!
 //! File layout follows the WRAC template:
 //! - `plugin.rs`   : the plugin contract as seen by the host
-//! - `state.rs`    : lock-free parameter state + the analysis feed queue
+//! - `state.rs`    : lock-free parameter state
 //! - `audio.rs`    : the audio-thread processor driving `opq_engine::Engine`
-//! - `gui.rs`      : WebView GUI integration; runtime/notifier under `gui/`
-//! - `commands.rs` : Rust commands callable from the WebView frontend
 //!
 //! NOTE: unlike the template, we do NOT install the assert_no_alloc global
 //! allocator. The engine currently allocates small scratch vectors during
@@ -17,8 +16,6 @@
 //! RT-allocation discipline is tracked work, not a blocker.
 
 mod audio;
-mod commands;
-mod gui;
 mod plugin;
 mod state;
 
