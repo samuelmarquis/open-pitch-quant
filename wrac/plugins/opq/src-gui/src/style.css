@@ -143,7 +143,6 @@ body,
 
 #grove-wrap {
   position: relative;
-  border-right: 1px solid var(--rule);
   min-width: 0;
   overflow: hidden;
 }
@@ -174,49 +173,22 @@ body,
   padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  background: var(--panel);
+  gap: 10px;
+  background: transparent;
   scrollbar-width: thin;
   scrollbar-color: var(--rule) transparent;
 }
 
 .pgroup {
-  border: 1px solid var(--rule);
   position: relative;
-  padding: 6px 7px 7px;
-}
-
-/* corner ticks — instrument-bezel */
-.pgroup::before,
-.pgroup::after {
-  content: "";
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  pointer-events: none;
-}
-
-.pgroup::before {
-  top: -1px;
-  left: -1px;
-  border-top: 2px solid var(--dim);
-  border-left: 2px solid var(--dim);
-}
-
-.pgroup::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 2px solid var(--dim);
-  border-right: 2px solid var(--dim);
 }
 
 .pgroup > header {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  gap: 8px;
   margin-bottom: 6px;
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 4px;
+  opacity: 0.75;
 }
 
 .pgroup-title {
@@ -251,17 +223,53 @@ body,
   gap: 5px;
 }
 
-/* ------------------------------------------------------------------ blocks */
+/* ------------------------------------------------------------ the wardens */
 
-.pblock {
-  border: 1px solid var(--rule);
-  background: #08080a;
-  padding: 5px 6px 6px;
-  cursor: ns-resize;
+.warden {
   position: relative;
+  min-height: 78px;
   min-width: 0;
-  min-height: 58px;
-  overflow: hidden;
+  cursor: ns-resize;
+}
+
+.warden:hover .warden-film {
+  filter: brightness(1.18);
+}
+
+.warden.is-dragging .warden-film {
+  filter: brightness(1.32);
+}
+
+.warden-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.warden-tag {
+  position: absolute;
+  right: -4px;
+  top: -6px;
+  height: 24px;
+  transform: rotate(2.5deg);
+  mix-blend-mode: lighten;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.warden-tag-text {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 9px;
+  color: rgba(242, 239, 230, 0.6);
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .pblock-label,
@@ -269,15 +277,7 @@ body,
 .pblock-input {
   position: relative;
   z-index: 2;
-  text-shadow: 0 0 4px #000, 0 1px 2px #000;
-}
-
-.pblock:hover {
-  border-color: #3d3d44;
-}
-
-.pblock.is-dragging {
-  border-color: var(--bone);
+  text-shadow: 0 0 5px #000, 0 1px 2px #000;
 }
 
 .pblock-label {
@@ -318,46 +318,23 @@ body,
   -webkit-user-select: text;
 }
 
-.pblock-face,
-.pblock-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-}
+/* -------------------------------------------------------------- the rites */
 
-.pblock-warden {
-  position: absolute;
-  right: 5px;
-  bottom: 3px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-style: italic;
-  font-size: 9px;
-  color: rgba(242, 239, 230, 0.55);
-  text-shadow: 0 1px 3px #000;
-  pointer-events: none;
-}
-
-/* ------------------------------------------------------------------- chips */
-
-.pblock-choice {
-  cursor: default;
+.rite {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 6px;
-  min-height: 0;
+  grid-column: span 2;
 }
 
-.pblock-choice .pblock-label {
+.rite .pblock-label {
   margin-bottom: 0;
 }
 
 .chip-row {
   display: flex;
-  gap: 3px;
+  gap: 12px;
   flex-wrap: nowrap;
 }
 
@@ -365,28 +342,21 @@ body,
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.5px;
-  color: var(--dim);
-  background: transparent;
-  border: 1px solid var(--rule);
-  padding: 1px 6px;
+  color: var(--faint);
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .chip:hover {
   color: var(--bone);
-  border-color: var(--dim);
 }
 
 .chip.is-active {
-  color: #000;
-  background: var(--acid-yellow);
-  border-color: var(--acid-yellow);
-  font-weight: 700;
-}
-
-.pgroup:nth-child(3) .chip.is-active {
-  background: var(--acid-yellow);
+  color: var(--acid-yellow);
+  border-bottom: 1px solid var(--acid-yellow);
 }
 
 /* ------------------------------------------------------------------ status */

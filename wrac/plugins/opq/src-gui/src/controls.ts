@@ -92,6 +92,14 @@ export function makeControl(
   return control;
 }
 
+function h01(seed: number): number {
+  let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+  x ^= x >>> 13;
+  x = Math.imul(x, 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+
 function makeBlock(
   spec: ParamSpec,
   bridge: OpqBridge,
@@ -99,7 +107,10 @@ function makeBlock(
   accent: string,
 ): HTMLElement {
   const root = document.createElement("div");
-  root.className = "pblock";
+  root.className = "warden";
+  // pinned to the void, each at its own slight angle — nothing is a box
+  root.style.transform = `rotate(${((h01(spec.id * 17) - 0.5) * 3.2).toFixed(2)}deg)`;
+  root.style.marginLeft = `${Math.round(h01(spec.id * 29) * 14)}px`;
 
   const label = document.createElement("div");
   label.className = "pblock-label";
@@ -116,31 +127,36 @@ function makeBlock(
 
   const warden = WARDENS[spec.id];
   const face = document.createElement("canvas");
-  face.className = "pblock-face";
+  face.className = "warden-film";
+  // the film IS the value: a metamorphosis strip scrubbed by the knob
+  const strip = new Image();
   const loImg = new Image();
   const hiImg = new Image();
+  let stripFrames = 0;
   if (warden) {
+    strip.src = `/specimens/${warden.slug}_strip.webp`;
+    strip.addEventListener("load", () => {
+      stripFrames = Math.max(1, Math.round(strip.naturalWidth / (strip.naturalHeight * 2)));
+      drawFace();
+    });
+    // fallback poles if no film shipped for this warden
     loImg.src = `/specimens/${warden.slug}_lo.png`;
     hiImg.src = `/specimens/${warden.slug}_hi.png`;
   }
-  let video: HTMLVideoElement | undefined;
-  if (warden?.video) {
-    video = document.createElement("video");
-    video.className = "pblock-video";
-    video.src = `/specimens/${warden.slug}_drag.mp4`;
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.hidden = true;
-    video.addEventListener("error", () => video?.remove());
+  const wardenTag = document.createElement("img");
+  wardenTag.className = "warden-tag";
+  if (warden) {
+    wardenTag.src = `/specimens/${warden.slug}_name.png`;
+    wardenTag.alt = warden.name;
+    wardenTag.addEventListener("error", () => {
+      const fallback = document.createElement("span");
+      fallback.className = "warden-tag-text";
+      fallback.textContent = warden.name;
+      wardenTag.replaceWith(fallback);
+    });
   }
-  const wardenTag = document.createElement("span");
-  wardenTag.className = "pblock-warden";
-  wardenTag.textContent = warden?.name ?? "";
 
-  root.append(face);
-  if (video) root.append(video);
-  root.append(label, value, input, wardenTag);
+  root.append(face, label, value, input, wardenTag);
 
   let current = spec.default;
   let dragging = false;
@@ -172,18 +188,22 @@ function makeBlock(
     faceCtx.save();
     faceCtx.scale(dpr, dpr);
     faceCtx.clearRect(0, 0, cw, ch);
-    faceCtx.globalAlpha = 1 - v;
-    coverDraw(loImg, cw, ch);
-    faceCtx.globalAlpha = v;
-    coverDraw(hiImg, cw, ch);
-    // scrim so the readout stays legible over the specimen
-    faceCtx.globalAlpha = 1;
-    const scrim = faceCtx.createLinearGradient(0, 0, 0, ch);
-    scrim.addColorStop(0, "rgba(0,0,0,0.55)");
-    scrim.addColorStop(0.55, "rgba(0,0,0,0.10)");
-    scrim.addColorStop(1, "rgba(0,0,0,0.30)");
-    faceCtx.fillStyle = scrim;
-    faceCtx.fillRect(0, 0, cw, ch);
+    if (stripFrames > 1) {
+      // scrub: value picks the frame of the metamorphosis
+      const fw = strip.naturalWidth / stripFrames;
+      const fh = strip.naturalHeight;
+      const fi = Math.min(stripFrames - 1, Math.floor(v * stripFrames));
+      const scale = Math.max(cw / fw, ch / fh);
+      const dw = fw * scale;
+      const dh = fh * scale;
+      faceCtx.drawImage(strip, fi * fw, 0, fw, fh,
+        (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+    } else {
+      faceCtx.globalAlpha = 1 - v;
+      coverDraw(loImg, cw, ch);
+      faceCtx.globalAlpha = v;
+      coverDraw(hiImg, cw, ch);
+    }
     faceCtx.restore();
   };
   loImg.addEventListener("load", drawFace);
@@ -233,10 +253,6 @@ function makeBlock(
     startValue = current;
     root.setPointerCapture(event.pointerId);
     root.classList.add("is-dragging");
-    if (video?.isConnected) {
-      video.hidden = false;
-      void video.play().catch(() => undefined);
-    }
     beginGesture();
   });
 
@@ -252,10 +268,6 @@ function makeBlock(
     dragging = false;
     root.releasePointerCapture(event.pointerId);
     root.classList.remove("is-dragging");
-    if (video) {
-      video.hidden = true;
-      video.pause();
-    }
     endGesture();
   };
   root.addEventListener("pointerup", finish);
@@ -319,7 +331,7 @@ function makeChoice(
   registry: ControlRegistry,
 ): HTMLElement {
   const root = document.createElement("div");
-  root.className = "pblock pblock-choice";
+  root.className = "rite";
 
   const label = document.createElement("div");
   label.className = "pblock-label";

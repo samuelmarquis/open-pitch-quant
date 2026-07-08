@@ -91,6 +91,23 @@ bands                      over wxp Channel "viz-frames"      the reliquary rail
 - Screenshots without a browser: `tools/shot.swift` (offscreen
   WKWebView — the plugin's actual rendering engine).
 
+## The Meltdown Bestiary (round 4: the films ARE the values)
+
+Round 4 killed the widget: no boxes, borders, or chips anywhere on the
+rail — the Wardens are pinned straight to the void, each at its own
+slight angle, policy switches are bare ink with an acid underline. And
+each Warden is now a **metamorphosis film**: WAN 2.5 transforms the
+curated start frame into the high aspect over five seconds, extracted to
+a 33-frame strip, and **the knob scrubs it** — 35% Feel is frame 12 of
+the hand curling around its ember; VOICES at 6 is the star mid-division.
+
+Curation was a kill floor: 66 start-frame candidates → 11 survivors
+(83% rejected; the grinning homunculus at the Door was non-negotiable),
+22 film candidates → 10 + one re-roll (the Choir's star vanished at low
+values — re-shot with the star pinned). 44 hand-lettered name-card
+attempts died on an API minimum; the italic serif whisper stays.
+Contact sheets: `img/bestiary-candidates.png`, `img/bestiary-films.png`.
+
 ## The Meltdown Bestiary
 
 Every continuous parameter is kept by a **Warden** — a specimen generated
