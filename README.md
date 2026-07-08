@@ -51,8 +51,9 @@ exception — it wants `ibtool`).
 ## Status
 
 Working and daily-driven in Ableton (VST3). AU validates (`auval -v aumf
-Opq1 Opqt`). Reference A/B against actual PITCHMAP renders pending
-(probe suite ready in `testdata/`). No license chosen yet; if you want to
+Opq1 Opqt`). Reference A/B against actual PITCHMAP renders pending —
+`tools/make_ab_pack.py` builds the self-documenting render-job pack
+(protocol: `testdata/REFERENCE-RENDERS.md`). No license chosen yet; if you want to
 use this for something, open an issue.
 
 *This project reimplements a publicly documented idea from scratch — no

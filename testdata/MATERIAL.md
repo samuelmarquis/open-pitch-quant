@@ -20,6 +20,11 @@ tonal center — the fair quality test). Notably: both CIRCLES clips live on a
 D–F#–A# AUGMENTED triad. Targets live in `tools/render_batch.py` (SOURCES);
 override per experiment as needed.
 
+For PITCHMAP ground-truth renders, `tools/make_ab_pack.py` turns each clip
+into 48 kHz/mono job pairs with the batch-target chord baked as a real `.mid`
+(phylovox keeps its own MIDI, stretch pre-applied) — see
+`testdata/REFERENCE-RENDERS.md`.
+
 Restore/refresh: original paths live in the user's Dropbox; the copy commands
 are in the git history (or ask the user). The amen break is the designated
 transient/residual torture test; the CIRCLES clips and Board Warp material are

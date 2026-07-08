@@ -24,35 +24,14 @@ Repeat mode = pitch-class attraction in all octaves; Custom = exact note only;
 Electrify = tracked-voice count (max = mono!); residual layer exists; rounding
 modes are Up/Down/Nearest/Intelligent. See `docs/research/02-*.md`.
 
-## Rendering the PITCHMAP references (when iLok permits)
+## Rendering the PITCHMAP references
 
-DAW session at **48 kHz**. Audio track with the probe WAV → PITCHMAP insert;
-MIDI track playing the probe `.mid` routed to PITCHMAP's MIDI input (Logic/AU:
-insert as "AU MIDI-controlled Effect" with the audio track as side-chain; see
-manual Tutorial A).
-
-Plugin setup (the manual's recommended MIDI workflow): **Reset sliders →
-MIDI MAP on → Key Edit = Xclude → Edit Mode = Repeat**, Algorithm = Medium,
-everything else at defaults — that's the `default` setting. Then the matrix:
-
-| setting name | change from default |
-|---|---|
-| `default` | — |
-| `elec0` / `elec100` | Electrify 0% / 100% |
-| `pur0` / `pur100` | Purify 0% / 100% |
-| `feel100` | Feel 100% |
-| `glide100` | Glide 100% |
-| `custom` | Edit Mode = Custom instead of Repeat |
-| `nomidi` | MIDI MAP on, but **no notes held** (undocumented behavior!) |
-
-Full matrix only for probes **01, 03, 05**; `default` alone is fine for the
-rest (plus `custom` for 02). Render/bounce each and drop into
-`testdata/reference/` (gitignored) named:
-
-    <probe-name>__pm_<setting>.wav
-
-e.g. `03_detuned_triad_vs_Cmaj__pm_elec100.wav`. Note the plugin reports
-4096 samples latency — bounce with host PDC on, so files stay time-aligned.
+Superseded by the consolidated job pack: `tools/make_ab_pack.py` bakes
+these probes **and** the real material into `testdata/reference/jobs/` as
+matched (WAV, MID) pairs whose filenames carry the complete PITCHMAP
+settings for each bounce — the render matrix above lives in the names now.
+Protocol, settings legend, and DAW recipe: `testdata/REFERENCE-RENDERS.md`
+(copied into the pack as `_OPERATOR.md`).
 
 Also welcome in `testdata/material/` (gitignored): any real material you want
 this thing to eat — vocals first, then everything else.
