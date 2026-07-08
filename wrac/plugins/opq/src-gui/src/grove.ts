@@ -124,6 +124,11 @@ export class Grove {
   /** Live parameter values — the controls ARE the model; the display obeys. */
   private params = new Map<number, number>();
   private lastRenderMs = 0;
+  /** The sky remembers: every mapped note leaves a permanent faint star. */
+  private memory: HTMLCanvasElement = document.createElement("canvas");
+  /** Red thread: influence made physical (set while a Warden is held). */
+  private thread: { x: number; y: number } | null = null;
+  private pinImg = new Image();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -154,6 +159,11 @@ export class Grove {
 
   setParam(id: number, value: number): void {
     this.params.set(id, value);
+  }
+
+  setThread(point: { x: number; y: number } | null): void {
+    this.thread = point;
+    if (point && !this.pinImg.src) this.pinImg.src = "/shrine/pin.png";
   }
 
   private param(id: number, fallback: number): number {
@@ -324,6 +334,17 @@ export class Grove {
   private renderCosmos(tMs: number, head: VizFrame): void {
     const { ctx } = this;
     const { cx, cy, rOut, rIn } = this.cGeom();
+
+    // the remembering sky — a session writes its own nebula
+    if (this.memory.width !== this.canvas.width || this.memory.height !== this.canvas.height) {
+      this.memory.width = this.canvas.width;
+      this.memory.height = this.canvas.height;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(this.memory, 0, 0);
+    ctx.restore();
 
     // --- the wheel: spokes, octave rings, the pitch spiral
     ctx.lineWidth = 1;
@@ -592,13 +613,50 @@ export class Grove {
       ctx.globalAlpha = 1;
     }
 
+    // engrave this instant into the memory sky
+    {
+      const mctx = this.memory.getContext("2d");
+      if (mctx) {
+        mctx.save();
+        mctx.scale(this.dpr, this.dpr);
+        for (const s of stars) {
+          mctx.fillStyle = s.trail.color;
+          mctx.globalAlpha = 0.02;
+          mctx.beginPath();
+          mctx.arc(s.x, s.y, 1.6, 0, TAU);
+          mctx.fill();
+        }
+        mctx.restore();
+      }
+    }
+
+    // red thread: while a Warden is held, its influence runs to every star
+    if (this.thread) {
+      ctx.strokeStyle = "rgba(214,40,40,0.75)";
+      ctx.lineWidth = 1;
+      for (const s of stars) {
+        const midX = (this.thread.x + s.x) / 2;
+        const midY = Math.max(this.thread.y, s.y) + 26; // catenary sag
+        ctx.beginPath();
+        ctx.moveTo(this.thread.x, this.thread.y);
+        ctx.quadraticCurveTo(midX, midY, s.x, s.y);
+        ctx.stroke();
+        if (this.pinImg.complete && this.pinImg.naturalWidth > 0) {
+          ctx.drawImage(this.pinImg, s.x - 6, s.y - 6, 12, 12);
+        }
+      }
+      if (this.pinImg.complete && this.pinImg.naturalWidth > 0) {
+        ctx.drawImage(this.pinImg, this.thread.x - 8, this.thread.y - 8, 16, 16);
+      }
+    }
+
     this.drawHoverCard(stars);
 
     ctx.font = "9px ui-monospace, Menlo, monospace";
     ctx.textAlign = "left";
     ctx.fillStyle = "rgba(242,239,230,0.22)";
     ctx.fillText(
-      "cosmos: angle = pitch class · radius = octave · ○→star tether = the remap · ticks = harmonic comb",
+      "cosmos: angle = pitch class · radius = octave · ○→star tether = the remap · the sky remembers",
       6,
       this.h - 8,
     );

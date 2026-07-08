@@ -8,37 +8,38 @@
   </head>
   <body>
     <div id="app">
-      <header id="masthead">
-        <div id="brand">
+      <div id="plate">
+        <div id="sediment"></div>
+        <div id="grove-wrap">
+          <canvas id="grove"></canvas>
+        </div>
+        <div id="label">
           <h1 id="plugin-name">OPEN PITCH QUANT</h1>
           <div id="fig-caption">
             fig. 1 — pitch-object de-mixing on a chromatic grid
           </div>
-        </div>
-        <div id="masthead-side">
           <div id="masthead-meta"></div>
-          <button id="bypass" type="button" title="Bypass (latency-aligned)">
-            <span class="led"></span>BYPASS
+          <div id="scale-legend"></div>
+        </div>
+        <button id="bypass" type="button">
+          <img src="/shrine/seal.png" alt="" draggable="false" />
+          <span>DRY</span>
+        </button>
+        <div id="mode-switch">
+          <button type="button" data-mode="cosmos" class="is-active">
+            chart A · cosmos
           </button>
+          <button type="button" data-mode="strata">chart B · strata</button>
         </div>
-      </header>
-      <div id="stage">
-        <div id="grove-wrap">
-          <canvas id="grove"></canvas>
-          <div id="mode-switch">
-            <button type="button" data-mode="cosmos" class="is-active">
-              COSMOS
-            </button>
-            <button type="button" data-mode="strata">STRATA</button>
-          </div>
-          <div id="demo-badge" hidden>demo feed · phylovox trace</div>
-        </div>
-        <aside id="rail"></aside>
+        <div id="demo-badge" hidden>demo feed · phylovox trace</div>
+        <div id="wardens"></div>
+        <div id="rites"></div>
+        <img id="tally0" src="/shrine/tally0.png" alt="" draggable="false" />
+        <footer id="status">
+          <span id="status-left"></span>
+          <span id="status-right"></span>
+        </footer>
       </div>
-      <footer id="status">
-        <span id="status-left"></span>
-        <span id="status-right"></span>
-      </footer>
       <button
         class="resize-grip"
         id="resize-grip"

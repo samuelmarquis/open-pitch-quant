@@ -24,18 +24,19 @@ use crate::state::SharedState;
 
 // GUI window size bounds (pixels). The host opens at the default; resize is
 // clamped to min..=max. The display needs room — this is a maximalist UI.
+// The GUI is a fixed 1120x800 plate, integer-scaled (user decree: locked
+// to whole multiples; composition over reflow).
 pub(super) const DEFAULT_GUI_SIZE: GuiSize = GuiSize {
     width: 1120,
     height: 800,
 };
-// Min height is set so the parameter rail NEVER scrolls (user decree).
 pub(super) const MIN_GUI_SIZE: GuiSize = GuiSize {
-    width: 920,
-    height: 780,
+    width: 1120,
+    height: 800,
 };
 pub(super) const MAX_GUI_SIZE: GuiSize = GuiSize {
-    width: 1920,
-    height: 1200,
+    width: 2240,
+    height: 1600,
 };
 
 // Embed the frontend zip only for release builds; debug builds use the Vite

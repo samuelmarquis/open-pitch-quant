@@ -124,30 +124,91 @@ void (async () => {
   const specs = await bridge.manifest();
   const byId = new Map(specs.map((s) => [s.id, s]));
 
-  // --- rail: grouped parameter clusters -------------------------------
-  const rail = el("rail");
-  const ACCENTS = ["#4ff2d2", "#ff3fd4", "#ffe23d"];
-  GROUPS.forEach((group, gi) => {
-    const box = document.createElement("section");
-    box.className = "pgroup";
-    const head = document.createElement("header");
-    const title = document.createElement("span");
-    title.className = "pgroup-title";
-    title.textContent = group.title;
-    const caption = document.createElement("span");
-    caption.className = "pgroup-caption";
-    caption.textContent = group.caption;
-    head.append(title, caption);
-    box.appendChild(head);
-    const body = document.createElement("div");
-    body.className = "pgroup-body";
-    for (const id of group.ids) {
-      const spec = byId.get(id);
-      if (spec) body.appendChild(makeControl(spec, bridge, registry, ACCENTS[gi]));
+  // --- the shrine: hand-placed composition ------------------------------
+  // [x, y, w, h, rotation°] on the 1120x800 plate. Overlaps are deliberate.
+  const LAYOUT: Record<number, [number, number, number, number, number]> = {
+    1: [726, 64, 300, 150, -1.5],
+    2: [920, 180, 190, 95, 2],
+    3: [726, 200, 180, 90, 1],
+    15: [884, 262, 225, 112, -2],
+    4: [726, 306, 152, 76, 2.5],
+    5: [742, 398, 240, 120, -1],
+    7: [968, 380, 148, 74, 1.5],
+    9: [726, 494, 190, 95, -2],
+    14: [906, 478, 205, 102, 1],
+    16: [726, 584, 220, 110, -1.5],
+    13: [952, 588, 165, 82, 2],
+  };
+  const wardensLayer = el("wardens");
+  const ritesLayer = el("rites");
+  const groveCanvas = el<HTMLCanvasElement>("grove");
+  const onDrag = (active: boolean, control: HTMLElement) => {
+    if (!active) {
+      grove.setThread(null);
+      return;
     }
-    box.appendChild(body);
-    rail.appendChild(box);
-  });
+    const c = control.getBoundingClientRect();
+    const g = groveCanvas.getBoundingClientRect();
+    const k = g.width / groveCanvas.clientWidth || 1;
+    grove.setThread({
+      x: (c.left + c.width / 2 - g.left) / k,
+      y: (c.top + c.height / 2 - g.top) / k,
+    });
+  };
+  for (const spec of specs) {
+    if (spec.id === 0) continue;
+    const control = makeControl(spec, bridge, registry, "#4ff2d2", onDrag);
+    if (spec.kind === "choice") {
+      ritesLayer.appendChild(control);
+    } else {
+      const pos = LAYOUT[spec.id];
+      if (pos) {
+        control.style.left = `${pos[0]}px`;
+        control.style.top = `${pos[1]}px`;
+        control.style.width = `${pos[2]}px`;
+        control.style.height = `${pos[3]}px`;
+        control.style.transform = `rotate(${pos[4]}deg)`;
+      }
+      wardensLayer.appendChild(control);
+    }
+  }
+
+  // sediment: the strongest rejected candidates, pasted under everything —
+  // the obsessive never throws anything away
+  const SEDIMENT: [string, number, number, number, number][] = [
+    ["sed0", 745, 118, 250, 8],
+    ["sed1", 56, 84, 230, -6],
+    ["sed2", 934, 540, 210, 12],
+    ["sed3", 296, 606, 250, -9],
+    ["sed4", 812, 434, 230, 5],
+  ];
+  const sedimentLayer = el("sediment");
+  for (const [name, x, y, w, rot] of SEDIMENT) {
+    const img = document.createElement("img");
+    img.src = `/shrine/${name}.png`;
+    img.style.left = `${x}px`;
+    img.style.top = `${y}px`;
+    img.style.width = `${w}px`;
+    img.style.transform = `rotate(${rot}deg)`;
+    sedimentLayer.appendChild(img);
+  }
+
+  // integer scale lock: the plate is 1120x800, always; the window can only
+  // magnify it whole. Resize the host window to reach x2.
+  const plate = el("plate");
+  const legend = el("scale-legend");
+  const fit = () => {
+    const k = Math.max(
+      1,
+      Math.floor(Math.min(window.innerWidth / 1120, window.innerHeight / 800)),
+    );
+    plate.style.transform = `scale(${k})`;
+    plate.style.left = `${Math.max(0, (window.innerWidth - 1120 * k) / 2)}px`;
+    plate.style.top = `${Math.max(0, (window.innerHeight - 800 * k) / 2)}px`;
+    legend.textContent = `scale ×${k} — locked to whole numbers; enlarge the window for ×${k + 1}`;
+  };
+  window.addEventListener("resize", fit);
+  fit();
 
   // --- tooltips on the fixed chrome -------------------------------------
   attachTooltip(

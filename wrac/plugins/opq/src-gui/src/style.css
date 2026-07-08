@@ -41,110 +41,148 @@ body,
   overflow: hidden;
 }
 
+/* THE PLATE — a fixed 1120x800 composition, integer-scaled onto the void.
+ * Nothing reflows. Every position is a decision. */
 #app {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  position: relative;
+  background: #020202;
+}
+
+#plate {
+  position: absolute;
+  width: 1120px;
+  height: 800px;
+  transform-origin: 0 0;
   background: var(--void);
 }
 
-/* ---------------------------------------------------------------- masthead */
-
-#masthead {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 8px 14px 7px;
-  border-bottom: 1px solid var(--rule);
-  position: relative;
-}
-
-/* double rule — scientific plate */
-#masthead::after {
-  content: "";
+#sediment {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 3px;
-  border-bottom: 1px solid var(--rule);
+  inset: 0;
+  pointer-events: none;
 }
 
-#brand h1 {
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  line-height: 1;
+#sediment img {
+  position: absolute;
+  opacity: 0.12;
+  filter: grayscale(0.4);
 }
 
-#fig-caption {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--dim);
-  margin-top: 4px;
-  letter-spacing: 0.3px;
+#label {
+  position: absolute;
+  left: 18px;
+  top: 12px;
+  z-index: 5;
 }
 
-#masthead-side {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-#masthead-meta {
+#scale-legend {
   font-family: var(--mono);
   font-size: 9px;
   color: var(--faint);
-  text-align: right;
+  margin-top: 3px;
 }
 
 #bypass {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  color: var(--dim);
-  background: transparent;
-  border: 1px solid var(--rule);
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
+  position: absolute;
+  right: 20px;
+  top: 14px;
+  width: 72px;
+  height: 72px;
+  background: none;
+  border: none;
   cursor: pointer;
+  z-index: 6;
+  padding: 0;
 }
 
-#bypass .led {
-  width: 8px;
-  height: 8px;
-  background: #2a1216;
-  border: 1px solid #55232b;
-  display: inline-block;
+#bypass img {
+  width: 100%;
+  height: 100%;
+  transition: filter 0.15s, transform 0.1s;
+  filter: brightness(0.75);
 }
 
-#bypass:hover {
-  border-color: var(--dim);
-  color: var(--bone);
+#bypass span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(242, 239, 230, 0);
+  pointer-events: none;
+  transition: color 0.15s;
 }
 
-#bypass.is-engaged {
-  color: var(--alarm);
-  border-color: var(--alarm);
+#bypass:hover img {
+  filter: brightness(1);
 }
 
-#bypass.is-engaged .led {
-  background: var(--alarm);
-  box-shadow: 0 0 8px var(--alarm);
+#bypass.is-engaged img {
+  filter: brightness(1.25) saturate(1.6) drop-shadow(0 0 14px rgba(255, 60, 60, 0.7));
+  transform: scale(0.94);
 }
 
-/* ------------------------------------------------------------------- stage */
-
-#stage {
-  display: grid;
-  grid-template-columns: 1fr 292px;
-  min-height: 0;
+#bypass.is-engaged span {
+  color: rgba(255, 230, 220, 0.95);
+  text-shadow: 0 0 6px #000;
 }
+
+#wardens {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#wardens .warden {
+  position: absolute;
+  cursor: ns-resize;
+}
+
+.warden-tape {
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  width: 52px;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+#rites {
+  position: absolute;
+  left: 742px;
+  top: 712px;
+  width: 360px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+#rites .pblock-label {
+  font-size: 7.5px;
+}
+
+#tally0 {
+  position: absolute;
+  left: 660px;
+  top: 90px;
+  width: 90px;
+  opacity: 0.55;
+  transform: rotate(-4deg);
+  pointer-events: none;
+}
+
+
 
 #grove-wrap {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
+  position: absolute;
+  left: 10px;
+  top: 56px;
+  width: 700px;
+  height: 690px;
 }
 
 #grove {
@@ -155,8 +193,9 @@ body,
 
 #demo-badge {
   position: absolute;
-  left: 8px;
-  top: 8px;
+  left: 20px;
+  top: 748px;
+  z-index: 5;
   font-family: var(--mono);
   font-size: 9px;
   color: var(--acid-magenta);
@@ -166,64 +205,9 @@ body,
   pointer-events: none;
 }
 
-/* -------------------------------------------------------------------- rail */
 
-#rail {
-  overflow-y: auto;
-  padding: 8px 10px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: transparent;
-  scrollbar-width: thin;
-  scrollbar-color: var(--rule) transparent;
-}
 
-.pgroup {
-  position: relative;
-}
-
-.pgroup > header {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
-  opacity: 0.75;
-}
-
-.pgroup-title {
-  white-space: nowrap;
-}
-
-.pgroup-title {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.6px;
-  color: var(--acid-cyan);
-}
-
-.pgroup:nth-child(2) .pgroup-title {
-  color: var(--acid-magenta);
-}
-
-.pgroup:nth-child(3) .pgroup-title {
-  color: var(--acid-yellow);
-}
-
-.pgroup-caption {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--faint);
-  letter-spacing: 0.2px;
-}
-
-.pgroup-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-}
-
-/* ------------------------------------------------------------ the wardens */
+.pgroup:nth-child(2) .pgroup:nth-child(3) /* ------------------------------------------------------------ the wardens */
 
 .warden {
   position: relative;
@@ -278,6 +262,11 @@ body,
   position: relative;
   z-index: 2;
   text-shadow: 0 0 5px #000, 0 1px 2px #000;
+}
+
+.pblock-value {
+  color: rgba(245, 243, 235, 0.92);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.25), 0 1px 3px #000;
 }
 
 .pblock-label {
@@ -359,14 +348,15 @@ body,
   border-bottom: 1px solid var(--acid-yellow);
 }
 
-/* ------------------------------------------------------------------ status */
-
 #status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  padding: 5px 14px 6px;
-  border-top: 1px solid var(--rule);
+  padding: 4px 14px 5px;
   font-family: var(--mono);
   font-size: 9px;
   color: var(--dim);
@@ -423,8 +413,9 @@ body,
 
 #mode-switch {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  left: 452px;
+  top: 748px;
+  z-index: 5;
   display: flex;
   gap: 3px;
 }

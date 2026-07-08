@@ -73,20 +73,19 @@ const TIPS: Record<number, string> = {
 
 export type ControlRegistry = Map<number, (state: ParameterState) => void>;
 
+export type DragHook = (active: boolean, control: HTMLElement) => void;
+
 export function makeControl(
   spec: ParamSpec,
   bridge: OpqBridge,
   registry: ControlRegistry,
   accent: string,
+  onDrag?: DragHook,
 ): HTMLElement {
   const control =
     spec.kind === "choice"
       ? makeChoice(spec, bridge, registry)
-      : makeBlock(spec, bridge, registry, accent);
-  // Mix is the hero; choice rows are single-line and take the full width.
-  if (spec.id === 1 || spec.kind === "choice") {
-    control.style.gridColumn = "span 2";
-  }
+      : makeBlock(spec, bridge, registry, accent, onDrag);
   const tip = TIPS[spec.id];
   if (tip) attachTooltip(control, tip);
   return control;
@@ -105,12 +104,21 @@ function makeBlock(
   bridge: OpqBridge,
   registry: ControlRegistry,
   accent: string,
+  onDrag?: DragHook,
 ): HTMLElement {
   const root = document.createElement("div");
   root.className = "warden";
-  // pinned to the void, each at its own slight angle — nothing is a box
-  root.style.transform = `rotate(${((h01(spec.id * 17) - 0.5) * 3.2).toFixed(2)}deg)`;
-  root.style.marginLeft = `${Math.round(h01(spec.id * 29) * 14)}px`;
+  // taped to the felt
+  const tape = document.createElement("img");
+  tape.className = "warden-tape";
+  tape.src = `/shrine/tape${spec.id % 3}.png`;
+  tape.draggable = false;
+  tape.style.transform = `rotate(${((h01(spec.id * 7) - 0.5) * 40).toFixed(1)}deg)`;
+  if (h01(spec.id * 13) > 0.5) {
+    tape.style.left = "auto";
+    tape.style.right = "10px";
+  }
+  root.appendChild(tape);
 
   const label = document.createElement("div");
   label.className = "pblock-label";
@@ -253,6 +261,7 @@ function makeBlock(
     startValue = current;
     root.setPointerCapture(event.pointerId);
     root.classList.add("is-dragging");
+    onDrag?.(true, root);
     beginGesture();
   });
 
@@ -268,6 +277,7 @@ function makeBlock(
     dragging = false;
     root.releasePointerCapture(event.pointerId);
     root.classList.remove("is-dragging");
+    onDrag?.(false, root);
     endGesture();
   };
   root.addEventListener("pointerup", finish);
