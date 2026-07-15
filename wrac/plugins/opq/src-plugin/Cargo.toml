@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "OpenPitchQuant - real-time polyphonic pitch mapping"
 license = "MIT"
-repository = "https://github.com/novonotes/wrac-plugin-template"
+repository = "https://github.com/samuelmarquis/open-pitch-quant"
 publish = false
 build = "build.rs"
 
@@ -85,6 +85,18 @@ serde_json = "1.0"
 wrac_clap_adapter = { workspace = true }
 wrac_log = { workspace = true }
 opq-engine = { path = "../../../../rt/engine" }
+
+# The drum's Win32 mount (raw child HWND + GDI blit; no webview, no toolkit).
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
 
 # The drum (native Cocoa view; no webview, no toolkit).
 [target.'cfg(target_os = "macos")'.dependencies]

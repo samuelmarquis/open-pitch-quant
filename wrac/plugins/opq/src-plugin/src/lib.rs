@@ -13,7 +13,8 @@
 //! - `state.rs`    : lock-free parameter state + the analysis feed
 //! - `audio.rs`    : the audio-thread processor driving `opq_engine::Engine`
 //! - `drum.rs`     : the transect renderer (pure pixels, platform-free)
-//! - `gui.rs`      : the drum's Cocoa mount (macOS; elsewhere: headless)
+//! - `gui.rs`      : the drum's Cocoa mount (macOS)
+//! - `gui_win32.rs`: the drum's Win32 mount (Windows; elsewhere: headless)
 //!
 //! NOTE: unlike the template, we do NOT install the assert_no_alloc global
 //! allocator. The engine currently allocates small scratch vectors during
@@ -21,18 +22,20 @@
 //! RT-allocation discipline is tracked work, not a blocker.
 
 mod audio;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod assets;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod board;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod canvas;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod drum;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod font;
 #[cfg(target_os = "macos")]
 mod gui;
+#[cfg(target_os = "windows")]
+mod gui_win32;
 mod plugin;
 mod state;
 

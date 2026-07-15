@@ -1754,6 +1754,7 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+ "windows-sys 0.61.2",
  "wrac_clap_adapter",
  "wrac_log",
 ]

@@ -15,7 +15,7 @@ pub(crate) use params::{
     PARAM_TRANSITIONS_ID, PARAM_UNOWNED_ID, PARAM_VOICES_ID, param_clamp, param_default,
     param_exists, parameter_infos,
 };
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) use params::{param_minmax, param_value_text};
 
 use audio_ports::{AudioLayoutStore, OpqAudioPorts, OpqConfigurableAudioPorts};
@@ -32,7 +32,9 @@ use wrac_clap_adapter::{
 use crate::audio::OpqAudioProcessor;
 #[cfg(target_os = "macos")]
 use crate::gui::PanelGui;
-#[cfg(target_os = "macos")]
+#[cfg(target_os = "windows")]
+use crate::gui_win32::PanelGui;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 use wrac_clap_adapter::PluginGuiExtension;
 
 use crate::state::SharedState;
@@ -114,13 +116,13 @@ pub(crate) struct OpqPlugin {
     state_extension: Arc<OpqStateExtension>,
     note_ports: Arc<OpqNotePorts>,
     latency: Arc<OpqLatency>,
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     gui: Arc<PanelGui>,
 }
 
 impl OpqPlugin {
     pub(crate) fn new(context: PluginCoreContext, descriptor: PluginDescriptor) -> Self {
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         let _ = &context;
         let shared = Arc::new(SharedState::new());
         let audio_layout = Arc::new(AudioLayoutStore::new(2));
@@ -132,7 +134,7 @@ impl OpqPlugin {
 
         Self {
             descriptor,
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
             gui: Arc::new(PanelGui::new(
                 shared.clone(),
                 context.host_parameter_edit_notifier.clone(),
@@ -208,7 +210,7 @@ impl PluginCore for OpqPlugin {
         Some(self.latency.clone())
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     fn gui(&self) -> Option<Arc<dyn PluginGuiExtension>> {
         Some(self.gui.clone())
     }
