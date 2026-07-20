@@ -41,6 +41,7 @@ pub(crate) struct Glyph {
 /// A rasterized grotesk atlas (see bake-assets: fontdue metrics — `ymin` is
 /// the glyph's bottom edge relative to the baseline, y-up).
 pub(crate) struct Atlas {
+    #[allow(dead_code)] // .font header field; no reader yet
     pub(crate) ascent: i32,
     glyphs: Vec<Option<Glyph>>,
 }

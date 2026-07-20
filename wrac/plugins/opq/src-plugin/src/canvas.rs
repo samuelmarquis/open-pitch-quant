@@ -46,19 +46,6 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// Additive (phosphor) blend scaled by s (0..=1).
-    #[inline]
-    pub(crate) fn add(&mut self, x: i32, y: i32, ink: Ink, s: f32) {
-        if x < 0 || y < 0 || x >= self.w as i32 || y >= self.h as i32 {
-            return;
-        }
-        let i = (y as usize * self.w + x as usize) * 4;
-        for k in 0..3 {
-            let v = (ink[k] as f32 * s) as u16;
-            self.fb[i + k] = (self.fb[i + k] as u16 + v).min(255) as u8;
-        }
-    }
-
     pub(crate) fn fill(&mut self, x: i32, y: i32, w: i32, h: i32, ink: Ink, a: u8) {
         for yy in y..y + h {
             for xx in x..x + w {
@@ -154,6 +141,7 @@ impl<'a> Canvas<'a> {
         num: usize,
         den: usize,
     ) {
+        let frame = frame.min(s.frames.saturating_sub(1));
         let ow = s.w * num / den;
         let oh = s.h * num / den;
         for oy in 0..oh {
@@ -190,10 +178,6 @@ impl<'a> Canvas<'a> {
             pen += 6;
         }
         pen - x
-    }
-
-    pub(crate) fn text5_w(s: &str) -> i32 {
-        s.chars().count() as i32 * 6
     }
 
     /// Rasterized grotesk at the baseline `(x, base_y)`. Damage per `voice`.

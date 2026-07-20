@@ -130,7 +130,7 @@ impl PanelView {
     }
 
     fn mouse(&self, event: &NSEvent, kind: MouseKind) {
-        let p = unsafe { event.locationInWindow() };
+        let p = event.locationInWindow();
         let local = self.convertPoint_fromView(p, None);
         // Flipped view: local y already runs top-down in view points; the
         // view is BOARD_W x BOARD_H points, matching board pixels 1:1.

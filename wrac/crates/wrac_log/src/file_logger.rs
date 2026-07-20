@@ -471,6 +471,7 @@ fn announce_log_output(destination: &str) {
     eprintln!("[wrac_log] output={destination}");
 }
 
+#[cfg_attr(not(debug_assertions), allow(unused_variables))]
 fn apply_default_filter(builder: &mut Builder, dotenv_rust_log: Option<&str>) {
     if std::env::var("RUST_LOG").is_err() {
         #[cfg(debug_assertions)]
@@ -521,6 +522,7 @@ impl Write for FileAndStderr {
     }
 }
 
+#[cfg_attr(not(debug_assertions), allow(dead_code))]
 fn get_test_name() -> String {
     std::thread::current()
         .name()
@@ -661,6 +663,7 @@ mod tests {
         assert!(temp_dir.path().join("TestApp Latest.log").exists());
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     fn parse_dotenv_rust_log_reads_last_non_empty_rust_log() {
         let content = r#"
@@ -676,11 +679,13 @@ mod tests {
         );
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     fn parse_dotenv_rust_log_ignores_empty_rust_log() {
         assert_eq!(parse_dotenv_rust_log("RUST_LOG=\n"), None);
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     fn debug_dotenv_path_prefers_repository_root() {
         let temp_dir = TempDir::new("wrac_log_dotenv_root");
@@ -698,6 +703,7 @@ mod tests {
         );
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     fn debug_dotenv_path_falls_back_to_nearest_dotenv_when_repository_root_has_none() {
         let temp_dir = TempDir::new("wrac_log_dotenv_fallback");
@@ -714,6 +720,7 @@ mod tests {
         );
     }
 
+    #[cfg(debug_assertions)]
     #[test]
     fn parse_dotenv_rust_log_strips_comment_after_quoted_value() {
         assert_eq!(
