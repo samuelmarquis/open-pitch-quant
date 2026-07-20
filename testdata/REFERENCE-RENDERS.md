@@ -93,7 +93,14 @@ plus the filled `_RENDER-LOG.md` — and hand it back.
 ## Returning the goods
 
 Zip `reference/` (at minimum `renders/` + `_RENDER-LOG.md`) back onto the
-Mac at `testdata/reference/`. Everything here is local-only (the material
+Mac at `testdata/reference/`. First thing on arrival (Mac side):
+
+```
+nix develop --command python3 tools/check_ab_returns.py
+```
+
+inventories the returns and uses j00 to measure any residual latency in
+the remote render path before anything gets compared. Everything here is local-only (the material
 is private; git ignores all WAV/MID). Regenerate the pack any time:
 
 ```
