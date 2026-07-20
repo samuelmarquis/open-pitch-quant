@@ -51,9 +51,10 @@ exception — it wants `ibtool`).
 ## Status
 
 Working and daily-driven in Ableton (VST3). AU validates (`auval -v aumf
-Opq1 Opqt`). Reference A/B against actual PITCHMAP renders pending —
-`tools/make_ab_pack.py` builds the self-documenting render-job pack
-(protocol: `testdata/REFERENCE-RENDERS.md`). No license chosen yet; if you want to
+Opq1 Opqt`). Reference A/B against actual PITCHMAP renders: **measured** — see
+[`docs/research/04-pitchmap-measured.md`](docs/research/04-pitchmap-measured.md)
+(bench: `make_ab_pack.py` → `check_ab_returns.py` → `render_ab_ours.py` →
+`compare_ab.py`; protocol: `testdata/REFERENCE-RENDERS.md`). No license chosen yet; if you want to
 use this for something, open an issue.
 
 *This project reimplements a publicly documented idea from scratch — no
