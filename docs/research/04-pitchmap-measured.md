@@ -75,7 +75,7 @@ CARRIED is the other answer to the same impossibility.
 | FEEL | 100 % ≈ **leave static detune in place** (C+35→+38, G+20→+20) | preserves micro-*variation* only; static detune still fully corrected (j18: ours lands 0/0/0) | fork; matching mode needs deviation-retention |
 | THRESHOLD | th50 spared −40 c and +20 c but **corrected +35 c** — not a symmetric cents rule; estimator-dependent | `--threshold 45` spares all three | partial match; their estimator differs from ground truth |
 | ELECTRIFY | tracked-sound count; starved content **discarded** | `--voices`; starved content **carried dry** | count maps, fate of the starved does not |
-| PURIFY | no measurable effect on clean saws *or* pink noise in these probes (j04≈j05≈j01, gains within 0.1 dB) | no analog | flagged for ears; its domain is subtler than the manual implies |
+| PURIFY | **v1 rows void — bench artifact.** The scripted bench set an inert parameter index: pu0 and pu100 renders are magnitude-identical (smoothed-spectrum corr 1.0000; bit-identical on noise) while every other knob measurably moved. Sam confirms the knob is very audible by hand. Pack v2 (`make_ab_pack_p2.py`, dispatched 2026-07-20) re-runs a 5-point sweep on purify-forward material with a parameter-table dump and a self-test gate | no analog | unmeasured pending v2 |
 | Edit Mode / Rounding | Repeat/Custom, Nearest/Intelligent behave as documented; intel visibly hunts to avoid jumps (plate A, teal) | `--mode`, `--rounding` direct | matches |
 
 ## Conduct notes (for listening and for the comparator)
@@ -93,7 +93,14 @@ CARRIED is the other answer to the same impossibility.
   engineering one.
 - The unexplained: at FEEL 100 the E4−40 c voice renders at **+33 c** —
   neither source nor target, rock-steady for the whole take. No theory
-  survives contact with this number yet.
+  survives contact with this number yet (v2 re-renders the identical job
+  to test session stability).
+- **Methodological: PITCHMAP re-randomizes synthesis phases per render.**
+  Two renders of the same settings share magnitudes but decorrelate in
+  waveform (same-input diffs of −1 dB re signal with smoothed-magnitude
+  correlation 0.9995+). Null tests and waveform diffs are therefore
+  meaningless against this plugin; compare in the magnitude domain only.
+  (This is also how the purify bench artifact was caught.)
 
 ## Listening shortlist (the second pass, ears only)
 
@@ -104,8 +111,8 @@ CARRIED is the other answer to the same impossibility.
    voice you know intimately.
 5. `j36` — tritone remap +2.3 dB resonance: their shift-damage timbre
    vs ours at the same distance.
-6. `j43/j49/j50` — the amen at PURIFY 0/50/100: does the knob live in a
-   place these metrics can't see?
+6. ~~`j43/j49/j50` — the amen at PURIFY 0/50/100~~ — void (bench
+   artifact, above); the real purify sweep is pack v2's j100–j126.
 7. `j39` — the bell: inharmonic partials, chroma agreement only 0.83 —
    kaleidoscope vs compromise, adjudicated by ear.
 
