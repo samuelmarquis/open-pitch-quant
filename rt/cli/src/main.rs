@@ -11,7 +11,9 @@
 //!
 //! Output is latency-compensated (N_FFT samples trimmed).
 
-use opq_engine::{Engine, EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned, N_FFT};
+use opq_engine::{
+    Algorithm, Engine, EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned, N_FFT,
+};
 
 fn die(msg: &str) -> ! {
     eprintln!("error: {msg}");
@@ -234,6 +236,13 @@ fn main() {
                     "repeat" => Mode::Repeat,
                     "custom" => Mode::Custom,
                     _ => die("bad --mode"),
+                }
+            }
+            "--algorithm" => {
+                p.algorithm = match val().as_str() {
+                    "house" => Algorithm::House,
+                    "oracle" => Algorithm::Oracle,
+                    _ => die("bad --algorithm (house|oracle)"),
                 }
             }
             "--rounding" => {

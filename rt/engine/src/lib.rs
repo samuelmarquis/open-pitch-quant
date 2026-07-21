@@ -50,6 +50,21 @@ pub enum Rounding {
     Intelligent,
 }
 
+/// The governing law of the plant. House is the sound this engine grew
+/// into through the listening batches — frozen byte-exact by
+/// testdata/HOUSE-BASELINE.json, never silently retuned. Oracle is the
+/// PITCHMAP-faithful policy set measured in docs/research/04: the
+/// remainder is discarded instead of carried, glide is onset-only
+/// portamento, feel re-injects the tracker's believed deviation
+/// (statics included). Semantics only — Oracle does not chase the
+/// reference's defects (first-transient swallow, resonant gain, folded
+/// parameters).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Algorithm {
+    House,
+    Oracle,
+}
+
 /// What regions owned by very young (<2 frames) objects do — i.e., what
 /// ambiguous TRANSITION content (mid-portamento, note onsets) sounds like.
 /// (A third variant, Mute, was tried and executed by user decree.)
@@ -63,6 +78,7 @@ pub enum Newborn {
 
 #[derive(Clone, Copy)]
 pub struct EngineParams {
+    pub algorithm: Algorithm,
     pub voices: usize,
     pub unowned: Unowned,
     /// 0.0 disables the gate
@@ -100,6 +116,7 @@ pub struct EngineParams {
 impl Default for EngineParams {
     fn default() -> Self {
         Self {
+            algorithm: Algorithm::House,
             voices: 6,
             unowned: Unowned::Dry,
             tonality_gate: 0.0,

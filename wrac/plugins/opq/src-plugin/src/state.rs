@@ -106,6 +106,9 @@ impl SharedState {
     /// engine's dry path is latency-aligned — a click-free, PDC-correct bypass.
     pub(crate) fn engine_params(&self) -> EngineParams {
         let mut p = EngineParams {
+            // pinned until the SEL-2200 selector lands with the purify
+            // fitting (one host-facing param migration, not two)
+            algorithm: opq_engine::Algorithm::House,
             voices: self.v(PARAM_VOICES_ID).round().clamp(1.0, 12.0) as usize,
             unowned: if self.v(PARAM_UNOWNED_ID) >= 0.5 {
                 Unowned::Map
