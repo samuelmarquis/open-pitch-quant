@@ -1129,6 +1129,7 @@ impl Engine {
             let mut h = 0usize;
             let df;
             let mut noisy = false;
+            let mut discard = false;
             if owner[i] >= 0 {
                 let oi = owner[i] as usize;
                 let trk = &self.tracks[obj_trk[oi]];
@@ -1141,6 +1142,24 @@ impl Engine {
                 trk_idx = Some(obj_trk[oi]);
             } else if p.unowned == Unowned::Dry {
                 df = 0.0;
+                if p.algorithm == Algorithm::Oracle {
+                    // map-or-discard: Oracle forsakes what the law could
+                    // have owned but didn't. Content beyond the law's
+                    // reach (floor/ceiling) still passes, and a tonality
+                    // gate in Bypass is explicit mercy — honored.
+                    let mut in_law = fp > 30.0 && fp < self.sr / 2.0 * 0.95;
+                    if p.fmax_map.is_finite() {
+                        in_law = in_law && fp <= p.fmax_map;
+                    }
+                    if in_law && gate > 0.0 && p.tonality_mode == TonalityMode::Bypass {
+                        let mean =
+                            self.mag[lo..hi].iter().sum::<f64>() / (hi - lo).max(1) as f64;
+                        if self.mag[pk] / (mean + 1e-12) < gate {
+                            in_law = false;
+                        }
+                    }
+                    discard = in_law;
+                }
             } else {
                 let mut mappable = fp > 30.0 && fp < self.sr / 2.0 * 0.95;
                 if p.fmax_map.is_finite() {
@@ -1184,6 +1203,9 @@ impl Engine {
                 }
             }
 
+            if discard {
+                continue; // Oracle: the remainder is not carried
+            }
             let dbin = (df / bin_hz).round() as i64;
             let clo = (lo as i64 + dbin).max(1) as usize;
             let chi = ((hi as i64 + dbin).min(self.bins as i64 - 1)) as usize;
