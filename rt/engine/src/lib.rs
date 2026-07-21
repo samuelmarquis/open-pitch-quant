@@ -110,6 +110,11 @@ pub struct EngineParams {
     /// bins (onset/noise energy). 1 = full onset preservation but a ~-31 dB
     /// source-pitch ghost under partials; 0 = pure stamps (attack holes)
     pub carry: f64,
+    /// 0..1 one-sided denoise (the PURIFY fitting, both algorithms):
+    /// fades unowned residual, claimed-noise synthesis, and the carry
+    /// toward zero — at 1.0 the output is pure stamps, where the
+    /// reference's "resonance" character lives. 0 = neutral.
+    pub purify: f64,
     pub newborn: Newborn,
 }
 
@@ -135,6 +140,7 @@ impl Default for EngineParams {
             threshold_cents: 0.0,
             formant: 0.0,
             carry: 1.0,
+            purify: 0.0,
             newborn: Newborn::Map,
         }
     }
@@ -304,6 +310,10 @@ pub struct Engine {
     note_phase: [f64; 128],
     note_seen: [i64; 128],
     note_ft: [f64; 128],
+    /// smoothed recovered-region amplitude per output note (~150 ms EMA):
+    /// persistence is what makes PURIFY's recovery read as resonance
+    /// rather than flicker
+    note_recov: [f64; 128],
     tracks: Vec<Track>,
     // scratch
     fft_in: Vec<f64>,
@@ -384,6 +394,7 @@ impl Engine {
             note_phase: [0.0; 128],
             note_seen: [-2; 128],
             note_ft: [0.0; 128],
+            note_recov: [0.0; 128],
             tracks: Vec::with_capacity(16),
             fft_in: vec![0.0; n_fft],
             fft_s,
@@ -861,7 +872,12 @@ impl Engine {
         // while the mapped state keeps running underneath (no reset —
         // hard swaps at frame edges read as choppiness); only STRONG
         // onsets reset synthesis state (and thereby retrigger glide)
-        let hard_transient = p.transient_bypass && flux > 3.0 * p.flux_thresh;
+        // purify raises the hard-reset bar: high purify trades transient
+        // fidelity for sustained tone (the reference's documented tradeoff),
+        // letting dense percussive material recover onto the grid instead
+        // of resetting analysis every frame
+        let hard_transient =
+            p.transient_bypass && flux > 3.0 * p.flux_thresh * (1.0 + 3.0 * p.purify);
 
         self.build_grid(held, p.mode);
 
@@ -876,15 +892,24 @@ impl Engine {
         } else if hard_transient || self.first_frame {
             self.note_seen = [-2; 128];
             self.tracks.clear();
+            // purify fades even the hard-transient dry pass (the analysis
+            // reset above still happens; only the audio thins)
+            let g = 1.0 - p.purify;
             for c in 0..nch {
-                self.ysyn[c].copy_from_slice(&self.spec[c]);
+                if p.purify > 0.0 {
+                    for k in 0..self.bins {
+                        self.ysyn[c][k] = g * self.spec[c][k];
+                    }
+                } else {
+                    self.ysyn[c].copy_from_slice(&self.spec[c]);
+                }
             }
-            viz_transient = 1.0;
+            viz_transient = g as f32;
         } else {
             self.map_frame(t, p, bin_hz);
             viz_mapped = true;
             if p.transient_bypass && flux > p.flux_thresh {
-                let a = (flux / p.flux_thresh - 1.0).min(1.0);
+                let a = (flux / p.flux_thresh - 1.0).min(1.0) * (1.0 - p.purify);
                 viz_transient = a as f32;
                 for c in 0..nch {
                     for k in 0..self.bins {
@@ -1145,6 +1170,8 @@ impl Engine {
             let df;
             let mut noisy = false;
             let mut discard = false;
+            let mut region_gain = 1.0f64;
+            let mut recover = false;
             if owner[i] >= 0 {
                 let oi = owner[i] as usize;
                 let trk = &self.tracks[obj_trk[oi]];
@@ -1155,27 +1182,13 @@ impl Engine {
                 }
                 h = ((fp / trk.f0).round() as i64).max(1) as usize;
                 trk_idx = Some(obj_trk[oi]);
-            } else if p.unowned == Unowned::Dry {
-                df = 0.0;
-                if p.algorithm == Algorithm::Oracle {
-                    // map-or-discard: Oracle forsakes what the law could
-                    // have owned but didn't. Content beyond the law's
-                    // reach (floor/ceiling) still passes, and a tonality
-                    // gate in Bypass is explicit mercy — honored.
-                    let mut in_law = fp > 30.0 && fp < self.sr / 2.0 * 0.95;
-                    if p.fmax_map.is_finite() {
-                        in_law = in_law && fp <= p.fmax_map;
-                    }
-                    if in_law && gate > 0.0 && p.tonality_mode == TonalityMode::Bypass {
-                        let mean =
-                            self.mag[lo..hi].iter().sum::<f64>() / (hi - lo).max(1) as f64;
-                        if self.mag[pk] / (mean + 1e-12) < gate {
-                            in_law = false;
-                        }
-                    }
-                    discard = in_law;
-                }
             } else {
+                // unowned region. The valve chooses its fate (House:
+                // carry vs map; Oracle: discard vs map) — and PURIFY
+                // pulls it toward the grid regardless: recovery, the
+                // residual re-pitched rather than merely removed.
+                // Beyond the law's reach (floor/ceiling) content always
+                // passes; a tonality gate in Bypass is explicit mercy.
                 let mut mappable = fp > 30.0 && fp < self.sr / 2.0 * 0.95;
                 if p.fmax_map.is_finite() {
                     mappable = mappable && fp <= p.fmax_map;
@@ -1189,11 +1202,34 @@ impl Engine {
                         mappable = false;
                     }
                 }
-                df = if mappable {
-                    self.nearest_grid(fp) - fp
+                if p.unowned == Unowned::Map {
+                    df = if mappable {
+                        self.nearest_grid(fp) - fp
+                    } else {
+                        0.0
+                    };
+                } else if mappable && p.purify > 0.0 {
+                    // crossfade carry -> recovered-to-grid (Oracle
+                    // carries no dry share; its remainder is discarded)
+                    let dry_g = if p.algorithm == Algorithm::Oracle {
+                        0.0
+                    } else {
+                        1.0 - p.purify
+                    };
+                    if dry_g > 0.0 {
+                        for c in 0..nch {
+                            for k in lo..hi {
+                                self.ysyn[c][k] += dry_g * self.spec[c][k];
+                            }
+                        }
+                    }
+                    region_gain = p.purify;
+                    recover = true;
+                    df = self.nearest_grid(fp) - fp;
                 } else {
-                    0.0
-                };
+                    df = 0.0;
+                    discard = mappable && p.algorithm == Algorithm::Oracle;
+                }
             }
             if h > MAX_H {
                 trk_idx = None;
@@ -1243,7 +1279,7 @@ impl Engine {
                     for k in clo..chi {
                         let sk = (k as i64 - dbin) as usize;
                         self.ysyn[c][k] += Complex64::from_polar(
-                            self.magc[c][sk],
+                            region_gain * self.magc[c][sk],
                             self.phi[c][sk] + ramp,
                         );
                     }
@@ -1281,6 +1317,24 @@ impl Engine {
             let anchor = self.phim[pk] - PI * dsrc;
             let ni = ((69.0 + 12.0 * (ft / 440.0).log2()).round() as i64).clamp(0, 127)
                 as usize;
+            // recovered regions: whole-region energy, smoothed per note
+            let recov_mid = if recover {
+                let mut e = 0.0;
+                for k in lo..hi {
+                    e += self.mag[k] * self.mag[k];
+                }
+                let rss = e.sqrt();
+                let prev = if self.note_seen[ni] >= t - 1 {
+                    self.note_recov[ni]
+                } else {
+                    rss
+                };
+                let ema = prev + 0.15 * (rss - prev);
+                self.note_recov[ni] = ema;
+                Some((ema, rss.max(1e-12)))
+            } else {
+                None
+            };
             let phv = if let Some(ti) = trk_idx {
                 let trk = &mut self.tracks[ti];
                 let (ph0, seen, ft_prev) = trk.phases[h];
@@ -1325,11 +1379,12 @@ impl Engine {
             // position: onset/noise energy living between partials
             // otherwise vanishes entirely (measured as ~25 dB "attack
             // holes" at note starts — the batch-011 choppiness)
-            if p.carry > 0.0 {
+            let carry_g = p.carry * (1.0 - p.purify);
+            if carry_g > 0.0 {
                 for c in 0..nch {
                     for k in lo..hi {
                         if (k as i64 - pk as i64).unsigned_abs() as usize > 4 {
-                            self.ysyn[c][k] += p.carry * self.spec[c][k];
+                            self.ysyn[c][k] += carry_g * self.spec[c][k];
                         }
                     }
                 }
@@ -1338,8 +1393,19 @@ impl Engine {
             let k0 = ((b - 4.0).ceil() as i64).max(1) as usize;
             let k1 = ((b + 4.0).floor() as i64).min(self.bins as i64 - 2) as usize;
             for c in 0..nch {
-                // channel's own level + phase offset from the mid reference
-                let amp_c = self.magc[c][pk] / ker_src * formant_gain;
+                // channel's own level + phase offset from the mid reference.
+                // Recovered regions concentrate: the WHOLE region's energy
+                // (RSS) lands in the stamped line — the reference's additive
+                // band-bunching, energy-conserving flavor (no gain bloom)
+                let amp_c = if let Some((ema, rss_mid)) = recov_mid {
+                    let mut e = 0.0;
+                    for k in lo..hi {
+                        e += self.magc[c][k] * self.magc[c][k];
+                    }
+                    ema * (e.sqrt() / rss_mid) * formant_gain * region_gain
+                } else {
+                    self.magc[c][pk] / ker_src * formant_gain * region_gain
+                };
                 let off_c = if nch > 1 {
                     princarg(self.phi[c][pk] - self.phim[pk])
                         + decor_amt * decor_offset(ni, c)

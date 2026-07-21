@@ -201,6 +201,9 @@ fn main() {
             "--carry" => {
                 p.carry = val().parse().unwrap_or_else(|_| die("bad --carry"))
             }
+            "--purify" => {
+                p.purify = val().parse().unwrap_or_else(|_| die("bad --purify"))
+            }
             "--newborn" => {
                 p.newborn = match val().as_str() {
                     "map" => Newborn::Map,
