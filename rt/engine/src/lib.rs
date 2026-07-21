@@ -1047,7 +1047,14 @@ impl Engine {
                             trk.cand_n = 1;
                         }
                         if grid_changed || trk.cand_n >= 3 {
-                            trk.r_from = r_now;
+                            trk.r_from = if p.algorithm == Algorithm::Oracle {
+                                // Oracle glide is onset-only portamento
+                                // (measured: j24≡j30) — retargets land
+                                // instantly, births still ramp
+                                (tgt / f0).ln()
+                            } else {
+                                r_now
+                            };
                             trk.g0 = t;
                             trk.tgt = tgt;
                             trk.cand_n = 0;
@@ -1083,7 +1090,15 @@ impl Engine {
             } else {
                 r_to
             };
-            let dev = trk.f0.ln() - trk.lema;
+            let dev = if p.algorithm == Algorithm::Oracle {
+                // belief re-injection (the ORACLE feel law, research 04):
+                // the tracker's whole believed deviation from the source's
+                // own chromatic pitch, statics included, linear in cents
+                let f_chrom = midi_freq((69.0 + 12.0 * (trk.f0 / 440.0).log2()).round());
+                trk.f0.ln() - f_chrom.ln()
+            } else {
+                trk.f0.ln() - trk.lema // micro-variation about the track EMA
+            };
             obj_mult.push(if bypass {
                 1.0
             } else {
