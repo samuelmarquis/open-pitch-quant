@@ -79,7 +79,7 @@ CARRIED is the other answer to the same impossibility.
 | FEEL | **linear re-injection of the believed deviation**: output = target + fe × believed_dev. v2 measured fe50 at exactly half of fe100 (+19.2/+16.8/+10.0 vs +38.2/+33.4/+20.0). The belief vector is session-stable (v1 j18 reproduced to 0.1 c) | preserves micro-*variation* only; static detune still fully corrected | fork; a matching mode needs `out = target + fe·est_dev` with *their* estimator's flavor of belief |
 | THRESHOLD | operates on the engine's **believed** deviation, not ground truth — v2's 5-point curve spares G(+20 c) between th25–35, E(−40 c) between th35–50, C(+35 c) between th50–75, which is perfectly monotonic in the estimator's own deviation vector (+20/+33/+38 c, measured via FEEL below). The v1 "asymmetry" dissolves: we ranked by truth, the machine ranks by belief | `--threshold` in true cents of own pitch | same mechanism, different referent: theirs thresholds the estimate, ours the actual detune |
 | ELECTRIFY | tracked-sound count; starved content **discarded** | `--voices`; starved content **carried dry** | count maps, fate of the starved does not |
-| PURIFY | **the VST3 parameter is folded around its center** (v2, 5-point sweeps on five materials): normalized 0.0 and 1.0 both land on the same strong *reduce-noise* state while 25/50/75 sit together at default — U-shaped on every material (hat noise-share 7.4/93.6/93.7/93.8/7.5 %). The effect itself is enormous where noise lives (a 94 %-noise hat becomes a 7 %-noise *tone*), but the manual's below-50 noise-*increase* side is unreachable through the param API — pack v3 (GUI-set sweep + param-vs-GUI cross-check) is dispatched for that half. v1's purify rows are confirmed void by adjudication: all three v1 amen renders sit exactly on the default point of the v2 curve | no analog | half-measured; the fold means automation of PURIFY in this binary cannot be trusted to match the panel knob |
+| PURIFY | **closed by v3 (GUI-set sweep + cross-check). One-sided denoise with all the action in the top quarter of knob travel**: GUI 0–75 is neutral (≡ default; hat noise-share 93.6/93.6/93.7/93.8 %), GUI 100 is a transformative denoise/harmonic-recovery state (hat → **7.4 %** — the hat becomes a *tone*; amen 56→31 %; murky 14→10 %). **No noise-increase side exists in this build** — the manual's "below 50 % increases noisy components" is false for this binary; knob-bottom is neutral. Separately, the VST3 *parameter* is folded (normalized 0.0 ≡ 1.0 ≡ GUI-100, verified PARAM-1.0 7.5 % vs GUI-100 7.4 %; GUI 25–75 ≡ param 25–75 ≡ neutral), so purify automation in this build cannot be trusted. v1 purify rows void; v2's {0,100} rows are max-purify duplicates, its {25,50,75} rows neutral | no analog; nearest raw ingredients are `--carry`/`--gate`/unowned | measured and closed; a faithful mode needs a one-sided residual-suppress/harmonic-recover macro with a top-quarter taper |
 | Edit Mode / Rounding | Repeat/Custom, Nearest/Intelligent behave as documented; intel visibly hunts to avoid jumps (plate A, teal) | `--mode`, `--rounding` direct | matches |
 
 ## Conduct notes (for listening and for the comparator)
@@ -122,8 +122,9 @@ CARRIED is the other answer to the same impossibility.
    voice you know intimately.
 5. `j36` — tritone remap +2.3 dB resonance: their shift-damage timbre
    vs ours at the same distance.
-6. ~~`j43/j49/j50` — the amen at PURIFY 0/50/100~~ — void (bench
-   artifact, above); the real purify sweep is pack v2's j100–j126.
+6. `reference-p3/renders/j202` vs `j204` — the hat at GUI-purify 50 vs
+   100: a 94 %-noise hat turned into a tone. The single most dramatic
+   knob state measured in this whole campaign.
 7. `j39` — the bell: inharmonic partials, chroma agreement only 0.83 —
    kaleidoscope vs compromise, adjudicated by ear.
 
