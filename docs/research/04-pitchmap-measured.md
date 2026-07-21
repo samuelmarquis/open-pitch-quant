@@ -19,6 +19,10 @@ is the listening agenda.*
   (`tools/render_ab_ours.py`; PITCHMAP→opq translation in its header).
   Battery: `tools/compare_ab.py` → `out/ab-analysis/metrics.md` + the
   plates in [`ab-plates/`](ab-plates/).
+- Pack v2 (`make_ab_pack_p2.py`, returned 2026-07-20): purify-forward
+  material sweep + parameter census (2120 params, `reference-p2/params.txt`)
+  + THRESHOLD curve + FEEL midpoint/repro. Pack v3
+  (`make_ab_pack_p3.py`, dispatched): GUI-set purify + fold cross-check.
 
 ## The headline: map-or-discard vs map-or-carry
 
@@ -72,10 +76,10 @@ CARRIED is the other answer to the same impossibility.
 | control | PITCHMAP, measured | ours | verdict |
 |---|---|---|---|
 | GLIDE | **onset-only portamento**: chord-change retarget is instant even at 100 % (j24≡j30); new-note attacks start ~160 c off, settle ≈¼ s (phylovox j52) | glide smooths **retargets** (the drum's amber bend) | semantic fork; a matching mode needs onset-glide |
-| FEEL | 100 % ≈ **leave static detune in place** (C+35→+38, G+20→+20) | preserves micro-*variation* only; static detune still fully corrected (j18: ours lands 0/0/0) | fork; matching mode needs deviation-retention |
-| THRESHOLD | th50 spared −40 c and +20 c but **corrected +35 c** — not a symmetric cents rule; estimator-dependent | `--threshold 45` spares all three | partial match; their estimator differs from ground truth |
+| FEEL | **linear re-injection of the believed deviation**: output = target + fe × believed_dev. v2 measured fe50 at exactly half of fe100 (+19.2/+16.8/+10.0 vs +38.2/+33.4/+20.0). The belief vector is session-stable (v1 j18 reproduced to 0.1 c) | preserves micro-*variation* only; static detune still fully corrected | fork; a matching mode needs `out = target + fe·est_dev` with *their* estimator's flavor of belief |
+| THRESHOLD | operates on the engine's **believed** deviation, not ground truth — v2's 5-point curve spares G(+20 c) between th25–35, E(−40 c) between th35–50, C(+35 c) between th50–75, which is perfectly monotonic in the estimator's own deviation vector (+20/+33/+38 c, measured via FEEL below). The v1 "asymmetry" dissolves: we ranked by truth, the machine ranks by belief | `--threshold` in true cents of own pitch | same mechanism, different referent: theirs thresholds the estimate, ours the actual detune |
 | ELECTRIFY | tracked-sound count; starved content **discarded** | `--voices`; starved content **carried dry** | count maps, fate of the starved does not |
-| PURIFY | **v1 rows void — bench artifact.** The scripted bench set an inert parameter index: pu0 and pu100 renders are magnitude-identical (smoothed-spectrum corr 1.0000; bit-identical on noise) while every other knob measurably moved. Sam confirms the knob is very audible by hand. Pack v2 (`make_ab_pack_p2.py`, dispatched 2026-07-20) re-runs a 5-point sweep on purify-forward material with a parameter-table dump and a self-test gate | no analog | unmeasured pending v2 |
+| PURIFY | **the VST3 parameter is folded around its center** (v2, 5-point sweeps on five materials): normalized 0.0 and 1.0 both land on the same strong *reduce-noise* state while 25/50/75 sit together at default — U-shaped on every material (hat noise-share 7.4/93.6/93.7/93.8/7.5 %). The effect itself is enormous where noise lives (a 94 %-noise hat becomes a 7 %-noise *tone*), but the manual's below-50 noise-*increase* side is unreachable through the param API — pack v3 (GUI-set sweep + param-vs-GUI cross-check) is dispatched for that half. v1's purify rows are confirmed void by adjudication: all three v1 amen renders sit exactly on the default point of the v2 curve | no analog | half-measured; the fold means automation of PURIFY in this binary cannot be trusted to match the panel knob |
 | Edit Mode / Rounding | Repeat/Custom, Nearest/Intelligent behave as documented; intel visibly hunts to avoid jumps (plate A, teal) | `--mode`, `--rounding` direct | matches |
 
 ## Conduct notes (for listening and for the comparator)
@@ -91,16 +95,23 @@ CARRIED is the other answer to the same impossibility.
   material: −5.5 dB (audio178), −4.0 dB (prism), −2.0 dB (amen) — voices
   cap and residual handling are the suspects. Listening question, then an
   engineering one.
-- The unexplained: at FEEL 100 the E4−40 c voice renders at **+33 c** —
-  neither source nor target, rock-steady for the whole take. No theory
-  survives contact with this number yet (v2 re-renders the identical job
-  to test session stability).
+- ~~The unexplained +33 c E4~~ — **solved by v2**: it is the pitch
+  estimator's own belief. PITCHMAP believes the −40 c-flat E4 is +33 c
+  sharp — stably, across sessions — and both FEEL (which re-injects
+  belief×slider) and THRESHOLD (which spares by belief) act on that same
+  internal vector. One estimator, two knobs, mutually confirming. Why the
+  estimator mis-signs this particular flat detune remains open; that it
+  does is now a fixed, reproducible fact.
 - **Methodological: PITCHMAP re-randomizes synthesis phases per render.**
   Two renders of the same settings share magnitudes but decorrelate in
   waveform (same-input diffs of −1 dB re signal with smoothed-magnitude
   correlation 0.9995+). Null tests and waveform diffs are therefore
-  meaningless against this plugin; compare in the magnitude domain only.
-  (This is also how the purify bench artifact was caught.)
+  meaningless against this plugin — v2's waveform-based self-test
+  false-passed on exactly this. Compare in the magnitude domain, and
+  **time-locally**: time-averaged smoothed spectra are equally blind to
+  local energy redistribution (they read purify-different renders as
+  identical). The working instrument is HPSS-style noise-share /
+  per-frame flatness. Both failure modes are now proven, one per bench.
 
 ## Listening shortlist (the second pass, ears only)
 
