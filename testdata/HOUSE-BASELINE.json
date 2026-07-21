@@ -1,0 +1,343 @@
+{
+ "engine_commit": "36a881291c005bea69938049f4de112ad40e1f01",
+ "frozen": "2026-07-21",
+ "law": "algorithm=house must reproduce these bytes forever",
+ "renders": {
+  "resoguitar__champ.wav": {
+   "sha256": "42a8886cd7d022f656deea656b441ddb209386c6727a0a2c4b416d400a9b1789",
+   "rms": 0.173774541703034,
+   "samples": 108000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "audio178__champ.wav": {
+   "sha256": "25a46b53e74a9f2b93f2ca23ed7d16ba18aa08f7be4d786defad6299e61d43e6",
+   "rms": 0.10276051724054217,
+   "samples": 216000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "audio116__champ.wav": {
+   "sha256": "e742f15ec85478b26c22c3bd73dbaf7a79ee4a8a69fdce0f9680215369a21d8c",
+   "rms": 0.18630436225044858,
+   "samples": 144000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "amen__champ.wav": {
+   "sha256": "3edbda8e0262e4c4a79fe3e3e24f4fc4a5f43f63e3f81ff4e15cb86d98c30a2e",
+   "rms": 0.15369699806727247,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "memories__champ.wav": {
+   "sha256": "06f9d72d367556977ac2bf80afdcccf0225a07a9228e9494ffd74a04bdac20b3",
+   "rms": 0.04854984095830786,
+   "samples": 225536,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "when__champ.wav": {
+   "sha256": "38711158632e3475ca0acae1e80e3513d0b286121a7dde05122a77cc125f8bcc",
+   "rms": 0.07903714434179913,
+   "samples": 249035,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "falter__champ.wav": {
+   "sha256": "a994ead6a7fad3d9f5c7ca23f59428a907a5c6175ab13b0952b148c32b9242ad",
+   "rms": 0.07272659156261745,
+   "samples": 70041,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "prism__champ.wav": {
+   "sha256": "9b628661b75dd9d4d39b53cde5b04f8ec635593b6328e054c0184b8880c89292",
+   "rms": 0.16625034108365208,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "phylovox__champ.wav": {
+   "sha256": "a18d24c6867bdeea037378381a30a3dcf15c9f5dc5ab686fceb0c3191f226adb",
+   "rms": 0.1235853913817317,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "p01__champ.wav": {
+   "sha256": "82ed54cac9e354cfeb3f0ea880cd66da214ac4cd47c6b866fc997f34f4f747c3",
+   "rms": 0.09070537468632854,
+   "samples": 288000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "p03__champ.wav": {
+   "sha256": "576940f6083e9cbf5c8c159801eef1bced200aec5f8bceca29b1babb275f1d28",
+   "rms": 0.1504180217070649,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "p05__champ.wav": {
+   "sha256": "5709eef2a950b7c454ad3efd5fc5e55aad498483344a1af41cd81d8b5d5f11a5",
+   "rms": 0.14886002174669874,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35"
+  },
+  "p03__flat.wav": {
+   "sha256": "b2800254577e8672f0b7e784ab54063280da895fa08e165f9b9eb44fa4a712e8",
+   "rms": 0.15041969507623937,
+   "samples": 384000,
+   "flags": ""
+  },
+  "p03__glide60.wav": {
+   "sha256": "31e395e15f641f9f8cd8467fc7c0b8ccb69cbe294ebd34b0ed9fcf5e501b4b2d",
+   "rms": 0.1504013374073948,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --glide 0.06"
+  },
+  "p03__thresh25.wav": {
+   "sha256": "da9580255fedaa09f652eb2e51357d4e444d7e8f8e1a568f6a221f12b26e9b20",
+   "rms": 0.14813744936310513,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --threshold 25"
+  },
+  "p03__custom.wav": {
+   "sha256": "576940f6083e9cbf5c8c159801eef1bced200aec5f8bceca29b1babb275f1d28",
+   "rms": 0.1504180217070649,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --mode custom"
+  },
+  "p03__voices1.wav": {
+   "sha256": "d25d932a31ec2eea6a241a4b3b087056cc49ca845acc521338d78d24365d811e",
+   "rms": 0.14657223308326917,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --voices 1"
+  },
+  "p03__formant100.wav": {
+   "sha256": "3661dba92cf570d2ff7285b2e732e32d33866df23f1420a248f25b51dbac2707",
+   "rms": 0.15046341437597394,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --formant 1.0"
+  },
+  "p03__grit35.wav": {
+   "sha256": "a2d0d4fc71803e73e5be7d2e8b8cfea45817455af2db70b5d28b0248cd17c418",
+   "rms": 0.12781448814132984,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --grit 0.35"
+  },
+  "p03__map.wav": {
+   "sha256": "99ae04f4ee235c53da63312c88ed9d06732381091d575e88d4fce1e5923c46bc",
+   "rms": 0.15041785594696214,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --unowned map --gate 2.5"
+  },
+  "p03__feel100.wav": {
+   "sha256": "8a05b0ddbd9f0827fd099632ba049eb852c1ad1feb9eda8f195dbb825c45e4ca",
+   "rms": 0.15041301966827833,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 1.0"
+  },
+  "p03__carry0.wav": {
+   "sha256": "9dc5ff3314bef779990737b7d2bf55ea42292a714b4a1292083c56478be34586",
+   "rms": 0.15041786466091503,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --carry 0.0"
+  },
+  "p03__notransient.wav": {
+   "sha256": "08eabe4b228de122b853453131f7aec660a52ae1147ba93519ab6f32a6baffb0",
+   "rms": 0.15044660947462585,
+   "samples": 384000,
+   "flags": "--rounding intelligent --feel 0.35 --no-transient"
+  },
+  "p05__flat.wav": {
+   "sha256": "4dcc47569f4837242af0bf03ced2e576ceb4ca064576bda5925f62e06ff02a01",
+   "rms": 0.14874591543963556,
+   "samples": 480000,
+   "flags": ""
+  },
+  "p05__glide60.wav": {
+   "sha256": "f56a3a9971e2845b30e4dfcde0846f8fb785e2d0d801ac3b1e3d074eae35e2a4",
+   "rms": 0.14874759053732206,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --glide 0.06"
+  },
+  "p05__thresh25.wav": {
+   "sha256": "c208cb977ac5c518f1ae205a8d12f023a9cd3e730efa910506e68e46763d1483",
+   "rms": 0.1443854384056022,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --threshold 25"
+  },
+  "p05__custom.wav": {
+   "sha256": "f02359746d0ed6aa523515bff51ffc929c36ec7ede4811d49601c132662b410c",
+   "rms": 0.13859178753460327,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --mode custom"
+  },
+  "p05__voices1.wav": {
+   "sha256": "c19af3fea20e69459e0a7019029bf4fd397b9f485eeb600c41e479a4b515627d",
+   "rms": 0.14455906650530143,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --voices 1"
+  },
+  "p05__formant100.wav": {
+   "sha256": "d2867959b5fc58ba172d9bd16d9f2ffd36096db588ae3fb94432c10efb5b4f6f",
+   "rms": 0.14672862214187965,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --formant 1.0"
+  },
+  "p05__grit35.wav": {
+   "sha256": "8fc8675f2526617981d6d3a15d58a1f42cc0765f1f1fb5107565e7ed01e6da1a",
+   "rms": 0.13246216818229486,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --grit 0.35"
+  },
+  "p05__map.wav": {
+   "sha256": "9c132a9d0deb9406f7b468cfc52e53a0b75718c85727d80447ba881aa1018cbb",
+   "rms": 0.14886019601893327,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --unowned map --gate 2.5"
+  },
+  "p05__feel100.wav": {
+   "sha256": "536222e1bc612c68272718ec025b0c8f5f8a55eed1a9db23a6e9641183a11df4",
+   "rms": 0.14872215280415413,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 1.0"
+  },
+  "p05__carry0.wav": {
+   "sha256": "1673b0d5b910670c2f91d46403c467d7267c8e10c83189168fa7425fe424c860",
+   "rms": 0.14886011311776665,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --carry 0.0"
+  },
+  "p05__notransient.wav": {
+   "sha256": "e17dbc8da1ac4201a6cc354c2d4dcc9b04c7b41537acc6dc0d6940fab2adbb76",
+   "rms": 0.14868926544507913,
+   "samples": 480000,
+   "flags": "--rounding intelligent --feel 0.35 --no-transient"
+  },
+  "amen__flat.wav": {
+   "sha256": "8a439a433b0d13a65803792ac12e79b967ae6bdf4a35f1675c1cdceaf190da64",
+   "rms": 0.167921238606782,
+   "samples": 128290,
+   "flags": ""
+  },
+  "amen__glide60.wav": {
+   "sha256": "eada2a803829912f0b59ce17e8772725638fb4a1550ee4aa182ff4088ac80844",
+   "rms": 0.17074516325051586,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --glide 0.06"
+  },
+  "amen__thresh25.wav": {
+   "sha256": "9c81aa8c819be6a63747ed5c45a5b1963bc7826914ada4bd6d160ea9ca4e5f08",
+   "rms": 0.17378931235861594,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --threshold 25"
+  },
+  "amen__custom.wav": {
+   "sha256": "b771a303d247f1efa2f231791466743255fe6a01156a7b8f5d4eae24f9f992db",
+   "rms": 0.15614587815253617,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --mode custom"
+  },
+  "amen__voices1.wav": {
+   "sha256": "d0b2689d5064b8a91b28fffd974bdda22096fd62e9a33569b6063e8a4475a9af",
+   "rms": 0.17653990971474184,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --voices 1"
+  },
+  "amen__formant100.wav": {
+   "sha256": "ec4dfaccc7a5e55132024522690ccdbd0374b55cea41fde0ed345e463e276e37",
+   "rms": 0.15368689356438478,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --formant 1.0"
+  },
+  "amen__grit35.wav": {
+   "sha256": "a94d5e61bf75a281e3e7de4ef7423f4269afea2d7280684076c948af4ff6ce37",
+   "rms": 0.1474255654088691,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --grit 0.35"
+  },
+  "amen__map.wav": {
+   "sha256": "985a2cbd7947e4071710ab1ee8121966e7d72b535db866fc20e06aee584bd143",
+   "rms": 0.1667054005301979,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --unowned map --gate 2.5"
+  },
+  "amen__feel100.wav": {
+   "sha256": "d5f79767dc513b1a1eb2a6a58ac8b53cd9e5821a7130870a9541d007fba58fd1",
+   "rms": 0.1613831828285991,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 1.0"
+  },
+  "amen__carry0.wav": {
+   "sha256": "6d202a7865dc9e2925fe4e8144e4c11c24f9266ce99b758e3baa2c4d52ebbcc3",
+   "rms": 0.1511685116137559,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --carry 0.0"
+  },
+  "amen__notransient.wav": {
+   "sha256": "be26d2cfd29bd6fbc32bd4f32e0ee836064bb02b1d08dad824f179c01fe32388",
+   "rms": 0.1550337702691392,
+   "samples": 128290,
+   "flags": "--rounding intelligent --feel 0.35 --no-transient"
+  },
+  "phylovox__flat.wav": {
+   "sha256": "86f81ab888ac6cfa4b3012697e41b49d5f0d038bc43095fd94def77c49efe51d",
+   "rms": 0.11363833553376823,
+   "samples": 992251,
+   "flags": ""
+  },
+  "phylovox__glide60.wav": {
+   "sha256": "3b5a9a5d5f09cb322edde1a4ac74fe6e2b88324200659ffaf5bd68077855ae20",
+   "rms": 0.12223747527590226,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --glide 0.06"
+  },
+  "phylovox__thresh25.wav": {
+   "sha256": "3fbb01a03f7585fc7f856bdca29c26822b88630b33feaa285f6bda0e16fde878",
+   "rms": 0.1259616636651579,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --threshold 25"
+  },
+  "phylovox__custom.wav": {
+   "sha256": "517f61eeb077d2ed79d23fe566610b2715a0ded2bf0aa3ac958dad1290f4de69",
+   "rms": 0.12734262479874928,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --mode custom"
+  },
+  "phylovox__voices1.wav": {
+   "sha256": "3cc809aaa686544961bf4915333a5893821882c2d5206c936ad703fdfb1f52e2",
+   "rms": 0.12376263431306142,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --voices 1"
+  },
+  "phylovox__formant100.wav": {
+   "sha256": "672ac4bc8b936444131c53c3fd672cb0d92728a6a50f11b33a2254669ed42646",
+   "rms": 0.13040219821029075,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --formant 1.0"
+  },
+  "phylovox__grit35.wav": {
+   "sha256": "7f27c186bfdb66009f7fda9c39af12c1041d8fe8a066b86d4db590c8353bd5d1",
+   "rms": 0.09884176204711004,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --grit 0.35"
+  },
+  "phylovox__map.wav": {
+   "sha256": "859b93744f33c78b30053184451297081aebd23cdfd5324deafc97ea28fc7c08",
+   "rms": 0.12206482626816698,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --unowned map --gate 2.5"
+  },
+  "phylovox__feel100.wav": {
+   "sha256": "2462ec7ec8aa0b5fd16e5606642720c9e7d386d693d850ac828da1203710c753",
+   "rms": 0.12312405027437447,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 1.0"
+  },
+  "phylovox__carry0.wav": {
+   "sha256": "10cdbbefa16563a4d47915136b3a6abb359d2ceb324d12ceb403652a56ea1448",
+   "rms": 0.1291554309977664,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --carry 0.0"
+  },
+  "phylovox__notransient.wav": {
+   "sha256": "52959dbbb7ba6e23f0cedd1f72ad47038315dbf92527d7f53c77cbb800bd95b1",
+   "rms": 0.10041333854444272,
+   "samples": 992251,
+   "flags": "--rounding intelligent --feel 0.35 --no-transient"
+  }
+ }
+}
