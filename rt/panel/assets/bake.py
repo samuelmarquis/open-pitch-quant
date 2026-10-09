@@ -56,18 +56,25 @@ KNOBS = ["handwheel", "hifi-black-turned", "witchhat-black", "heady", "catalin",
          "leather-oxblood", "wood-ebony", "chrome-heat-tint", "davies-black",
          "ceramic-cobalt"]
 
-# Component renders resampled to their 2x draw size: name -> (source, w, h).
+# Component renders resampled to their 2x draw size: name -> (source, w, h,
+# crop). The canonical toggle and chickenhead renders frame the part small
+# (toggle-bat fills 49% x 38% of its frame), so they are cropped first: a
+# rect centred on the part's pivot that holds the union of every state's
+# alpha box plus a margin, so states swap in register. Asked of DESIGN
+# (2026-10-09) as a larger default framing; drop the crops when it lands.
+TOGGLE_CROP = (99, 163, 222, 234)  # pivot (209.5, 280); union x 107..312, y 171..388
+SELECTOR_CROP = (152, 152, 336, 336)  # pivot (320, 320); union x 201..437, y 167..480
 SPRITES = {
-    "selector-house": ("knob-chickenhead/renders/chickenhead_black_pos1.png", 192, 192),
-    "selector-oracle": ("knob-chickenhead/renders/chickenhead_black_pos3.png", 192, 192),
-    "toggle-up": ("toggle-bat/renders/toggle_up.png", 60, 80),
-    "toggle-down": ("toggle-bat/renders/toggle_down.png", 60, 80),
-    "led-green-off": ("led-indicator/renders/led_green_b00.png", 80, 80),
-    "led-green-on": ("led-indicator/renders/led_green_b15.png", 80, 80),
-    "led-amber-off": ("led-indicator/renders/led_amber_b00.png", 80, 80),
-    "led-amber-on": ("led-indicator/renders/led_amber_b15.png", 80, 80),
-    "led-red-off": ("led-indicator/renders/led_red_b00.png", 80, 80),
-    "led-red-on": ("led-indicator/renders/led_red_b15.png", 80, 80),
+    "selector-house": ("knob-chickenhead/renders/chickenhead_black_pos1.png", 192, 192, SELECTOR_CROP),
+    "selector-oracle": ("knob-chickenhead/renders/chickenhead_black_pos3.png", 192, 192, SELECTOR_CROP),
+    "toggle-up": ("toggle-bat/renders/toggle_up.png", 80, 84, TOGGLE_CROP),
+    "toggle-down": ("toggle-bat/renders/toggle_down.png", 80, 84, TOGGLE_CROP),
+    "led-green-off": ("led-indicator/renders/led_green_b00.png", 80, 80, None),
+    "led-green-on": ("led-indicator/renders/led_green_b15.png", 80, 80, None),
+    "led-amber-off": ("led-indicator/renders/led_amber_b00.png", 80, 80, None),
+    "led-amber-on": ("led-indicator/renders/led_amber_b15.png", 80, 80, None),
+    "led-red-off": ("led-indicator/renders/led_red_b00.png", 80, 80, None),
+    "led-red-on": ("led-indicator/renders/led_red_b15.png", 80, 80, None),
 }
 
 COPIES = {
@@ -128,15 +135,21 @@ def vendor_knobs(record):
 
 
 def resample_sprites(record):
-    for name, (source, w, h) in SPRITES.items():
+    for name, (source, w, h, crop) in SPRITES.items():
         target = VENDOR / f"{name}.png"
-        # Straight alpha, lanczos: a component render down to its 2x size.
+        # Straight alpha, lanczos: a component render (cropped round its
+        # pivot) down to its 2x size.
+        filters = f"scale={w}:{h}:flags=lanczos"
+        if crop:
+            cx, cy, cw, ch = crop
+            filters = f"crop={cw}:{ch}:{cx}:{cy}," + filters
         subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(COMPONENTS / source),
-                        "-vf", f"scale={w}:{h}:flags=lanczos", "-pix_fmt", "rgba", str(target)],
+                        "-vf", filters, "-pix_fmt", "rgba", str(target)],
                        check=True)
         record[target.name] = {
             "kind": "component render, resampled",
             "source": f"open-plugin-template/components/{source}",
+            "crop": list(crop) if crop else None,
             "size": [w, h],
             "resample": "ffmpeg lanczos, straight alpha",
         }

@@ -225,19 +225,34 @@ impl Board {
                 continue;
             }
             self.solid(Rect::new(PLOT.x, y, PLOT.w, 1.0), opacity(INK, 0.045));
-            self.text(PLOT.x + 4.0, y - 13.0, &format!("C{}", octave), VALUE, opacity(INK, 0.35), false);
-        }
-        // The targets: lanes across the plot, named at the right; a held
-        // note's lane full, a Repeat octave's fainter.
-        for note in layout::LOW_NOTE as u32..=layout::HIGH_NOTE as u32 {
-            if !state.is_target(note) {
-                continue;
+            // Under its rule, so the top one clears the header; the floor's
+            // would fall off the plot.
+            if y + 16.0 <= PLOT.y + PLOT.h {
+                self.text(PLOT.x + 4.0, y + 2.0, &format!("C{}", octave), VALUE, opacity(INK, 0.35), false);
             }
-            let strength = if held >> note & 1 == 1 { 1.0 } else { 0.45 };
-            let y = layout::note_y(note as f32);
-            self.solid(Rect::new(PLOT.x, y - 0.5, PLOT.w, 1.0), opacity(MINT, 0.22 * strength));
-            let name = format!("{}{}", NOTE_NAMES[(note % 12) as usize], note / 12 - 1);
-            self.text(PLOT.x + PLOT.w + 6.0, y - 7.0, &name, VALUE, opacity(MINT, strength), false);
+        }
+        self.time_axis(state);
+        // The targets: lanes across the plot, named at the right; a held
+        // note's lane full, a Repeat octave's fainter. A name that would
+        // touch the one above it is left off (its lane still shows), and a
+        // held note's name wins over a Repeat octave's.
+        let mut named: Vec<f32> = Vec::new();
+        for pass_held in [true, false] {
+            for note in (layout::LOW_NOTE as u32..=layout::HIGH_NOTE as u32).rev() {
+                let is_held = held >> note & 1 == 1;
+                if !state.is_target(note) || is_held != pass_held {
+                    continue;
+                }
+                let y = layout::note_y(note as f32);
+                let strength = if is_held { 1.0 } else { 0.45 };
+                self.solid(Rect::new(PLOT.x, y - 0.5, PLOT.w, 1.0), opacity(MINT, 0.22 * strength));
+                if named.iter().any(|&other| (other - y).abs() < 11.0) {
+                    continue;
+                }
+                named.push(y);
+                let name = format!("{}{}", NOTE_NAMES[(note % 12) as usize], note / 12 - 1);
+                self.text(PLOT.x + PLOT.w + 6.0, y - 7.0, &name, VALUE, opacity(MINT, strength), false);
+            }
         }
         // The map ceiling, in refusal ink: above it nothing unowned is bent.
         let ceiling = layout::note_y(layout::hz_note(state.params.get(p::FMAX)));
@@ -300,6 +315,33 @@ impl Board {
             self.disc(x - 2.0, o, 2.6, if t.spared { OCHRE } else { WARM });
         }
         self.set_clip(None);
+    }
+
+    /// Seconds before now, along the plot's foot: a tick every second, a
+    /// figure every two, from the running engine's frame rate.
+    fn time_axis(&mut self, state: &PanelState) {
+        let (sr, hop) = state.engine_info;
+        let frames_per_second = sr / hop.max(1) as f32;
+        let px_per_second = PLOT.w / HISTORY as f32 * frames_per_second;
+        if !(px_per_second.is_finite() && px_per_second > 4.0) {
+            return;
+        }
+        let foot = PLOT.y + PLOT.h;
+        let right = PLOT.x + PLOT.w;
+        let mut second = 0;
+        loop {
+            let x = right - second as f32 * px_per_second;
+            if x < PLOT.x {
+                break;
+            }
+            let major = second % 2 == 0;
+            self.solid(Rect::new(x - 0.5, foot - if major { 6.0 } else { 3.0 }, 1.0, if major { 6.0 } else { 3.0 }), opacity(INK, 0.3));
+            if major && second > 0 && x > PLOT.x + 30.0 {
+                let label = format!("-{second} s");
+                self.text(x, foot - 18.0, &label, VALUE, opacity(INK, 0.3), true);
+            }
+            second += 1;
+        }
     }
 
     // ---- the rack --------------------------------------------------------
@@ -369,9 +411,11 @@ impl Board {
                 self.sprite(texture, rect, source, WHITE, paint::ART, 0);
                 let lit = value_ink(widget.plate);
                 let dim = opacity(ink, 0.45);
-                let top = cy - layout::SELECTOR * 0.5 - 2.0;
-                self.text(cx - 32.0, top, "HOUSE", CAPTION, if oracle { dim } else { lit }, true);
-                self.text(cx + 32.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
+                // Each name sits where the pointer stands for it, clear of
+                // the pointer itself.
+                let top = cy - layout::SELECTOR * 0.5 - 4.0;
+                self.text(cx - 50.0, top, "HOUSE", CAPTION, if oracle { dim } else { lit }, true);
+                self.text(cx + 50.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
                 self.caption(widget, ink, hovered);
             }
         }
@@ -406,7 +450,8 @@ impl Board {
         let s = layout::LED * 0.8;
         let (bx, by) = layout::widget(layout::Control::Param(p::BYPASS)).map_or((0.0, 0.0), |w| w.at);
         let source = Rect::new(0.0, 0.0, self.textures[texture].width, self.textures[texture].height);
-        self.sprite(texture, Rect::new(bx + 36.0 - s * 0.5, by - s * 0.5, s, s), source, WHITE, paint::ART, 0);
+        // Left of its toggle, between it and Mix, clear of the lamp row.
+        self.sprite(texture, Rect::new(bx - 34.0 - s * 0.5, by - s * 0.5, s, s), source, WHITE, paint::ART, 0);
     }
 
     // ---- the LCD module --------------------------------------------------
@@ -500,7 +545,11 @@ impl Board {
         self.solid(STRIP, BLACK);
         let y = STRIP.y + 3.0;
         let Some(widget) = state.hover_control.and_then(layout::widget) else {
-            let line = format!("{}   /   {}   /   hold a chord on the MIDI side chain; everything pitched is pulled onto it", crate::PLUGIN_NAME, crate::VERSION_LINE);
+            let line = format!(
+                "{}   /   Version {}   /   hold a chord on the MIDI side chain; everything pitched is pulled onto it",
+                crate::PLUGIN_NAME,
+                state.version
+            );
             self.text(STRIP.x + 4.0, y, &line, VALUE, MUTED, false);
             return;
         };

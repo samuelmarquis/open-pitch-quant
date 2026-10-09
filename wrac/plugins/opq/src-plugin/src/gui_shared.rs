@@ -58,6 +58,7 @@ impl ViewState {
         let (params, restore_revision) = shared.snapshot();
         let mut panel = PanelState::new(Instant::now());
         panel.params = params;
+        panel.version = env!("CARGO_PKG_VERSION");
         Self {
             shared,
             notifier,

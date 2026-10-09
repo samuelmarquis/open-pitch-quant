@@ -74,6 +74,14 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.3.1** — panel nits: the bat toggles and the Algorithm selector are
+  drawn at the family's size (their renders are cropped to the part); the
+  transect gets a time axis (seconds before now), its octave names sit
+  under their rules, and target names no longer crowd; the bypass lamp
+  sits beside its toggle; the strip shows the plug-in's own version.
+  Built on open-wrac's P27: a value set from the host's own controls
+  (Live's device panel) now reaches the plug-in even while the device is
+  off, and for list parameters such as Algorithm.
 - **0.3.0** — a new editor, rebuilt from scratch in the family idiom (see
   `rt/panel` above): a monitor with the belief transect over a rack of
   baked plates and controls, with an LCD module, on open-panelkit's GPU

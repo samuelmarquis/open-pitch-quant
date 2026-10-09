@@ -32,7 +32,6 @@ use std::collections::VecDeque;
 use std::time::Instant;
 
 pub const PLUGIN_NAME: &str = "OpenPitchQuant";
-pub const VERSION_LINE: &str = concat!("Version ", env!("CARGO_PKG_VERSION"));
 
 /// Analysis frames the transect keeps: one per two logical px of its plot.
 pub const HISTORY: usize = 484;
@@ -83,6 +82,9 @@ pub struct PanelState {
     was_onset: bool,
     pub started: Instant,
     pub now: Instant,
+    /// The product's version, for the strip: the mount sets the plugin's
+    /// (the panel crate's own version is not the product's).
+    pub version: &'static str,
 }
 
 impl Default for PanelState {
@@ -106,6 +108,7 @@ impl PanelState {
             was_onset: false,
             started: now,
             now,
+            version: "",
         }
     }
 

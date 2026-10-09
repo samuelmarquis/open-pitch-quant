@@ -81,6 +81,7 @@ fn feed(state: &mut PanelState, held: &[u8], seconds: f64) {
 fn scenario(name: &str) -> PanelState {
     let start = Instant::now();
     let mut state = PanelState::new(start);
+    state.version = "(offline render)";
     let chord = [60u8, 64, 67, 71];
     match name {
         "house" => {

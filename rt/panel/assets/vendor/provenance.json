@@ -94,6 +94,7 @@
    "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-wood-ebony.png"
   },
   "led-amber-off.png": {
+   "crop": null,
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
    "sha256": "2a4faa5d857256d14086747fac805e11b92790deff3e703db71dbf4642af4f31",
@@ -104,6 +105,7 @@
    "source": "open-plugin-template/components/led-indicator/renders/led_amber_b00.png"
   },
   "led-amber-on.png": {
+   "crop": null,
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
    "sha256": "5efd4bc27d2289baf5cacabd1641a42357edadfa58e7402dd495dc0c0be3a50b",
@@ -114,6 +116,7 @@
    "source": "open-plugin-template/components/led-indicator/renders/led_amber_b15.png"
   },
   "led-green-off.png": {
+   "crop": null,
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
    "sha256": "ccfd39447ecc35a8dd1b101d95cd6acf3222dcaa510e99a48fd4832778493f44",
@@ -124,6 +127,7 @@
    "source": "open-plugin-template/components/led-indicator/renders/led_green_b00.png"
   },
   "led-green-on.png": {
+   "crop": null,
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
    "sha256": "2f3896fbe54477a7c470bc5ae98940e5677cc3e3c83027c62766e95e478a0c7c",
@@ -134,6 +138,7 @@
    "source": "open-plugin-template/components/led-indicator/renders/led_green_b15.png"
   },
   "led-red-off.png": {
+   "crop": null,
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
    "sha256": "1eb7e233316de31a4c155706d0cc176d571dbc8649afc3ba7d2ccf7b01be5b68",
@@ -144,6 +149,7 @@
    "source": "open-plugin-template/components/led-indicator/renders/led_red_b00.png"
   },
   "led-red-on.png": {
+   "crop": null,
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
    "sha256": "b2489fc4e3f93cbc6f1dd56f03a629a733a0ff89ea2e5b17fdd80b03e37e8eff",
@@ -291,9 +297,15 @@
    "sha256": "b3edd1bf6193a421e17af09d2c4d35d280b2527f152f6cc8d20af47fa979d67b"
   },
   "selector-house.png": {
+   "crop": [
+    152,
+    152,
+    336,
+    336
+   ],
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "f25a085208688403449403d0b7fedcd2b4fc9b215390eff54727b62e73eaa8c1",
+   "sha256": "8fd47f087162a54524fdb51a3e9b15d656c01f8bce3155ab42413e5a558eda3c",
    "size": [
     192,
     192
@@ -301,9 +313,15 @@
    "source": "open-plugin-template/components/knob-chickenhead/renders/chickenhead_black_pos1.png"
   },
   "selector-oracle.png": {
+   "crop": [
+    152,
+    152,
+    336,
+    336
+   ],
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "56fbd15c91e0a434304c88045e73a8d265fbe4e61a0d452cb700f9ad8e92657d",
+   "sha256": "fa794c16cf2217369a2f4eb179855f83fb2199833dc31def2dbaf87a833d4e98",
    "size": [
     192,
     192
@@ -311,28 +329,40 @@
    "source": "open-plugin-template/components/knob-chickenhead/renders/chickenhead_black_pos3.png"
   },
   "toggle-down.png": {
+   "crop": [
+    99,
+    163,
+    222,
+    234
+   ],
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "5a941c7cfa64d0aecd1d3e9d7a3dbdb7a1b40b2919468df43487fd4e612d685b",
+   "sha256": "ce03657b4aad3ac9270328862083d1783659d813f0ddf0394ffcf926ed234f19",
    "size": [
-    60,
-    80
+    80,
+    84
    ],
    "source": "open-plugin-template/components/toggle-bat/renders/toggle_down.png"
   },
   "toggle-up.png": {
+   "crop": [
+    99,
+    163,
+    222,
+    234
+   ],
    "kind": "component render, resampled",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "03bbc5ad1bee3589e3bfd6f32a1d8433b4a09b262b84fb655b15d0412f7d2fb9",
+   "sha256": "272920ab79fd6cbe8ef4e4aaa160c245c1404bf0d94bf9517ebf529cb7c40721",
    "size": [
-    60,
-    80
+    80,
+    84
    ],
    "source": "open-plugin-template/components/toggle-bat/renders/toggle_up.png"
   }
  },
  "sources": {
-  "open-cepstrum": "e0ec85891e4fa6197231982ef4529bf5942514b0",
+  "open-cepstrum": "450f4a03ddf81146afd6162dda8fbf1b6122e37b",
   "open-plugin-template": "d59c877474a70c913d24b0f14439eff92d53d37f"
  }
 }

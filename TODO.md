@@ -39,11 +39,17 @@ messages, and behavior belongs in the README; neither is kept here.
        `GestureDelivery`), open-eq's mounts; plates baked with
        panel-board at their exact size, knobs from OpenCepstrum's
        knob-preview atlases, switches/LEDs from template components.
-     - [ ] Sam's verdict on v07, then nit rounds. Known nits: octave
-       labels touch the screen header; adjacent lane names (C/B) crowd
-       at the right; toggles read small on the black plate; the bypass
-       lamp sits under FULL; the transect has no time axis; plate
-       titles are drawn text, not the panel-board's backlit cut titles.
+     - Nits (0.3.1, done, catalogue/v08): toggle and selector size
+       (Sam: the bat switch read too small); the time axis; octave and
+       lane names; the bypass lamp; the strip's version.
+     - [ ] DESIGN is giving toggle-bat, button-console and the
+       chickenhead the knobs' size contract (`--footprint 0.5`, common
+       crop [68, 68, 252, 252] at 320 px, one framing for all states;
+       plate p174). Then replace bake.py's TOGGLE_CROP/SELECTOR_CROP
+       with their recipes.
+     - [ ] Sam's fuller notes on v07/v08, then more nit rounds. Still
+       known: plate titles are drawn text, not the panel-board's backlit
+       cut titles (title-bake/1).
      - [ ] Ideas parked for later rounds: harmonic ladders (hmask) on the
        transect; a residual-band strip (res_bands); the LCD's crawl as
        the old mutter; the parked organs (monitor stations, session
@@ -64,8 +70,15 @@ messages, and behavior belongs in the README; neither is kept here.
   VST3 `IEditController::setParamNormalized`, so a host edit reaches the
   plugin only through process(). Confirming on sam-pc: (a) does process()
   run while off, (b) the same edit from our own editor, (c) the same on
-  open-cepstrum. If confirmed, the fix is open-wrac's (terrible-cepstra
-  to make it, we review).
+  open-cepstrum. Confirmed (F6: an edit from our own editor persists;
+  Live-panel edits never reach the plugin) plus a second symptom (F5:
+  Algorithm, a list param, lost from Live's panel even while
+  processing). Fix: open-wrac 668bc84 (P27, terrible-cepstra): the
+  wrapper forwards setParamNormalized to the plugin. Reviewed; open
+  question: Live's automation echoes to the controller may now step
+  automated continuous lanes backwards. 0.3.1 is built on it; awaiting
+  WIN's rerun of F5/F6 (and save-while-still-off) and an automation
+  smoothness check.
 
 ## Rulings
 
