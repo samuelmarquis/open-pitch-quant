@@ -8,18 +8,20 @@ mod audio_ports;
 mod params;
 mod state;
 
+#[allow(unused_imports)] // the panel's names; headless builds draw nothing
 pub(crate) use params::{
     PARAM_BYPASS_ID, PARAM_CARRY_ID, PARAM_COHERENCE_ID, PARAM_FEEL_ID, PARAM_FMAX_ID,
     PARAM_FORMANT_ID, PARAM_GATE_ID, PARAM_GATE_MODE_ID, PARAM_GLIDE_ID, PARAM_GRIT_ID,
     PARAM_MIX_ID, PARAM_ROUNDING_ID, PARAM_SCOPE_ID, PARAM_THRESHOLD_ID, PARAM_TRANSIENT_ID,
-    PARAM_TRANSITIONS_ID, PARAM_UNOWNED_ID, PARAM_VOICES_ID, param_clamp, param_default,
-    param_exists, parameter_infos,
+    PARAM_TRANSITIONS_ID, PARAM_UNOWNED_ID, PARAM_VOICES_ID,
 };
+#[cfg(test)]
+pub(crate) use params::param_default;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) use params::{param_minmax, param_value_text};
 
 use audio_ports::{AudioLayoutStore, OpqAudioPorts, OpqConfigurableAudioPorts};
-use params::OpqParamsExtension;
+use params::OpqParams;
 use state::OpqStateExtension;
 use wrac_clap_adapter::{
     AaxDescriptor, AaxStemConfig, ActivateContext, Auv2Descriptor, NoteDialects, NotePortInfo,
@@ -112,7 +114,7 @@ pub(crate) struct OpqPlugin {
     audio_layout: Arc<AudioLayoutStore>,
     audio_ports: Arc<OpqAudioPorts>,
     configurable_audio_ports: Arc<OpqConfigurableAudioPorts>,
-    params: Arc<OpqParamsExtension>,
+    params: Arc<OpqParams>,
     state_extension: Arc<OpqStateExtension>,
     note_ports: Arc<OpqNotePorts>,
     latency: Arc<OpqLatency>,
@@ -129,7 +131,7 @@ impl OpqPlugin {
         let audio_ports = Arc::new(OpqAudioPorts::new(audio_layout.clone()));
         let configurable_audio_ports =
             Arc::new(OpqConfigurableAudioPorts::new(audio_layout.clone()));
-        let params = Arc::new(OpqParamsExtension::new(shared.clone()));
+        let params = Arc::new(OpqParams::new(shared.clone()));
         let state_extension = Arc::new(OpqStateExtension::new(shared.clone()));
 
         Self {
@@ -182,7 +184,10 @@ impl PluginCore for OpqPlugin {
         )))
     }
 
-    fn deactivate(&mut self, _processor: Box<dyn Processor>) -> PluginResult<()> {
+    fn deactivate(&mut self, processor: Box<dyn Processor>) -> PluginResult<()> {
+        // The processor's drop reports its final values and deactivates the
+        // sync.
+        drop(processor);
         Ok(())
     }
 

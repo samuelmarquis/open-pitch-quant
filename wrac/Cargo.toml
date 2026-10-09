@@ -15,6 +15,7 @@ wrac_build = { path = "../../open-wrac/crates/wrac_build" }
 wrac_clap_adapter = { path = "../../open-wrac/crates/wrac_clap_adapter" }
 wrac_host_context = { path = "../../open-wrac/crates/wrac_host_context" }
 wrac_log = { path = "../../open-wrac/crates/wrac_log" }
+wrac_shell = { path = "../../open-wrac/crates/wrac_shell" }
 wrac_wxp_gui = { path = "../../open-wrac/crates/wrac_wxp_gui" }
 wrac_xtask = { path = "../../open-wrac/crates/wrac_xtask" }
 wxp = { git = "https://github.com/novonotes/wxp.git", rev = "db0db1c0ba795fd434a981c903dcd882b638e5ed" }

@@ -7,3 +7,4 @@ description = "Real-time polyphonic pitch-mapping engine (open PITCHMAP explorat
 
 [dependencies]
 realfft = "3"
+pluginkit = { path = "../../../open-pluginkit" }

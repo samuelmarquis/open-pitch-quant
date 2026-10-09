@@ -130,9 +130,11 @@ convention existed.
 
 ## Current state
 
-- Installed: v0.1.0-era build (Jul 20) as CLAP, VST3 and AU; 18 host
-  parameters, ids 0–17; HOUSE pinned, PURIFY pinned at 0.
-- Engine: HOUSE and ORACLE algorithms plus PURIFY, done (397de9f).
-- Next: the 18→20 parameter change (ALGORITHM, PURIFY) on a pluginkit
-  schema with the SEL-2200 selector; then the wrac_shell steps; then
-  the panel onto panelkit. See `TODO.md`.
+- Installed: 0.2.0 (release) as CLAP, VST3 and AU; 20 host parameters,
+  id == index, from the engine's pluginkit schema (`rt/engine/src/
+  params.rs`); saved state is pluginkit's document, version 2.
+- Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f); ALGORITHM
+  and PURIFY are host parameters but have no panel controls yet.
+- Next: wrac_shell's mechanical steps; then the panel rebuilt from
+  scratch in the family idiom (open-cepstrum is the furthest example,
+  open-conv the older one). See `TODO.md`.

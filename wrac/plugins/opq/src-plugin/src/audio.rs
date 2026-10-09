@@ -4,21 +4,27 @@
 //! the engine's internal frame is 1024 samples, so sub-block precision would
 //! be lost anyway. Note events maintain the held-note set that defines the
 //! target pitch grid (PITCHMAP "MIDI MAP" semantics; empty set = silence).
+//!
+//! Parameters are pluginkit's audio-side copy: queued edits and restores
+//! land at the block boundary, the block's host events as one batch, and the
+//! set audio plays is reported back after the block.
 
 use std::any::Any;
 use std::sync::Arc;
 
 use opq_engine::Engine;
+use opq_engine::params::ParameterBatch;
 use wrac_clap_adapter::{
     AudioPortChannels, InputEvent, PluginResult, ProcessContext, ProcessStatus, Processor,
 };
 
-use crate::state::SharedState;
+use crate::state::{AudioSync, SharedState};
 
 const MAX_CHANNELS: usize = 2;
 
 pub(crate) struct OpqAudioProcessor {
     shared: Arc<SharedState>,
+    sync: AudioSync,
     engine: Engine,
     held: [bool; 128],
     channels: usize,
@@ -38,6 +44,7 @@ impl OpqAudioProcessor {
         let max_frames = max_frames as usize;
         shared.set_engine_info(sample_rate as f32, (opq_engine::N_FFT / 4) as u32);
         Self {
+            sync: shared.sync.activate(),
             shared,
             engine: Engine::new(sample_rate, channels),
             held: [false; 128],
@@ -69,7 +76,10 @@ impl Processor for OpqAudioProcessor {
     }
 
     fn process(&mut self, mut context: ProcessContext<'_>) -> PluginResult<ProcessStatus> {
-        // 1) Drain this block's events into held-note set + shared params.
+        // 1) Queued edits and restores, then this block's events: the
+        // held-note set, and the parameter events as one batch.
+        self.sync.receive(&self.shared.sync, || {});
+        let mut batch: Option<ParameterBatch> = None;
         for event in context.events.input.iter() {
             match event {
                 InputEvent::NoteOn(e) => self.note_on(e.key),
@@ -83,13 +93,20 @@ impl Processor for OpqAudioProcessor {
                         self.note_off(key);
                     }
                 }
-                InputEvent::ParamValue(e) => {
-                    let _ = self.shared.set_parameter_value(e.param_id, e.value);
+                InputEvent::ParamValue(e)
+                    if e.note_id == -1 && e.key == -1 && e.channel == -1 && e.port_index == -1 =>
+                {
+                    batch
+                        .get_or_insert_with(ParameterBatch::new)
+                        .insert(e.param_id as usize, e.value as f32);
                 }
                 _ => {}
             }
         }
-        let params = self.shared.engine_params();
+        if let Some(batch) = batch {
+            batch.apply(&mut self.sync.params, |_, _, _| {});
+        }
+        let params = self.sync.params.engine();
 
         let frames = (context.frames_count as usize).min(self.max_frames);
 
@@ -173,7 +190,15 @@ impl Processor for OpqAudioProcessor {
             }
         }
 
+        self.sync.report(&self.shared.sync);
         // The engine has a 4096-sample tail (its latency buffer); keep running.
         Ok(ProcessStatus::Continue)
+    }
+}
+
+impl Drop for OpqAudioProcessor {
+    fn drop(&mut self) {
+        self.sync.report(&self.shared.sync);
+        self.shared.sync.deactivate();
     }
 }

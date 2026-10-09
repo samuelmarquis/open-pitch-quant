@@ -61,6 +61,22 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.2.0** — the host sees 20 parameters. Two are new:
+  - **Algorithm** (House / Oracle, default House). House is the sound the
+    plugin has always had; Oracle is the PITCHMAP-faithful policy measured
+    in research 04 (map-or-discard, onset-only glide, belief-feel).
+  - **Purify** (0–100 %, default 0): the one-sided denoise, for both
+    algorithms. At 0 nothing changes; toward 100 % the unowned residual,
+    claimed-noise synthesis and carry fade, leaving pure stamps.
+
+  Both are host parameters only for now; the panel's controls for them
+  come with the panel's rebuild. Parameters and saved state now come from
+  the family's kits (pluginkit's schema and document, wrac_shell's host
+  view). **Projects saved with 0.1.x do not load in 0.2.0**; their
+  OpenPitchQuant comes back at defaults. Typed and displayed values read
+  slightly differently: percentages as `25%`, Map Ceiling with one
+  decimal, Threshold in `cents`, and a bare number typed into Glide is
+  milliseconds.
 - **0.1.1** — housekeeping, no change to the sound or the parameters. The
   plugin shell comes from `../open-wrac`; the old nih-plug shell
   (`rt/plugin`) and the template's demo plugin are gone. The installed

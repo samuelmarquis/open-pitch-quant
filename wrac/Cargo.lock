@@ -77,12 +77,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic_float"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "628d228f918ac3b82fe590352cc719d30664a0c13ca3a60266fe02c7132d480a"
-
-[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -212,6 +206,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.3.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03e8bd762f7479489c70ed6c768ddca99d7296857de437a68dcb2a94365b3fae"
+dependencies = [
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -534,14 +537,14 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 name = "opq-engine"
 version = "0.1.0"
 dependencies = [
+ "pluginkit",
  "realfft",
 ]
 
 [[package]]
 name = "opq_plugin_wrac"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
- "atomic_float",
  "block2",
  "log",
  "objc2",
@@ -549,12 +552,12 @@ dependencies = [
  "objc2-core-foundation",
  "objc2-foundation",
  "opq-engine",
- "serde",
- "serde_json",
+ "pluginkit",
  "windows-sys",
  "wrac_build",
  "wrac_clap_adapter",
  "wrac_log",
+ "wrac_shell",
 ]
 
 [[package]]
@@ -603,6 +606,16 @@ dependencies = [
  "quick-xml",
  "serde",
  "time",
+]
+
+[[package]]
+name = "pluginkit"
+version = "0.1.0"
+dependencies = [
+ "crossbeam-queue",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -993,6 +1006,16 @@ dependencies = [
  "env_logger",
  "log",
  "time",
+]
+
+[[package]]
+name = "wrac_shell"
+version = "0.1.0"
+dependencies = [
+ "pluginkit",
+ "serde",
+ "wrac_clap_adapter",
+ "wrac_log",
 ]
 
 [[package]]

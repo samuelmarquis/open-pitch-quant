@@ -1,8 +1,9 @@
 //! OpenPitchQuant — real-time polyphonic pitch mapping (WRAC edition).
 //!
-//! The DSP lives in the shared `opq-engine` crate (also used by the nih-plug
-//! build and the offline CLI). This crate is the WRAC/CLAP shell: parameters,
-//! state persistence, MIDI note-sidechain plumbing, and the drum.
+//! The DSP and the parameter schema live in the shared `opq-engine` crate
+//! (also used by the offline CLI). This crate is the WRAC/CLAP shell: the
+//! host's view of the parameters, state persistence, MIDI note-sidechain
+//! plumbing, and the panel.
 //!
 //! Controls stay in the host's generic parameter editor — the plugin's one
 //! visual organ is the drum (`drum.rs`): a fixed, unclickable transect of the

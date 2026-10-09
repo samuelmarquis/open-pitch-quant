@@ -12,6 +12,8 @@
 //!
 //! STFT N=4096 / hop=1024, reported latency = N samples (PITCHMAP's 4096).
 
+pub mod params;
+
 use realfft::num_complex::Complex64;
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use std::collections::VecDeque;

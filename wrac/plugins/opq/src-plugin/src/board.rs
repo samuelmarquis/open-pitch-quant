@@ -13,6 +13,8 @@
 
 use opq_engine::VizFrame;
 
+use opq_engine::params::PARAM_COUNT;
+
 use crate::assets;
 use crate::canvas::{Canvas, Ink, Voice};
 use crate::drum::{DRUM_H, DRUM_W, Drum};
@@ -223,7 +225,7 @@ impl Board {
 
     /// Digest frames + params, repaint. Params come as plain values indexed
     /// by id (the same table the host sees).
-    pub(crate) fn tick(&mut self, frames: &[VizFrame], params: &[f32; 18], sr: f32, hop: u32) {
+    pub(crate) fn tick(&mut self, frames: &[VizFrame], params: &[f32; PARAM_COUNT], sr: f32, hop: u32) {
         self.tick += 1;
         let ceiling = params[PARAM_FMAX_ID as usize];
         let voices_cap = params[PARAM_VOICES_ID as usize].round() as usize;
@@ -501,7 +503,7 @@ impl Board {
         self.base = base;
     }
 
-    fn paint(&mut self, params: &[f32; 18], sr: f32, hop: u32, voices_cap: usize) {
+    fn paint(&mut self, params: &[f32; PARAM_COUNT], sr: f32, hop: u32, voices_cap: usize) {
         self.ensure_base(sr, hop);
         let drum_px: Vec<u8> = self.drum.pixels().to_vec();
         let mask = self.last_mask;
@@ -785,7 +787,7 @@ impl Board {
     // ------------------------------------------------------------- input
 
 
-    pub(crate) fn on_mouse(&mut self, ev: MouseEv, params: &[f32; 18]) -> Vec<Edit> {
+    pub(crate) fn on_mouse(&mut self, ev: MouseEv, params: &[f32; PARAM_COUNT]) -> Vec<Edit> {
         let mut out = Vec::new();
         match ev.kind {
             MouseKind::Down => {
@@ -849,7 +851,7 @@ mod tests {
     #[test]
     fn drag_on_feel_valve_edits_param() {
         let mut b = Board::new();
-        let mut params: [f32; 18] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
+        let mut params: [f32; PARAM_COUNT] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
         params[PARAM_FEEL_ID as usize] = 0.35;
         let (x, y, w, h) = fitting_rect(9); // FEEL cell (row 2, col 1)
         assert_eq!(FITTINGS[9].0, PARAM_FEEL_ID);
@@ -868,7 +870,7 @@ mod tests {
     #[test]
     fn click_toggles_key_and_breaker() {
         let mut b = Board::new();
-        let mut params: [f32; 18] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
+        let mut params: [f32; PARAM_COUNT] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
         params[PARAM_TRANSIENT_ID as usize] = 1.0; // On
         let idx = FITTINGS.iter().position(|f| f.0 == PARAM_TRANSIENT_ID).unwrap();
         let (x, y, w, h) = fitting_rect(idx);
@@ -883,7 +885,7 @@ mod tests {
     fn ack_clears_the_latch() {
         let mut b = Board::new();
         b.latch_cut = true;
-        let params: [f32; 18] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
+        let params: [f32; PARAM_COUNT] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
         let (ax, ay, ..) = ACK_RECT;
         let out = b.on_mouse(MouseEv { x: ax + 5, y: ay + 5, kind: MouseKind::Down }, &params);
         assert!(out.is_empty());
@@ -908,7 +910,7 @@ mod tests {
         let mut engine = Engine::new(sr, 2);
         let mut board = Board::new();
 
-        let mut params: [f32; 18] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
+        let mut params: [f32; PARAM_COUNT] = std::array::from_fn(|i| crate::plugin::param_default(i as u32));
         params[FEEL as usize] = 0.35;
         params[GLIDE as usize] = 0.12;
         params[THRESH as usize] = 15.0;

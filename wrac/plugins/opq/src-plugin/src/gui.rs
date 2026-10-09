@@ -27,6 +27,8 @@ use wrac_clap_adapter::{
     PluginGuiExtension, PluginResult,
 };
 
+use opq_engine::params::PARAM_COUNT;
+
 use crate::board::{BOARD_H, BOARD_W, Board, Edit, MouseEv, MouseKind};
 use crate::state::SharedState;
 
@@ -64,8 +66,8 @@ struct PanelShared {
 }
 
 impl PanelShared {
-    fn params(&self) -> [f32; 18] {
-        std::array::from_fn(|i| self.shared.parameter_value(i as u32).unwrap_or(0.0))
+    fn params(&self) -> [f32; PARAM_COUNT] {
+        self.shared.values()
     }
 
     fn apply_edits(&mut self, edits: Vec<Edit>) {
@@ -73,7 +75,7 @@ impl PanelShared {
             match e {
                 Edit::Begin(id) => self.notifier.begin_edit(id),
                 Edit::Value(id, v) => {
-                    if let Some(applied) = self.shared.set_parameter_value(id, v as f64) {
+                    if let Some(applied) = self.shared.edit(id, v) {
                         self.notifier.update_edit(id, applied as f64);
                     }
                     self.dirty = true;

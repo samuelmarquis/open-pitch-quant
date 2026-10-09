@@ -1,6 +1,6 @@
 [package]
 name = "opq_plugin_wrac"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 description = "OpenPitchQuant - real-time polyphonic pitch mapping"
 license = "MIT"
@@ -78,13 +78,12 @@ plugin_id = "OpqS"
 crate-type = ["rlib", "staticlib", "cdylib"]
 
 [dependencies]
-atomic_float = "1.1.0"
 log = "0.4"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1.0"
 wrac_clap_adapter = { workspace = true }
 wrac_log = { workspace = true }
+wrac_shell = { workspace = true, features = ["sync"] }
 opq-engine = { path = "../../../../rt/engine" }
+pluginkit = { path = "../../../../../open-pluginkit" }
 
 # The drum's Win32 mount (raw child HWND + GDI blit; no webview, no toolkit).
 [target.'cfg(target_os = "windows")'.dependencies]
