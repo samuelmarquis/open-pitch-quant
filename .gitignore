@@ -4,6 +4,8 @@ out/
 *.wav
 *.mid
 testdata/reference/
+testdata/reference-p*/
+opq-pm-refpack-*.zip
 testdata/material/
 
 # python

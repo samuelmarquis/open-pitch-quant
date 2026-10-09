@@ -16,7 +16,8 @@ stem separation, ~93 ms latency, live.
   used by the listening-test bench; also dumps analysis traces
   (`--viz-dump`).
 - **`wrac/`** — the plugin: CLAP + VST3 + AU (`aumf`, so hosts route MIDI
-  to it), built on NovoNotes' WRAC template (vendored, MIT). The editor is
+  to it), built on NovoNotes' WRAC template (MIT) through the family's
+  shared shell, the sibling checkout `../open-wrac`. The editor is
   **the panel**: a fixed 1280×720 native control board — operable fittings
   wired to the real parameters, a belief-transect drum, honest alarms, and
   public-domain acoustic-instrument engravings collaged under the ink (no
@@ -44,7 +45,8 @@ cd rt && cargo build --release
 cargo xtask install -p opq_plugin_wrac --release   # --release matters: debug DSP underruns
 ```
 
-macOS needs only Command Line Tools (the vendored build is patched to not
+The plugin build expects `../open-wrac` checked out beside this repo.
+macOS needs only Command Line Tools (open-wrac's build is patched to not
 require full Xcode; the optional standalone-app target is the one
 exception — it wants `ibtool`).
 
@@ -56,6 +58,14 @@ Opq1 Opqt`). Reference A/B against actual PITCHMAP renders: **measured** — see
 (bench: `make_ab_pack.py` → `check_ab_returns.py` → `render_ab_ours.py` →
 `compare_ab.py`; protocol: `testdata/REFERENCE-RENDERS.md`). No license chosen yet; if you want to
 use this for something, open an issue.
+
+## Changes
+
+- **0.1.1** — housekeeping, no change to the sound or the parameters. The
+  plugin shell comes from `../open-wrac`; the old nih-plug shell
+  (`rt/plugin`) and the template's demo plugin are gone. The installed
+  plugin still pins the HOUSE algorithm and PURIFY at 0.
+- **0.1.0** (2026-07-04) — first public build.
 
 *This project reimplements a publicly documented idea from scratch — no
 Zynaptiq code, no disassembly; see `docs/research/` for the sources. Not

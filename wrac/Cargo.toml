@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "plugins/wrac-gain/src-plugin",
     "plugins/opq/src-plugin",
     "xtask",
 ]
