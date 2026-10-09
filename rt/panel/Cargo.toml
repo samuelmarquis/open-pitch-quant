@@ -1,0 +1,16 @@
+[package]
+name = "opq-panel"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+description = "OpenPitchQuant's editor board: host-free, the same board mounted and rendered offline"
+
+[[bin]]
+name = "panel-render"
+path = "src/bin/panel_render.rs"
+
+[dependencies]
+opq-engine = { path = "../engine" }
+panelkit = { path = "../../../open-panelkit" }
+pluginkit = { path = "../../../open-pluginkit" }
+wgpu = "24"

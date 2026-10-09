@@ -1,21 +1,17 @@
 //! OpenPitchQuant — real-time polyphonic pitch mapping (WRAC edition).
 //!
 //! The DSP and the parameter schema live in the shared `opq-engine` crate
-//! (also used by the offline CLI). This crate is the WRAC/CLAP shell: the
-//! host's view of the parameters, state persistence, MIDI note-sidechain
-//! plumbing, and the panel.
+//! (also used by the offline CLI); the editor board is `opq-panel`
+//! (rt/panel, host-free, also rendered offline). This crate is the
+//! WRAC/CLAP shell: the host's view of the parameters, state persistence,
+//! MIDI note-sidechain plumbing, and the board's native mounts.
 //!
-//! Controls stay in the host's generic parameter editor — the plugin's one
-//! visual organ is the drum (`drum.rs`): a fixed, unclickable transect of the
-//! tracker's belief. It observes; it cannot be operated.
-//!
-//! File layout follows the WRAC template:
-//! - `plugin.rs`   : the plugin contract as seen by the host
-//! - `state.rs`    : lock-free parameter state + the analysis feed
-//! - `audio.rs`    : the audio-thread processor driving `opq_engine::Engine`
-//! - `drum.rs`     : the transect renderer (pure pixels, platform-free)
-//! - `gui.rs`      : the drum's Cocoa mount (macOS)
-//! - `gui_win32.rs`: the drum's Win32 mount (Windows; elsewhere: headless)
+//! - `plugin.rs`    : the plugin contract as seen by the host
+//! - `state.rs`     : the parameter sync and the analysis feed
+//! - `audio.rs`     : the audio-thread processor driving `opq_engine::Engine`
+//! - `gui_shared.rs`: what both mounts share (edit delivery, view state, scene)
+//! - `gui.rs`       : the Cocoa mount (macOS)
+//! - `gui_win32.rs` : the Win32 mount (Windows; elsewhere: headless)
 //!
 //! NOTE: unlike the template, we do NOT install the assert_no_alloc global
 //! allocator. The engine currently allocates small scratch vectors during
@@ -23,18 +19,10 @@
 //! RT-allocation discipline is tracked work, not a blocker.
 
 mod audio;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-mod assets;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-mod board;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-mod canvas;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-mod drum;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-mod font;
 #[cfg(target_os = "macos")]
 mod gui;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+mod gui_shared;
 #[cfg(target_os = "windows")]
 mod gui_win32;
 mod plugin;

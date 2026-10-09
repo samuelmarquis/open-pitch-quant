@@ -17,13 +17,26 @@ stem separation, ~93 ms latency, live.
   (`--viz-dump`).
 - **`wrac/`** — the plugin: CLAP + VST3 + AU (`aumf`, so hosts route MIDI
   to it), built on NovoNotes' WRAC template (MIT) through the family's
-  shared shell, the sibling checkout `../open-wrac`. The editor is
-  **the panel**: a fixed 1280×720 native control board — operable fittings
-  wired to the real parameters, a belief-transect drum, honest alarms, and
-  public-domain acoustic-instrument engravings collaged under the ink (no
-  webview, no toolkit; CPU pixels). See
-  [`docs/design/03-the-panel.md`](docs/design/03-the-panel.md) and
-  [`docs/design/assets-sources.md`](docs/design/assets-sources.md).
+  shared shell, the sibling checkout `../open-wrac`.
+- **`rt/panel`** — the editor board, in the family idiom (open-panelkit,
+  wgpu; no webview, no toolkit), 1100×768, resizable. A monitor carries
+  the **belief transect**: each pitch object's source pitch (dim), the
+  pitch it is sung at (warm; ochre where Threshold spared it), the held
+  targets as mint lanes (fainter for Repeat octaves), the map ceiling, and
+  onsets. Beneath it, four baked plates, one control per parameter:
+  CAPTURE (Voices, Tonality Gate, Map Ceiling, Gate Mode, Map Unowned,
+  Transients), LAW (the Algorithm selector, Feel, Glide, Threshold,
+  Rounding, MIDI Scope), FINISH (Purify, Grit, Formant, Carry, Coherence,
+  Transitions) and OUTPUT (Mix, Bypass, lamps for chord / onset / voices
+  full, and a backlit LCD with the algorithm, the held pitch classes, the
+  chord and a crawling tally of the session). Knobs drag vertically
+  (Command for fine, double-click resets, the wheel works); switches throw
+  on a click. The strip along the bottom names what the pointer is over,
+  its value, and what it does. `cargo run --release -p opq-panel --bin
+  panel-render -- --out DIR` renders it offline from the real engine;
+  `rt/panel/assets/bake.py` bakes the plates and vendors the family
+  artwork, with provenance. The old panel's design is
+  [`docs/design/03-the-panel.md`](docs/design/03-the-panel.md) (history).
 - **`opq/`** — the frozen Python prototype lab (nine listened iterations;
   the Rust engine is canonical).
 - **`docs/research/`** — the PITCHMAP evidence corpus this was built
@@ -61,6 +74,15 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.3.0** — a new editor, rebuilt from scratch in the family idiom (see
+  `rt/panel` above): a monitor with the belief transect over a rack of
+  baked plates and controls, with an LCD module, on open-panelkit's GPU
+  canvas and native mounts (macOS and Windows; knobs drag with the cursor
+  hidden and land back on the knob). Algorithm and Purify now have
+  controls. The old CPU-pixel panel, its engravings and its bakery are
+  gone. The plug-in also handles a host reset by reporting its
+  parameters at once, and reports a block's parameters even when the
+  host's audio buffers fail.
 - **0.2.1** — no change to the sound or the parameters. The plugin's entry
   point, audio ports and sample conversion come from the family's shared
   shell. The audio ports are still one main pair, mono or stereo (the

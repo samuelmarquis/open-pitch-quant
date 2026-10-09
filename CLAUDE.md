@@ -55,11 +55,14 @@ convention existed.
 
 ## Architecture and boundaries
 
-- **Two workspaces:** `rt/{engine,cli}` and `wrac/` (the plugin crate
-  `opq_plugin_wrac` plus `xtask`). The wrapper framework and the
-  clap-wrapper build are `../open-wrac`, consumed by path. There is no
-  `rt/panel` crate yet: the panel (board, drum, canvas, font, assets)
-  lives inside the plugin crate, and has no offline harness.
+- **Two workspaces:** `rt/{engine,cli,panel}` and `wrac/` (the plugin
+  crate `opq_plugin_wrac` plus `xtask`). The wrapper framework and the
+  clap-wrapper build are `../open-wrac`, consumed by path. The panel is
+  host-free: `rt/panel` (layout, fittings, board, pack) with its offline
+  harness `panel-render`; the plugin crate only mounts it (`gui.rs`,
+  `gui_win32.rs`, `gui_shared.rs`, open-eq's mounts). Panel art comes
+  from `rt/panel/assets/bake.py` (needs Blender 5.2 and ffmpeg), never
+  hand-placed; review stills go to `catalogue/` at 1x.
 - **Host-free product logic:** the engine owns DSP and its parameters
   (`EngineParams`, `Algorithm::{House, Oracle}`); the panel owns layout,
   drawing and fittings; the shell owns host translation, native
@@ -130,12 +133,12 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.2.1 (release) as CLAP, VST3 and AU; 20 host parameters,
+- Installed: 0.3.0 (release) as CLAP, VST3 and AU; 20 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 2. Entry,
   ports and sample conversion are wrac_shell's. The wrapper build needs
   `nix develop` (cmake).
-- Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f); ALGORITHM
-  and PURIFY are host parameters but have no panel controls yet.
-- Next: the panel rebuilt from scratch in the family idiom (open-cepstrum is the furthest example,
-  open-conv the older one). See `TODO.md`.
+- Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f).
+- Panel: the family-idiom rebuild's first pass (0.3.0, catalogue/v07);
+  next are Sam's nit rounds. Open: the Live device-off edit loss
+  (TODO.md), likely open-wrac's.

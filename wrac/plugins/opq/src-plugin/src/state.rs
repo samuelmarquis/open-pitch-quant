@@ -81,23 +81,22 @@ impl SharedState {
         self.sync.value(id)
     }
 
-    /// The whole set, for the editor.
-    #[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
+    /// The whole set.
     pub(crate) fn values(&self) -> [f32; PARAM_COUNT] {
         self.sync.snapshot().0.values
     }
 
-    /// An editor edit: clamped by its spec, committed (it always lands, even
-    /// while the host keeps the plugin active but stops processing it), and
-    /// the stored value returned for the host's gesture. None for an unknown
-    /// id or a non-finite value.
+    /// The coherent set and its restore revision, for the editor: a new
+    /// revision means a state load, which ends any gesture in progress.
     #[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
-    pub(crate) fn edit(&self, id: u32, value: f32) -> Option<f32> {
-        let mut batch = ParameterBatch::new();
-        if !batch.insert(id as usize, value) {
-            return None;
-        }
-        self.sync.set_batch(&batch);
-        Some(self.value(id as usize))
+    pub(crate) fn snapshot(&self) -> (Params, u64) {
+        self.sync.snapshot()
+    }
+
+    /// Commit an editor batch. It always lands, even while the host keeps
+    /// the plugin active but stops processing it.
+    #[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
+    pub(crate) fn set_batch(&self, batch: &ParameterBatch) {
+        self.sync.set_batch(batch);
     }
 }

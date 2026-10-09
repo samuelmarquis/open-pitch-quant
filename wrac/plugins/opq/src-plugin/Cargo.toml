@@ -1,6 +1,6 @@
 [package]
 name = "opq_plugin_wrac"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 description = "OpenPitchQuant - real-time polyphonic pitch mapping"
 license = "MIT"
@@ -84,8 +84,11 @@ wrac_shell = { workspace = true, features = ["sync"] }
 opq-engine = { path = "../../../../rt/engine" }
 pluginkit = { path = "../../../../../open-pluginkit" }
 
-# The drum's Win32 mount (raw child HWND + GDI blit; no webview, no toolkit).
+# The panel's Win32 mount: a child HWND presenting the wgpu board
+# (panelkit's mount), no webview, no toolkit.
 [target.'cfg(target_os = "windows")'.dependencies]
+opq-panel = { path = "../../../../rt/panel" }
+panelkit = { path = "../../../../../open-panelkit", features = ["mount"] }
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
@@ -96,14 +99,18 @@ windows-sys = { version = "0.61", features = [
     "Win32_UI_WindowsAndMessaging",
 ] }
 
-# The drum (native Cocoa view; no webview, no toolkit).
+# The panel's Cocoa mount: an NSView presenting the wgpu board (panelkit's
+# mount), no webview, no toolkit.
 [target.'cfg(target_os = "macos")'.dependencies]
+opq-panel = { path = "../../../../rt/panel" }
+panelkit = { path = "../../../../../open-panelkit", features = ["mount"] }
 objc2 = "0.6"
 block2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = [
     "std",
     "block2",
     "NSDate",
+    "NSNotification",
     "NSObjCRuntime",
     "NSRunLoop",
     "NSString",
@@ -112,11 +119,10 @@ objc2-foundation = { version = "0.3", default-features = false, features = [
 ] }
 objc2-app-kit = { version = "0.3", default-features = false, features = [
     "std",
-    "NSBitmapImageRep",
+    "block2",
+    "NSApplication",
+    "NSCursor",
     "NSEvent",
-    "NSGraphics",
-    "NSImage",
-    "NSImageRep",
     "NSResponder",
     "NSView",
     "NSWindow",
@@ -126,6 +132,10 @@ objc2-core-foundation = { version = "0.3", default-features = false, features = 
     "std",
     "CFCGTypes",
 ] }
+
+[dev-dependencies]
+# A real process() with no ports, for the parameter round-trip tests.
+wrac_clap_adapter = { workspace = true, features = ["test-support"] }
 
 [lints.rust]
 unreachable_pub = "deny"

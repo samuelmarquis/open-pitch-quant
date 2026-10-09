@@ -1,5 +1,11 @@
 # The panel
 
+> **Superseded (0.3.0, 2026-10-09).** Sam reset the editor's design to the
+> family idiom: an LCD screen for the display and dynamic elements over
+> skeuomorphic plates with fixed controls (`rt/panel`, catalogue/v07). This
+> document records the old CPU-pixel board. Its laws carry over: everything
+> that indicates indicates truly, and refusal keeps its ochre.
+
 1280×720 fixed pixels: a control board in the dialect of a plant that
 processes music as if it were gas, collaged with the paper record of the
 people who tried to write sound down before electricity. It replaces the

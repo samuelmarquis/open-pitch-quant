@@ -1,0 +1,338 @@
+{
+ "files": {
+  "SourceSans-LICENSE.txt": {
+   "kind": "copied",
+   "sha256": "56af9b9c6715597e458284a474dc118a50a4150e9d547c70f7b4a33c3e6a9328",
+   "source": "open-cepstrum/rt/panel/assets/vendor/SourceSans-LICENSE.txt"
+  },
+  "SourceSansPro-Regular.otf": {
+   "kind": "copied",
+   "sha256": "cd978d919f1c6015f2b61530ece710215762bc39ba54e0b977005582c9b86a1d",
+   "source": "open-cepstrum/rt/panel/assets/vendor/SourceSansPro-Regular.otf"
+  },
+  "knobs/knob-catalin.png": {
+   "bake": [],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "dfca159afd93599c557222c552017c35209e9b388fe41fd57ae8b19344928924",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-catalin.png"
+  },
+  "knobs/knob-ceramic-cobalt.png": {
+   "bake": [
+    "--preset",
+    "cobalt"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "08d5ff13499d94f4b5529bb60f303abffe971b22bd6ec88081923bc196208907",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-ceramic-cobalt.png"
+  },
+  "knobs/knob-chrome-heat-tint.png": {
+   "bake": [
+    "--preset",
+    "heat-tint"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "dbb41c68c90974a85d993b7fa719a565ed39cbff56cd7a106a87dffaadb8d65b",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-chrome-heat-tint.png"
+  },
+  "knobs/knob-davies-black.png": {
+   "bake": [
+    "--preset",
+    "black"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "28a920c8043574965b6702aef6435c447ba9858b45cf83d7c44a5eecffcb96fd",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-davies-black.png"
+  },
+  "knobs/knob-handwheel.png": {
+   "bake": [],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "13abd8fcb51657cabac14d9e0e0b8f713dbc8ace7d1d0485b9352bea5813a07d",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-handwheel.png"
+  },
+  "knobs/knob-heady.png": {
+   "bake": [],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "414a3a007d6bc2a5bdfa3ee45b508d291d0d28e1622fcce22de380b90b0ad67f",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-heady.png"
+  },
+  "knobs/knob-hifi-black-turned.png": {
+   "bake": [
+    "--preset",
+    "black",
+    "--cap",
+    "turned"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "d747d5d08e2252b52a3a2814f3b07b9f3ef9f7bd81acf3799ba5e775ed005d61",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-hifi-black-turned.png"
+  },
+  "knobs/knob-leather-oxblood.png": {
+   "bake": [
+    "--preset",
+    "oxblood"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "aae14f8028938b51b263a2bf42d9aa59b39a4345f10f301bf9296647272f6fe0",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-leather-oxblood.png"
+  },
+  "knobs/knob-witchhat-black.png": {
+   "bake": [
+    "--preset",
+    "black"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "89cbdd3fff0cc17ea6dc5cfccd97d9e8c69c8df5e10704b98602f0a039373f00",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-witchhat-black.png"
+  },
+  "knobs/knob-wood-ebony.png": {
+   "bake": [
+    "--preset",
+    "ebony"
+   ],
+   "kind": "knob atlas (cepstrum-knob-preview/1)",
+   "sha256": "91c5c7db31957c84df2de93fc4fc1059e072061283d028ece2be8a609491d8b9",
+   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-wood-ebony.png"
+  },
+  "led-amber-off.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "2a4faa5d857256d14086747fac805e11b92790deff3e703db71dbf4642af4f31",
+   "size": [
+    80,
+    80
+   ],
+   "source": "open-plugin-template/components/led-indicator/renders/led_amber_b00.png"
+  },
+  "led-amber-on.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "5efd4bc27d2289baf5cacabd1641a42357edadfa58e7402dd495dc0c0be3a50b",
+   "size": [
+    80,
+    80
+   ],
+   "source": "open-plugin-template/components/led-indicator/renders/led_amber_b15.png"
+  },
+  "led-green-off.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "ccfd39447ecc35a8dd1b101d95cd6acf3222dcaa510e99a48fd4832778493f44",
+   "size": [
+    80,
+    80
+   ],
+   "source": "open-plugin-template/components/led-indicator/renders/led_green_b00.png"
+  },
+  "led-green-on.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "2f3896fbe54477a7c470bc5ae98940e5677cc3e3c83027c62766e95e478a0c7c",
+   "size": [
+    80,
+    80
+   ],
+   "source": "open-plugin-template/components/led-indicator/renders/led_green_b15.png"
+  },
+  "led-red-off.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "1eb7e233316de31a4c155706d0cc176d571dbc8649afc3ba7d2ccf7b01be5b68",
+   "size": [
+    80,
+    80
+   ],
+   "source": "open-plugin-template/components/led-indicator/renders/led_red_b00.png"
+  },
+  "led-red-on.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "b2489fc4e3f93cbc6f1dd56f03a629a733a0ff89ea2e5b17fdd80b03e37e8eff",
+   "size": [
+    80,
+    80
+   ],
+   "source": "open-plugin-template/components/led-indicator/renders/led_red_b15.png"
+  },
+  "monitor-housing.png": {
+   "kind": "copied",
+   "sha256": "5ff32270af11b06dcb324f82dffcd4596ac8caba909b37ebcb4a5ace7afd0de3",
+   "source": "open-cepstrum/rt/panel/assets/vendor/monitor-housing.png"
+  },
+  "plate-capture.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-capture.png",
+    "--w",
+    "2.58",
+    "--h",
+    "2.5",
+    "--face",
+    "black-paint",
+    "--fasteners",
+    "screws",
+    "--edge",
+    "flat",
+    "--corner",
+    ".015",
+    "--bevel",
+    ".04",
+    "--bevel-segments",
+    "4",
+    "--ortho-px",
+    "200",
+    "--samples",
+    "160"
+   ],
+   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
+   "kind": "plate",
+   "logical": [
+    258,
+    250
+   ],
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=black-paint fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.58 [ortho:516x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-capture.png",
+   "sha256": "dcf4027e4439c2d87e1b4e6cb9f0ae57d8cd91f103ca0d9401415d609d379247"
+  },
+  "plate-finish.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-finish.png",
+    "--w",
+    "2.58",
+    "--h",
+    "2.5",
+    "--face",
+    "verdigris",
+    "--fasteners",
+    "rivets",
+    "--edge",
+    "flat",
+    "--corner",
+    ".015",
+    "--bevel",
+    ".04",
+    "--bevel-segments",
+    "4",
+    "--ortho-px",
+    "200",
+    "--samples",
+    "160"
+   ],
+   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
+   "kind": "plate",
+   "logical": [
+    258,
+    250
+   ],
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=verdigris fastener=steel-hw fasteners=rivets h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.58 [ortho:516x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-finish.png",
+   "sha256": "0bb87178a7b7c924ef5825a8bfffcc645daaa89510b307ed94610122eb3fd7ac"
+  },
+  "plate-law.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-law.png",
+    "--w",
+    "3.0",
+    "--h",
+    "2.5",
+    "--face",
+    "brass",
+    "--fasteners",
+    "screws",
+    "--edge",
+    "flat",
+    "--corner",
+    ".015",
+    "--bevel",
+    ".04",
+    "--bevel-segments",
+    "4",
+    "--ortho-px",
+    "200",
+    "--samples",
+    "160"
+   ],
+   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
+   "kind": "plate",
+   "logical": [
+    300,
+    250
+   ],
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=brass fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=3 [ortho:600x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-law.png",
+   "sha256": "50957d4556ddced0bb4e04a1d1da6097275d3dc14d5e11b43d63ecb5f04efc0c"
+  },
+  "plate-module.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-module.png",
+    "--w",
+    "2.28",
+    "--h",
+    "2.5",
+    "--face",
+    "worn-steel",
+    "--fasteners",
+    "screws",
+    "--edge",
+    "flat",
+    "--corner",
+    ".015",
+    "--bevel",
+    ".04",
+    "--bevel-segments",
+    "4",
+    "--ortho-px",
+    "200",
+    "--samples",
+    "160"
+   ],
+   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
+   "kind": "plate",
+   "logical": [
+    228,
+    250
+   ],
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=worn-steel fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.28 [ortho:456x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-module.png",
+   "sha256": "b3edd1bf6193a421e17af09d2c4d35d280b2527f152f6cc8d20af47fa979d67b"
+  },
+  "selector-house.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "f25a085208688403449403d0b7fedcd2b4fc9b215390eff54727b62e73eaa8c1",
+   "size": [
+    192,
+    192
+   ],
+   "source": "open-plugin-template/components/knob-chickenhead/renders/chickenhead_black_pos1.png"
+  },
+  "selector-oracle.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "56fbd15c91e0a434304c88045e73a8d265fbe4e61a0d452cb700f9ad8e92657d",
+   "size": [
+    192,
+    192
+   ],
+   "source": "open-plugin-template/components/knob-chickenhead/renders/chickenhead_black_pos3.png"
+  },
+  "toggle-down.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "5a941c7cfa64d0aecd1d3e9d7a3dbdb7a1b40b2919468df43487fd4e612d685b",
+   "size": [
+    60,
+    80
+   ],
+   "source": "open-plugin-template/components/toggle-bat/renders/toggle_down.png"
+  },
+  "toggle-up.png": {
+   "kind": "component render, resampled",
+   "resample": "ffmpeg lanczos, straight alpha",
+   "sha256": "03bbc5ad1bee3589e3bfd6f32a1d8433b4a09b262b84fb655b15d0412f7d2fb9",
+   "size": [
+    60,
+    80
+   ],
+   "source": "open-plugin-template/components/toggle-bat/renders/toggle_up.png"
+  }
+ },
+ "sources": {
+  "open-cepstrum": "e0ec85891e4fa6197231982ef4529bf5942514b0",
+  "open-plugin-template": "d59c877474a70c913d24b0f14439eff92d53d37f"
+ }
+}

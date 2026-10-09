@@ -30,18 +30,42 @@ messages, and behavior belongs in the README; neither is kept here.
      `vst3_midi_channels` stays at the default 1, as every build so far
      has had (daily-driven in Live over VST3). `LatencyGate` is not
      taken: the latency is a constant 4096.
-  4. [ ] **The panel, rebuilt from scratch in the family idiom (Sam,
-     2026-10-09)** on panelkit: canvas, mount with `PointerLock`,
-     widgets, `GestureDelivery`; our own `canvas.rs`, `font.rs`,
-     `assets.rs`, `board.rs` and the drum's mounts go. Models:
-     open-cepstrum (the furthest along) and open-conv (the same idioms
-     in an older form, being updated now). Coordinate with open-eq and
-     DESIGN. It carries ALGORITHM and PURIFY controls.
+  4. The panel, rebuilt from scratch in the family idiom (Sam,
+     2026-10-09: "an LCD screen showing the display and dynamic
+     elements, and skeuomorphic solid panels with fixed controls
+     beneath"; first pass is Claude's to explore, then many nit rounds).
+     - First pass (0.3.0, done, catalogue/v07): `rt/panel` on panelkit
+       (canvas, LCD module, widgets, mount with `PointerLock`,
+       `GestureDelivery`), open-eq's mounts; plates baked with
+       panel-board at their exact size, knobs from OpenCepstrum's
+       knob-preview atlases, switches/LEDs from template components.
+     - [ ] Sam's verdict on v07, then nit rounds. Known nits: octave
+       labels touch the screen header; adjacent lane names (C/B) crowd
+       at the right; toggles read small on the black plate; the bypass
+       lamp sits under FULL; the transect has no time axis; plate
+       titles are drawn text, not the panel-board's backlit cut titles.
+     - [ ] Ideas parked for later rounds: harmonic ladders (hmask) on the
+       transect; a residual-band strip (res_bands); the LCD's crawl as
+       the old mutter; the parked organs (monitor stations, session
+       plates).
+     - [ ] Live check of the new editor on sam-pc and the Mac (open,
+       drag, pointer lock, resize, close while playing).
   5. [ ] `wrac/README.md`, `README_JA.md` and `wrac/docs/` are the
      WRAC template's own docs (they still describe `wrac-gain`);
      drop them or point at `../open-wrac`.
   6. [ ] A generic pitch tracker, if one falls out of the engine, moves
      into `open-audiokit`.
+
+- [ ] **Live: edits made with Live's own device controls while the device
+  is off never reach the saved state** (sam-pc, 0.2.1 check F: Live's
+  parameter list new, our saved document old). Every plugin-side path is
+  tested and saves (audio.rs tests). terrible-cepstra's hypothesis: a
+  family-wide wrapper gap, as open-wrac's clap-wrapper never overrides
+  VST3 `IEditController::setParamNormalized`, so a host edit reaches the
+  plugin only through process(). Confirming on sam-pc: (a) does process()
+  run while off, (b) the same edit from our own editor, (c) the same on
+  open-cepstrum. If confirmed, the fix is open-wrac's (terrible-cepstra
+  to make it, we review).
 
 ## Rulings
 

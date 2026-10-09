@@ -8,18 +8,6 @@ use std::sync::Arc;
 mod params;
 mod state;
 
-#[allow(unused_imports)] // the panel's names; headless builds draw nothing
-pub(crate) use params::{
-    PARAM_BYPASS_ID, PARAM_CARRY_ID, PARAM_COHERENCE_ID, PARAM_FEEL_ID, PARAM_FMAX_ID,
-    PARAM_FORMANT_ID, PARAM_GATE_ID, PARAM_GATE_MODE_ID, PARAM_GLIDE_ID, PARAM_GRIT_ID,
-    PARAM_MIX_ID, PARAM_ROUNDING_ID, PARAM_SCOPE_ID, PARAM_THRESHOLD_ID, PARAM_TRANSIENT_ID,
-    PARAM_TRANSITIONS_ID, PARAM_UNOWNED_ID, PARAM_VOICES_ID,
-};
-#[cfg(test)]
-pub(crate) use params::param_default;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-pub(crate) use params::{param_minmax, param_value_text};
-
 use params::OpqParams;
 use state::OpqStateExtension;
 use wrac_clap_adapter::{
@@ -126,8 +114,10 @@ impl PluginCore for OpqPlugin {
 
     fn deactivate(&mut self, processor: Box<dyn Processor>) -> PluginResult<()> {
         // The processor's drop reports its final values and deactivates the
-        // sync.
+        // sync, which cancels gestures in flight; the editor ends its own.
         drop(processor);
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        self.gui.cancel_gestures();
         Ok(())
     }
 
