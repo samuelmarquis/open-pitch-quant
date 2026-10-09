@@ -38,12 +38,12 @@ pub const STRIP: Rect = Rect::new(16.0, 748.0, 1068.0, 18.0);
 
 /// Knob, toggle and selector draw sizes.
 pub const KNOB: f32 = 58.0;
-/// The bat toggle, cropped to its part (bake.py's TOGGLE_CROP): the nut
-/// about 40 px across, a family knob's size class.
-pub const TOGGLE: (f32, f32) = (40.0, 42.0);
+/// Slots under the family's footprint contract (bake.py's
+/// COMPONENT_RENDERS): the bat toggle fills about 87% x 92% of its square
+/// slot, the chickenhead 51% x 91%.
+pub const TOGGLE: (f32, f32) = (44.0, 44.0);
 pub const SELECTOR: f32 = 96.0;
-/// The chickenhead, cropped to its part round its pivot.
-pub const SELECTOR_DRAW: f32 = 96.0;
+pub const SELECTOR_DRAW: f32 = 88.0;
 pub const LED: f32 = 40.0;
 
 /// Row centres in the rack: knobs on the first, switches on the second.

@@ -297,72 +297,116 @@
    "sha256": "b3edd1bf6193a421e17af09d2c4d35d280b2527f152f6cc8d20af47fa979d67b"
   },
   "selector-house.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-house.png",
+    "--color",
+    "black",
+    "--value",
+    "0.25",
+    "--footprint",
+    "0.5",
+    "--res",
+    "640"
+   ],
    "crop": [
-    152,
-    152,
-    336,
-    336
+    136,
+    136,
+    368,
+    368
    ],
-   "kind": "component render, resampled",
+   "generator": "open-plugin-template/components/knob-chickenhead/generator/knob_scene.py",
+   "kind": "component render, footprint contract",
+   "receipt": "knob-chickenhead adaptive=on angle=none body=bakelite-solid denoise=on detents=5 end-deg=30 footprint=0.5 indicator=same preset=black raw=off res=640 samples=220 scale=1 seed=0 start-deg=150 value=0.25 [alias --color as --preset] [footprint:native=0.581095,factor=0.860444] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-house.png",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "8fd47f087162a54524fdb51a3e9b15d656c01f8bce3155ab42413e5a558eda3c",
+   "sha256": "7ffe01f4a950a7f29cd2a648909a4c9b9b78316fa2e45c01894d9d0cc72c74c9",
    "size": [
-    192,
-    192
-   ],
-   "source": "open-plugin-template/components/knob-chickenhead/renders/chickenhead_black_pos1.png"
+    176,
+    176
+   ]
   },
   "selector-oracle.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-oracle.png",
+    "--color",
+    "black",
+    "--value",
+    "0.75",
+    "--footprint",
+    "0.5",
+    "--res",
+    "640"
+   ],
    "crop": [
-    152,
-    152,
-    336,
-    336
+    136,
+    136,
+    368,
+    368
    ],
-   "kind": "component render, resampled",
+   "generator": "open-plugin-template/components/knob-chickenhead/generator/knob_scene.py",
+   "kind": "component render, footprint contract",
+   "receipt": "knob-chickenhead adaptive=on angle=none body=bakelite-solid denoise=on detents=5 end-deg=30 footprint=0.5 indicator=same preset=black raw=off res=640 samples=220 scale=1 seed=0 start-deg=150 value=0.75 [alias --color as --preset] [footprint:native=0.581095,factor=0.860444] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-oracle.png",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "fa794c16cf2217369a2f4eb179855f83fb2199833dc31def2dbaf87a833d4e98",
+   "sha256": "0f4fb04d4f2419783d7501fe59eb2f6174bcba6933bcfb66683250cc44497e85",
    "size": [
-    192,
-    192
-   ],
-   "source": "open-plugin-template/components/knob-chickenhead/renders/chickenhead_black_pos3.png"
+    176,
+    176
+   ]
   },
   "toggle-down.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-down.png",
+    "--state",
+    "down",
+    "--footprint",
+    "0.5",
+    "--res",
+    "640"
+   ],
    "crop": [
-    99,
-    163,
-    222,
-    234
+    136,
+    136,
+    368,
+    368
    ],
-   "kind": "component render, resampled",
+   "generator": "open-plugin-template/components/toggle-bat/generator/toggle_scene.py",
+   "kind": "component render, footprint contract",
+   "receipt": "toggle-bat adaptive=on body=steel-dark denoise=on footprint=0.5 lever=chrome-plain nut=steel-bare preset=none raw=off res=640 samples=240 scale=1 seed=0 state=down washer=steel-black-oxide [frame:640x640] [footprint:native=0.224969,factor=2.22253] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-down.png",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "ce03657b4aad3ac9270328862083d1783659d813f0ddf0394ffcf926ed234f19",
+   "sha256": "76f3a50662be7dbbdf59e2ffc5a796c159dca89962ac23fdb46f482481a6bc68",
    "size": [
-    80,
-    84
-   ],
-   "source": "open-plugin-template/components/toggle-bat/renders/toggle_down.png"
+    88,
+    88
+   ]
   },
   "toggle-up.png": {
+   "args": [
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-up.png",
+    "--state",
+    "up",
+    "--footprint",
+    "0.5",
+    "--res",
+    "640"
+   ],
    "crop": [
-    99,
-    163,
-    222,
-    234
+    136,
+    136,
+    368,
+    368
    ],
-   "kind": "component render, resampled",
+   "generator": "open-plugin-template/components/toggle-bat/generator/toggle_scene.py",
+   "kind": "component render, footprint contract",
+   "receipt": "toggle-bat adaptive=on body=steel-dark denoise=on footprint=0.5 lever=chrome-plain nut=steel-bare preset=none raw=off res=640 samples=240 scale=1 seed=0 state=up washer=steel-black-oxide [frame:640x640] [footprint:native=0.224969,factor=2.22253] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-up.png",
    "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "272920ab79fd6cbe8ef4e4aaa160c245c1404bf0d94bf9517ebf529cb7c40721",
+   "sha256": "bd9e138fba45e00c06f757ebac6b2ac80fc020b39a9c336a665619a86ea8c718",
    "size": [
-    80,
-    84
-   ],
-   "source": "open-plugin-template/components/toggle-bat/renders/toggle_up.png"
+    88,
+    88
+   ]
   }
  },
  "sources": {
-  "open-cepstrum": "450f4a03ddf81146afd6162dda8fbf1b6122e37b",
-  "open-plugin-template": "d59c877474a70c913d24b0f14439eff92d53d37f"
+  "open-cepstrum": "527c866b8f9d12c9f4a211af1fd462adbd3f1256",
+  "open-plugin-template": "e5265f43aadf7a607cf1aed5b596e0acef383612"
  }
 }

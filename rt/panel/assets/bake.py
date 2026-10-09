@@ -56,19 +56,26 @@ KNOBS = ["handwheel", "hifi-black-turned", "witchhat-black", "heady", "catalin",
          "leather-oxblood", "wood-ebony", "chrome-heat-tint", "davies-black",
          "ceramic-cobalt"]
 
+# Controls rendered here under the family's footprint contract (the knobs'
+# own, extended to the button family by DESIGN, template 6796dcc): render
+# `--footprint 0.5` square, crop the centre [68, 68, 252, 252] of a 320 px
+# frame (here [136, 136, 504, 504] of 640, for density), scale the crop to
+# the slot. One framing for every state, so states swap in register.
+# name -> (generator, flags, 2x slot px). Slots must match layout.rs.
+CONTRACT_RES = 640
+CONTRACT_CROP = (136, 136, 368, 368)  # x, y, w, h
+COMPONENT_RENDERS = {
+    "toggle-up": ("toggle-bat/generator/toggle_scene.py", ["--state", "up"], 88),
+    "toggle-down": ("toggle-bat/generator/toggle_scene.py", ["--state", "down"], 88),
+    # The chickenhead's 5-detent throw: 0.25 points the nose -30 deg
+    # (HOUSE), 0.75 +30 deg (ORACLE).
+    "selector-house": ("knob-chickenhead/generator/knob_scene.py", ["--color", "black", "--value", "0.25"], 176),
+    "selector-oracle": ("knob-chickenhead/generator/knob_scene.py", ["--color", "black", "--value", "0.75"], 176),
+}
+
 # Component renders resampled to their 2x draw size: name -> (source, w, h,
-# crop). The canonical toggle and chickenhead renders frame the part small
-# (toggle-bat fills 49% x 38% of its frame), so they are cropped first: a
-# rect centred on the part's pivot that holds the union of every state's
-# alpha box plus a margin, so states swap in register. Asked of DESIGN
-# (2026-10-09) as a larger default framing; drop the crops when it lands.
-TOGGLE_CROP = (99, 163, 222, 234)  # pivot (209.5, 280); union x 107..312, y 171..388
-SELECTOR_CROP = (152, 152, 336, 336)  # pivot (320, 320); union x 201..437, y 167..480
+# crop).
 SPRITES = {
-    "selector-house": ("knob-chickenhead/renders/chickenhead_black_pos1.png", 192, 192, SELECTOR_CROP),
-    "selector-oracle": ("knob-chickenhead/renders/chickenhead_black_pos3.png", 192, 192, SELECTOR_CROP),
-    "toggle-up": ("toggle-bat/renders/toggle_up.png", 80, 84, TOGGLE_CROP),
-    "toggle-down": ("toggle-bat/renders/toggle_down.png", 80, 84, TOGGLE_CROP),
     "led-green-off": ("led-indicator/renders/led_green_b00.png", 80, 80, None),
     "led-green-on": ("led-indicator/renders/led_green_b15.png", 80, 80, None),
     "led-amber-off": ("led-indicator/renders/led_amber_b00.png", 80, 80, None),
@@ -120,6 +127,35 @@ def bake_plates(record):
             print("plate", name, flush=True)
 
 
+def render_components(record):
+    cx, cy, cw, ch = CONTRACT_CROP
+    with tempfile.TemporaryDirectory() as temp:
+        for name, (generator, flags, size) in COMPONENT_RENDERS.items():
+            raw = Path(temp) / f"{name}.png"
+            args = [str(BLENDER), "-b", "-P", str(COMPONENTS / generator), "--", str(raw),
+                    *flags, "--footprint", "0.5", "--res", str(CONTRACT_RES)]
+            run = subprocess.run(args, capture_output=True, text=True)
+            receipt = [line for line in run.stdout.splitlines() if "->" in line and str(raw) in line]
+            # Blender exits 0 after a script exception: the file and the
+            # receipt are the proof.
+            if not raw.exists() or not receipt:
+                sys.exit(f"{name}: render failed\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
+            target = VENDOR / f"{name}.png"
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(raw), "-vf",
+                            f"crop={cw}:{ch}:{cx}:{cy},scale={size}:{size}:flags=lanczos",
+                            "-pix_fmt", "rgba", str(target)], check=True)
+            record[target.name] = {
+                "kind": "component render, footprint contract",
+                "generator": f"open-plugin-template/components/{generator}",
+                "args": args[5:],
+                "receipt": receipt[-1],
+                "crop": list(CONTRACT_CROP),
+                "size": [size, size],
+                "resample": "ffmpeg lanczos, straight alpha",
+            }
+            print("component", name, flush=True)
+
+
 def vendor_knobs(record):
     (VENDOR / "knobs").mkdir(exist_ok=True)
     for knob in KNOBS:
@@ -163,13 +199,13 @@ def copy_files(record):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", nargs="*", default=["plates", "knobs", "sprites", "copies"])
+    parser.add_argument("--only", nargs="*", default=["plates", "components", "knobs", "sprites", "copies"])
     args = parser.parse_args()
     VENDOR.mkdir(exist_ok=True)
     manifest_path = VENDOR / "provenance.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     record = manifest.setdefault("files", {})
-    steps = {"plates": bake_plates, "knobs": vendor_knobs,
+    steps = {"plates": bake_plates, "components": render_components, "knobs": vendor_knobs,
              "sprites": resample_sprites, "copies": copy_files}
     for step in args.only:
         steps[step](record)

@@ -413,9 +413,9 @@ impl Board {
                 let dim = opacity(ink, 0.45);
                 // Each name sits where the pointer stands for it, clear of
                 // the pointer itself.
-                let top = cy - layout::SELECTOR * 0.5 - 4.0;
-                self.text(cx - 50.0, top, "HOUSE", CAPTION, if oracle { dim } else { lit }, true);
-                self.text(cx + 50.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
+                let top = cy - layout::SELECTOR_DRAW * 0.5 - 8.0;
+                self.text(cx - 40.0, top, "HOUSE", CAPTION, if oracle { dim } else { lit }, true);
+                self.text(cx + 40.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
                 self.caption(widget, ink, hovered);
             }
         }

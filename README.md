@@ -74,6 +74,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.3.2** — the bat toggles and the Algorithm selector are rendered under
+  the family's footprint contract (the knobs' framing, extended to the
+  switches by the template), so they sit at the knobs' size with every
+  position in register. Built on open-wrac's guard for automated lanes:
+  the host's automation echoes are not forwarded.
 - **0.3.1** — panel nits: the bat toggles and the Algorithm selector are
   drawn at the family's size (their renders are cropped to the part); the
   transect gets a time axis (seconds before now), its octave names sit

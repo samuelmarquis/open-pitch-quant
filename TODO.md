@@ -42,11 +42,9 @@ messages, and behavior belongs in the README; neither is kept here.
      - Nits (0.3.1, done, catalogue/v08): toggle and selector size
        (Sam: the bat switch read too small); the time axis; octave and
        lane names; the bypass lamp; the strip's version.
-     - [ ] DESIGN is giving toggle-bat, button-console and the
-       chickenhead the knobs' size contract (`--footprint 0.5`, common
-       crop [68, 68, 252, 252] at 320 px, one framing for all states;
-       plate p174). Then replace bake.py's TOGGLE_CROP/SELECTOR_CROP
-       with their recipes.
+     - The switches' size contract (0.3.2, done): DESIGN's template
+       6796dcc (plate p174); bake.py renders toggle-bat and the
+       chickenhead itself under it, and the stopgap crops are gone.
      - [ ] Sam's fuller notes on v07/v08, then more nit rounds. Still
        known: plate titles are drawn text, not the panel-board's backlit
        cut titles (title-bake/1).
