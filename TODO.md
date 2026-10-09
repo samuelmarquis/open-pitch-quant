@@ -24,10 +24,12 @@ messages, and behavior belongs in the README; neither is kept here.
        selector, the NO BIJECTION plate re-lettered per algorithm
        (CARRIED/DISCARDED) and a PURIFY fitting. They are design input
        for the new panel.
-  3. [ ] **wrac_shell's mechanical steps,** each behaviour-identical
-     and validated: `plugin_entry!`, `MonoStereoPorts` (if the ports
-     fit), `audio_io`. Decide `vst3_midi_channels` (the sidechain chord
-     is read on which channels?). Model: open-cepstrum 0.26.15–0.26.22.
+  3. wrac_shell's mechanical steps (0.2.1, done): `plugin_entry!`,
+     `MonoStereoPorts::main_only` (added to open-wrac for a product whose
+     side chain is MIDI), `audio_io`'s `read_block`/`write_block`.
+     `vst3_midi_channels` stays at the default 1, as every build so far
+     has had (daily-driven in Live over VST3). `LatencyGate` is not
+     taken: the latency is a constant 4096.
   4. [ ] **The panel, rebuilt from scratch in the family idiom (Sam,
      2026-10-09)** on panelkit: canvas, mount with `PointerLock`,
      widgets, `GestureDelivery`; our own `canvas.rs`, `font.rs`,

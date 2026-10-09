@@ -1,6 +1,6 @@
 [package]
 name = "opq_plugin_wrac"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "OpenPitchQuant - real-time polyphonic pitch mapping"
 license = "MIT"
@@ -80,7 +80,6 @@ crate-type = ["rlib", "staticlib", "cdylib"]
 [dependencies]
 log = "0.4"
 wrac_clap_adapter = { workspace = true }
-wrac_log = { workspace = true }
 wrac_shell = { workspace = true, features = ["sync"] }
 opq-engine = { path = "../../../../rt/engine" }
 pluginkit = { path = "../../../../../open-pluginkit" }

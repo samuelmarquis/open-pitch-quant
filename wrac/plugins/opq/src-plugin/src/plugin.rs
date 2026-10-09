@@ -1,10 +1,10 @@
-//! The plugin contract as seen by the host. Controls are headless (hosts
-//! present their generic editor); the editor window, where the platform has
-//! one, is the drum — a fixed observation instrument, not a control surface.
+//! The plugin contract as seen by the host: the 20 parameters, the saved
+//! state, a main audio pair (mono or stereo), the MIDI note side chain, a
+//! constant latency, and the panel where the platform has one. The entry,
+//! factory and audio ports are wrac_shell's.
 
 use std::sync::Arc;
 
-mod audio_ports;
 mod params;
 mod state;
 
@@ -20,16 +20,16 @@ pub(crate) use params::param_default;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) use params::{param_minmax, param_value_text};
 
-use audio_ports::{AudioLayoutStore, OpqAudioPorts, OpqConfigurableAudioPorts};
 use params::OpqParams;
 use state::OpqStateExtension;
 use wrac_clap_adapter::{
     AaxDescriptor, AaxStemConfig, ActivateContext, Auv2Descriptor, NoteDialects, NotePortInfo,
     PluginAudioPortsExtension, PluginConfigurableAudioPortsExtension, PluginCore,
-    PluginCoreContext, PluginDescriptor, PluginEntry, PluginFactory, PluginFeature,
-    PluginLatencyExtension, PluginNotePortsExtension, PluginParamsExtension, PluginResult,
-    PluginStateExtension, Processor, Vst3Descriptor,
+    PluginCoreContext, PluginDescriptor, PluginFeature, PluginLatencyExtension,
+    PluginNotePortsExtension, PluginParamsExtension, PluginResult, PluginStateExtension,
+    Processor, Vst3Descriptor,
 };
+use wrac_shell::MonoStereoPorts;
 
 use crate::audio::OpqAudioProcessor;
 #[cfg(target_os = "macos")]
@@ -43,41 +43,7 @@ use crate::state::SharedState;
 
 // Generated from [package.metadata.wrac] in src-plugin/Cargo.toml.
 include!(concat!(env!("OUT_DIR"), "/wrac_plugin_products.rs"));
-
-pub(crate) static PLUGIN_ENTRY: OpqEntry = OpqEntry;
-
-pub(crate) struct OpqEntry;
-
-impl PluginEntry for OpqEntry {
-    fn plugin_factory(&self) -> Option<&dyn PluginFactory> {
-        Some(&OPQ_FACTORY)
-    }
-}
-
-static OPQ_FACTORY: OpqFactory = OpqFactory;
-
-struct OpqFactory;
-
-impl PluginFactory for OpqFactory {
-    fn plugin_count(&self) -> u32 {
-        PLUGIN_DESCRIPTORS.len() as u32
-    }
-
-    fn plugin_descriptor(&self, index: u32) -> Option<PluginDescriptor> {
-        PLUGIN_DESCRIPTORS.get(index as usize).copied()
-    }
-
-    fn create_plugin(
-        &self,
-        plugin_id: &str,
-        context: PluginCoreContext,
-    ) -> Option<Box<dyn PluginCore>> {
-        PLUGIN_DESCRIPTORS
-            .iter()
-            .find(|descriptor| descriptor.id == plugin_id)
-            .map(|descriptor| create_plugin_core(context, *descriptor))
-    }
-}
+wrac_shell::plugin_entry!(OpqPlugin, log = "OpenPitchQuant");
 
 /// MIDI note sidechain: one input note port, CLAP + MIDI dialects.
 struct OpqNotePorts;
@@ -109,11 +75,9 @@ impl PluginLatencyExtension for OpqLatency {
 }
 
 pub(crate) struct OpqPlugin {
-    descriptor: PluginDescriptor,
     shared: Arc<SharedState>,
-    audio_layout: Arc<AudioLayoutStore>,
-    audio_ports: Arc<OpqAudioPorts>,
-    configurable_audio_ports: Arc<OpqConfigurableAudioPorts>,
+    /// The main pair only: the side chain is MIDI, a note port.
+    ports: Arc<MonoStereoPorts>,
     params: Arc<OpqParams>,
     state_extension: Arc<OpqStateExtension>,
     note_ports: Arc<OpqNotePorts>,
@@ -123,62 +87,38 @@ pub(crate) struct OpqPlugin {
 }
 
 impl OpqPlugin {
-    pub(crate) fn new(context: PluginCoreContext, descriptor: PluginDescriptor) -> Self {
+    pub(crate) fn new(context: PluginCoreContext) -> Self {
         #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         let _ = &context;
         let shared = Arc::new(SharedState::new());
-        let audio_layout = Arc::new(AudioLayoutStore::new(2));
-        let audio_ports = Arc::new(OpqAudioPorts::new(audio_layout.clone()));
-        let configurable_audio_ports =
-            Arc::new(OpqConfigurableAudioPorts::new(audio_layout.clone()));
-        let params = Arc::new(OpqParams::new(shared.clone()));
-        let state_extension = Arc::new(OpqStateExtension::new(shared.clone()));
-
         Self {
-            descriptor,
             #[cfg(any(target_os = "macos", target_os = "windows"))]
             gui: Arc::new(PanelGui::new(
                 shared.clone(),
                 context.host_parameter_edit_notifier.clone(),
             )),
-            shared,
-            audio_layout,
-            audio_ports,
-            configurable_audio_ports,
-            params,
-            state_extension,
+            ports: Arc::new(MonoStereoPorts::main_only()),
+            params: Arc::new(OpqParams::new(shared.clone())),
+            state_extension: Arc::new(OpqStateExtension::new(shared.clone())),
             note_ports: Arc::new(OpqNotePorts),
             latency: Arc::new(OpqLatency),
+            shared,
         }
     }
 }
 
-pub(crate) fn create_plugin_core(
-    context: PluginCoreContext,
-    descriptor: PluginDescriptor,
-) -> Box<dyn PluginCore> {
-    wrac_log::init!(descriptor.name);
-    log::debug!(
-        "creating plugin core: id={}, name={}",
-        descriptor.id,
-        descriptor.name
-    );
-    Box::new(OpqPlugin::new(context, descriptor))
-}
-
 impl PluginCore for OpqPlugin {
     fn activate(&mut self, context: ActivateContext) -> PluginResult<Box<dyn Processor>> {
-        let audio_channel_count = self.audio_layout.channel_count();
+        let channels = self.ports.channels();
         log::debug!(
-            "activating: plugin_id={}, sample_rate={}, max_frames={}, channels={}",
-            self.descriptor.id,
+            "activating: sample_rate={}, max_frames={}, channels={}",
             context.sample_rate,
             context.max_frames_count,
-            audio_channel_count
+            channels
         );
         Ok(Box::new(OpqAudioProcessor::new(
             self.shared.clone(),
-            audio_channel_count,
+            channels,
             context.sample_rate,
             context.max_frames_count,
         )))
@@ -192,11 +132,11 @@ impl PluginCore for OpqPlugin {
     }
 
     fn audio_ports(&self) -> Option<Arc<dyn PluginAudioPortsExtension>> {
-        Some(self.audio_ports.clone())
+        Some(self.ports.clone())
     }
 
     fn configurable_audio_ports(&self) -> Option<Arc<dyn PluginConfigurableAudioPortsExtension>> {
-        Some(self.configurable_audio_ports.clone())
+        Some(self.ports.clone())
     }
 
     fn note_ports(&self) -> Option<Arc<dyn PluginNotePortsExtension>> {

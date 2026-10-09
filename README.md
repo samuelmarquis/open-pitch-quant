@@ -61,6 +61,12 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.2.1** — no change to the sound or the parameters. The plugin's entry
+  point, audio ports and sample conversion come from the family's shared
+  shell. The audio ports are still one main pair, mono or stereo (the
+  side chain is MIDI); they now tell the host they take 64-bit audio and
+  can process in place. A host that gives no input now feeds the engine
+  silence.
 - **0.2.0** — the host sees 20 parameters. Two are new:
   - **Algorithm** (House / Oracle, default House). House is the sound the
     plugin has always had; Oracle is the PITCHMAP-faithful policy measured

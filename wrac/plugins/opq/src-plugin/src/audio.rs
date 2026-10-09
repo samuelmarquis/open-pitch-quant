@@ -15,8 +15,10 @@ use std::sync::Arc;
 use opq_engine::Engine;
 use opq_engine::params::ParameterBatch;
 use wrac_clap_adapter::{
-    AudioPortChannels, InputEvent, PluginResult, ProcessContext, ProcessStatus, Processor,
+    AudioPairedChannels, AudioPortChannels, InputEvent, PluginResult, ProcessContext,
+    ProcessStatus, Processor,
 };
+use wrac_shell::audio_io::{Sample, read_block, write_block};
 
 use crate::state::{AudioSync, SharedState};
 
@@ -51,6 +53,33 @@ impl OpqAudioProcessor {
             channels,
             max_frames,
             scratch: vec![0.0; channels * max_frames],
+        }
+    }
+
+    /// The block through the engine, in place on the scratch channels: input
+    /// read (silence where the host gives none), processed, written back. A
+    /// mono engine feeds every output channel.
+    fn run<T: Sample>(
+        &mut self,
+        channels: AudioPairedChannels<'_, T>,
+        frames: usize,
+        params: &opq_engine::EngineParams,
+    ) {
+        let mut channels = channels.into_iter();
+        let mut pairs = [channels.next(), channels.next()];
+        let (a, b) = self.scratch.split_at_mut(self.max_frames);
+        let (a, b) = (&mut a[..frames], &mut b[..frames]);
+        read_block(&pairs[0], 0, a);
+        if self.channels == 1 {
+            self.engine.process_block(&mut [&mut *a], &self.held, params);
+            for pair in &mut pairs {
+                write_block(pair, 0, a);
+            }
+        } else {
+            read_block(&pairs[1], 0, b);
+            self.engine.process_block(&mut [&mut *a, &mut *b], &self.held, params);
+            write_block(&mut pairs[0], 0, a);
+            write_block(&mut pairs[1], 0, b);
         }
     }
 
@@ -110,85 +139,17 @@ impl Processor for OpqAudioProcessor {
 
         let frames = (context.frames_count as usize).min(self.max_frames);
 
-        // 2) Copy input into per-channel scratch.
-        {
-            let Some(mut port) = context.audio.port_pair(0) else {
-                return Ok(ProcessStatus::Continue);
-            };
+        // 2) Read the main pair, run the engine, write the main pair.
+        if let Some(mut port) = context.audio.port_pair(0) {
             match port.channels()? {
-                AudioPortChannels::F32(mut chans) => {
-                    for ci in 0..self.channels {
-                        let dst = &mut self.scratch[ci * self.max_frames..][..frames];
-                        if let Some(pair) = chans.channel_pair(ci) {
-                            if let Some(input) = pair.input() {
-                                dst.copy_from_slice(&input[..frames]);
-                            }
-                        }
-                    }
-                }
-                AudioPortChannels::F64(mut chans) => {
-                    for ci in 0..self.channels {
-                        let dst = &mut self.scratch[ci * self.max_frames..][..frames];
-                        if let Some(pair) = chans.channel_pair(ci) {
-                            if let Some(input) = pair.input() {
-                                for (d, s) in dst.iter_mut().zip(input[..frames].iter()) {
-                                    *d = *s as f32;
-                                }
-                            }
-                        }
-                    }
-                }
+                AudioPortChannels::F32(chans) => self.run(chans, frames, &params),
+                AudioPortChannels::F64(chans) => self.run(chans, frames, &params),
             }
         }
 
-        // 3) Run the engine in place on the scratch channels.
-        {
-            let (a, b) = self.scratch.split_at_mut(self.max_frames);
-            if self.channels == 1 {
-                let mut io: [&mut [f32]; 1] = [&mut a[..frames]];
-                self.engine.process_block(&mut io, &self.held, &params);
-            } else {
-                let mut io: [&mut [f32]; 2] = [&mut a[..frames], &mut b[..frames]];
-                self.engine.process_block(&mut io, &self.held, &params);
-            }
-        }
-
-        // 3b) Hand this block's analysis frames to the drum (never blocks).
+        // 3) Hand this block's analysis frames to the drum (never blocks).
         self.shared
             .publish_viz(std::iter::from_fn(|| self.engine.viz_pop()));
-
-        // 4) Copy scratch to the output channels.
-        {
-            let Some(mut port) = context.audio.port_pair(0) else {
-                return Ok(ProcessStatus::Continue);
-            };
-            match port.channels()? {
-                AudioPortChannels::F32(mut chans) => {
-                    for ci in 0..chans.channel_pair_count() {
-                        let src = &self.scratch[(ci.min(self.channels - 1)) * self.max_frames..]
-                            [..frames];
-                        if let Some(mut pair) = chans.channel_pair(ci) {
-                            if let Some(output) = pair.output_mut() {
-                                output[..frames].copy_from_slice(src);
-                            }
-                        }
-                    }
-                }
-                AudioPortChannels::F64(mut chans) => {
-                    for ci in 0..chans.channel_pair_count() {
-                        let src = &self.scratch[(ci.min(self.channels - 1)) * self.max_frames..]
-                            [..frames];
-                        if let Some(mut pair) = chans.channel_pair(ci) {
-                            if let Some(output) = pair.output_mut() {
-                                for (d, s) in output[..frames].iter_mut().zip(src.iter()) {
-                                    *d = *s as f64;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         self.sync.report(&self.shared.sync);
         // The engine has a 4096-sample tail (its latency buffer); keep running.

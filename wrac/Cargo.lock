@@ -543,7 +543,7 @@ dependencies = [
 
 [[package]]
 name = "opq_plugin_wrac"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "block2",
  "log",
@@ -556,7 +556,6 @@ dependencies = [
  "windows-sys",
  "wrac_build",
  "wrac_clap_adapter",
- "wrac_log",
  "wrac_shell",
 ]
 
