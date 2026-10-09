@@ -133,5 +133,4 @@ objc2-core-foundation = { version = "0.3", default-features = false, features = 
 unreachable_pub = "deny"
 
 [build-dependencies]
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
+wrac_build = { workspace = true }

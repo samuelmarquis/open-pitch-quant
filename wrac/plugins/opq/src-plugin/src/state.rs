@@ -107,8 +107,10 @@ impl SharedState {
     pub(crate) fn engine_params(&self) -> EngineParams {
         let mut p = EngineParams {
             // pinned until the SEL-2200 selector lands with the purify
-            // fitting (one host-facing param migration, not two)
+            // fitting (one host-facing param migration, not two); purify
+            // stays at its neutral 0 until then
             algorithm: opq_engine::Algorithm::House,
+            purify: 0.0,
             voices: self.v(PARAM_VOICES_ID).round().clamp(1.0, 12.0) as usize,
             unowned: if self.v(PARAM_UNOWNED_ID) >= 0.5 {
                 Unowned::Map

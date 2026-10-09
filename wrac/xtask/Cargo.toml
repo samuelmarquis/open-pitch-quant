@@ -2,10 +2,10 @@
 name = "xtask"
 version = "0.1.0"
 edition = "2024"
-description = "Repository-local build tasks for the WRAC plugin template"
+description = "OpenPitchQuant native plugin build and packaging tasks"
 license = "MIT"
-repository = "https://github.com/novonotes/wrac-plugin-template"
+repository = "https://github.com/samuelmarquis/open-pitch-quant"
 publish = false
 
 [dependencies]
-wrac_xtask = { path = "../crates/wrac_xtask" }
+wrac_xtask = { workspace = true }

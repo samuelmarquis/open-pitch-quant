@@ -7,8 +7,13 @@ fn main() -> wrac_xtask::Result<()> {
         .parent()
         .expect("xtask must be a direct child of the repository root")
         .to_path_buf();
+    // The family's one clap-wrapper build, in the sibling open-wrac checkout.
+    let wrapper_dir = root
+        .join("../../open-wrac/clap_wrapper_builder")
+        .canonicalize()
+        .expect("../open-wrac must be checked out beside this repository");
     run(XtaskConfig {
-        wrapper_dir: root.join("clap_wrapper_builder"),
+        wrapper_dir,
         target_namespace: "wrac-plugins".to_string(),
         root,
     })

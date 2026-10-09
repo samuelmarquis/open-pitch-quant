@@ -94,6 +94,4 @@ wxp = { workspace = true }
 unreachable_pub = "deny"
 
 [build-dependencies]
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
-wrac_build = { path = "../../../crates/wrac_build" }
+wrac_build = { workspace = true }
