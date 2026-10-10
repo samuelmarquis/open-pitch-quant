@@ -63,6 +63,7 @@ impl OpqAudioProcessor {
         &mut self,
         channels: AudioPairedChannels<'_, T>,
         frames: usize,
+        grid: &[bool; 128],
         params: &opq_engine::EngineParams,
     ) {
         let mut channels = channels.into_iter();
@@ -71,13 +72,13 @@ impl OpqAudioProcessor {
         let (a, b) = (&mut a[..frames], &mut b[..frames]);
         read_block(&pairs[0], 0, a);
         if self.channels == 1 {
-            self.engine.process_block(&mut [&mut *a], &self.held, params);
+            self.engine.process_block(&mut [&mut *a], grid, params);
             for pair in &mut pairs {
                 write_block(pair, 0, a);
             }
         } else {
             read_block(&pairs[1], 0, b);
-            self.engine.process_block(&mut [&mut *a, &mut *b], &self.held, params);
+            self.engine.process_block(&mut [&mut *a, &mut *b], grid, params);
             write_block(&mut pairs[0], 0, a);
             write_block(&mut pairs[1], 0, b);
         }
@@ -123,7 +124,16 @@ impl Processor for OpqAudioProcessor {
         if let Some(batch) = batch {
             batch.apply(&mut self.sync.params, |_, _, _| {});
         }
-        let params = self.sync.params.engine();
+        let mut params = self.sync.params.engine();
+        // The grid: the panel's keys (and their Bypass) under the Keys
+        // source, else the notes held on the MIDI side chain.
+        let grid = if self.sync.params.keys_source() {
+            let keys = self.shared.keys();
+            params.bypass_keys = keys.bypass;
+            keys.held()
+        } else {
+            self.held
+        };
 
         let frames = (context.frames_count as usize).min(self.max_frames);
 
@@ -131,8 +141,8 @@ impl Processor for OpqAudioProcessor {
         // block's parameters are reported whatever the buffers did.
         let ran = match context.audio.port_pair(0) {
             Some(mut port) => port.channels().map(|channels| match channels {
-                AudioPortChannels::F32(chans) => self.run(chans, frames, &params),
-                AudioPortChannels::F64(chans) => self.run(chans, frames, &params),
+                AudioPortChannels::F32(chans) => self.run(chans, frames, &grid, &params),
+                AudioPortChannels::F64(chans) => self.run(chans, frames, &grid, &params),
             }),
             None => Ok(()),
         };

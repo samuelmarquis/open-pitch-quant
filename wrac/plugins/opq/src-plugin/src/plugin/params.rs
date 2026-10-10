@@ -44,14 +44,14 @@ mod tests {
     #[test]
     fn every_id_is_listed_at_its_index_and_automatable() {
         let ext = OpqParams::new(Arc::new(SharedState::new()));
-        assert_eq!(ext.param_count(), 20);
+        assert_eq!(ext.param_count(), 21);
         for i in 0..ext.param_count() {
             let info = ext.param_info(i).unwrap();
             assert_eq!(info.id, i);
             assert!(info.flags.is_automatable && !info.flags.is_hidden, "{}", info.name);
         }
-        assert!(ext.param_info(20).is_none());
-        assert!(ext.param_value(20).is_err());
+        assert!(ext.param_info(21).is_none());
+        assert!(ext.param_value(21).is_err());
         let bypass = ext.param_info(params::BYPASS as u32).unwrap().flags;
         assert!(bypass.is_bypass && bypass.is_enum);
         let voices = ext.param_info(params::VOICES as u32).unwrap().flags;

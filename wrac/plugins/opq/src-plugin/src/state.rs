@@ -11,12 +11,13 @@
 //! block's frames (a skipped drum column, never a glitch).
 
 use std::collections::VecDeque;
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use opq_engine::VizFrame;
-use opq_engine::params::{PARAM_COUNT, ParamSchema, ParameterBatch, Params};
+use opq_engine::params::{Keys, PARAM_COUNT, ParamSchema, ParameterBatch, Params};
 use pluginkit::sync::{AudioParams, ParamSync};
+use wrac_clap_adapter::HostStateDirtyNotifier;
 
 pub(crate) type Sync = ParamSync<ParamSchema, PARAM_COUNT>;
 pub(crate) type AudioSync = AudioParams<ParamSchema, PARAM_COUNT>;
@@ -30,15 +31,48 @@ pub(crate) struct SharedState {
     /// Sample rate bits + hop, published by the processor for panel captions.
     sr_bits: AtomicU32,
     hop: AtomicU32,
+    /// The Keys source's key states (product state, not parameters): the
+    /// target and bypass masks as low/high halves. The editor writes them,
+    /// audio reads them each block; a torn read between halves lasts one
+    /// block at most.
+    keys: [AtomicU64; 4],
+    /// Tells the host its saved state changed when the keys do.
+    dirty: Option<Arc<dyn HostStateDirtyNotifier>>,
 }
 
 impl SharedState {
+    #[cfg(test)]
     pub(crate) fn new() -> Self {
+        Self::with_host(None)
+    }
+
+    pub(crate) fn with_host(dirty: Option<Arc<dyn HostStateDirtyNotifier>>) -> Self {
+        let keys = Keys::default();
+        let words = split(keys);
         Self {
             sync: Sync::new(Params::default()),
             viz: Mutex::new(VecDeque::with_capacity(VIZ_QUEUE)),
             sr_bits: AtomicU32::new(0),
             hop: AtomicU32::new(0),
+            keys: words.map(AtomicU64::new),
+            dirty,
+        }
+    }
+
+    /// The key states.
+    pub(crate) fn keys(&self) -> Keys {
+        let w = |i: usize| self.keys[i].load(Ordering::Relaxed) as u128;
+        Keys { target: w(0) | w(1) << 64, bypass: w(2) | w(3) << 64 }
+    }
+
+    /// Replace the key states. An editor edit (`edited`) tells the host
+    /// its state changed (main thread); a load does not.
+    pub(crate) fn set_keys(&self, keys: Keys, edited: bool) {
+        for (slot, word) in self.keys.iter().zip(split(keys)) {
+            slot.store(word, Ordering::Relaxed);
+        }
+        if edited && let Some(dirty) = &self.dirty {
+            dirty.mark_dirty();
         }
     }
 
@@ -99,4 +133,9 @@ impl SharedState {
     pub(crate) fn set_batch(&self, batch: &ParameterBatch) {
         self.sync.set_batch(batch);
     }
+}
+
+/// Key masks as the four 64-bit words SharedState stores.
+fn split(keys: Keys) -> [u64; 4] {
+    [keys.target as u64, (keys.target >> 64) as u64, keys.bypass as u64, (keys.bypass >> 64) as u64]
 }

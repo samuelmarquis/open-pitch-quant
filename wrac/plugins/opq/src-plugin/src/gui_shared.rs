@@ -33,6 +33,9 @@ pub(crate) fn apply(edits: Vec<Edit>, shared: &SharedState, notifier: &dyn HostP
                 }
             }
             Edit::End(id) => notifier.end_edit(id as u32),
+            // Product state, not a parameter: stored, and the host told
+            // its saved state changed.
+            Edit::Keys(keys) => shared.set_keys(keys, true),
         }
     }
 }
@@ -58,6 +61,7 @@ impl ViewState {
         let (params, restore_revision) = shared.snapshot();
         let mut panel = PanelState::new(Instant::now());
         panel.params = params;
+        panel.keys = shared.keys();
         panel.version = env!("CARGO_PKG_VERSION");
         Self {
             shared,
@@ -88,6 +92,7 @@ impl ViewState {
         let edits = if restored { self.clear_editing(false) } else { Vec::new() };
         self.restore_revision = revision;
         self.panel.params = params;
+        self.panel.keys = self.shared.keys();
         self.frames.clear();
         self.shared.drain_viz(&mut self.frames);
         self.panel.push_frames(self.frames.drain(..));

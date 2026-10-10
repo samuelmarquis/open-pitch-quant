@@ -26,7 +26,7 @@ pub use board::Board;
 pub use fittings::{Fittings, PointerCapture};
 pub use layout::{HEIGHT, WIDTH};
 
-use opq_engine::params::Params;
+use opq_engine::params::{Keys, Params};
 use opq_engine::VizFrame;
 use std::collections::VecDeque;
 use std::time::Instant;
@@ -37,12 +37,15 @@ pub const PLUGIN_NAME: &str = "OpenPitchQuant";
 pub const HISTORY: usize = 484;
 
 /// A parameter gesture, plain units. `Begin` and `End` bracket the values
-/// of one gesture on one parameter.
+/// of one gesture on one parameter. `Keys` replaces the panel's key states
+/// (product state, not a parameter: the mount saves it and marks the
+/// host's state dirty).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Edit {
     Begin(usize),
     Value(usize, f32),
     End(usize),
+    Keys(Keys),
 }
 
 /// Keyboard modifiers held with a pointer event. Command is fine
@@ -67,6 +70,11 @@ impl Modifiers {
 /// Everything the board draws, and the editor-local view state.
 pub struct PanelState {
     pub params: Params,
+    /// The keys the Keys source maps to (the ruler, when it is the source).
+    pub keys: Keys,
+    /// The transect's floor (MIDI note at the bottom of the plot); the
+    /// wheel over the screen moves it.
+    pub view: f32,
     /// The newest analysis frames, oldest first.
     pub history: VecDeque<VizFrame>,
     /// Sample rate and hop of the running engine (for time captions).
@@ -97,6 +105,8 @@ impl PanelState {
     pub fn new(now: Instant) -> Self {
         Self {
             params: Params::default(),
+            keys: Keys::default(),
+            view: layout::VIEW_DEFAULT,
             history: VecDeque::with_capacity(HISTORY),
             engine_info: (48_000.0, opq_engine::HOP as u32),
             pointer: None,
@@ -158,6 +168,16 @@ impl PanelState {
     /// A note is a target: held, or (in Repeat scope) an octave of one.
     pub fn is_target(&self, note: u32) -> bool {
         self.held() >> note & 1 == 1 || (self.repeat() && note < 127 && self.classes()[(note % 12) as usize])
+    }
+
+    /// The grid comes from the panel's keys.
+    pub fn keys_source(&self) -> bool {
+        self.params.keys_source()
+    }
+
+    /// Edits to a key reach every octave of it (the Repeat scope).
+    pub fn repeat_scope(&self) -> bool {
+        self.params.get(opq_engine::params::SCOPE) < 0.5
     }
 
     pub fn update(&mut self, now: Instant) {

@@ -13,7 +13,7 @@
 //! spared, and the map ceiling.
 use crate::layout::{self, Kind, Plate, Widget, LCD, MONITOR, PLOT, RULER, SCREEN, STRIP, WIDGETS};
 use crate::{pack, PanelState, HISTORY};
-use opq_engine::params::{self as p, SPECS};
+use opq_engine::params::{self as p, KeyState, SPECS};
 use opq_engine::VizFrame;
 use panelkit::canvas::{opacity, paint, pixel_font, Canvas, Rect, TextGrid, FORMAT};
 use panelkit::gpu::Gpu;
@@ -109,7 +109,7 @@ fn lcd_font(size: usize) -> &'static pixel_font::PixelFont {
 /// brass and the verdigris.
 fn plate_ink(plate: Plate) -> [f32; 4] {
     match plate {
-        Plate::Capture | Plate::Module => [0.82, 0.84, 0.86, 1.0],
+        Plate::Capture | Plate::Module | Plate::Screen => [0.82, 0.84, 0.86, 1.0],
         Plate::Law => [0.02, 0.012, 0.004, 1.0],
         Plate::Finish => [0.0, 0.012, 0.012, 1.0],
     }
@@ -118,7 +118,7 @@ fn plate_ink(plate: Plate) -> [f32; 4] {
 /// A plate's value ink: the true value, in the plate's accent.
 fn value_ink(plate: Plate) -> [f32; 4] {
     match plate {
-        Plate::Capture | Plate::Module => MINT,
+        Plate::Capture | Plate::Module | Plate::Screen => MINT,
         Plate::Law => [0.16, 0.012, 0.004, 1.0],
         Plate::Finish => [0.0, 0.018, 0.09, 1.0],
     }
@@ -189,9 +189,17 @@ impl Board {
 
     fn transect(&mut self, state: &PanelState) {
         let held = state.held();
-        // Header: what this is, and the law in force.
+        let view = state.view;
+        let y_of = |note: f32| layout::note_y(view, note);
+        let visible = || (view.ceil() as u32)..=((view + layout::VIEW_SPAN).floor() as u32).min(127);
+        // Header: the Map Source tabs, what this is, and the law in force.
+        let source = layout::widget(layout::Control::Param(p::SOURCE)).copied();
+        if let Some(widget) = source {
+            self.tabs(state, &widget);
+        }
+        let title_x = layout::SOURCE_TABS.x + layout::SOURCE_TABS.w + 12.0;
+        self.text(title_x, SCREEN.y + 4.0, "REC-1859  BELIEF TRANSECT", SMALL, MUTED, false);
         let algorithm = SPECS[p::ALGORITHM].format(state.params.get(p::ALGORITHM)).to_uppercase();
-        self.text(SCREEN.x + 8.0, SCREEN.y + 4.0, "REC-1859  BELIEF TRANSECT", SMALL, MUTED, false);
         let law = format!(
             "{algorithm}   /   FEEL {}   /   GLIDE {}   /   {} VOICES",
             SPECS[p::FEEL].format(state.params.get(p::FEEL)),
@@ -201,26 +209,42 @@ impl Board {
         let lw = self.text_width(&law, SMALL);
         self.text(SCREEN.x + SCREEN.w - 8.0 - lw, SCREEN.y + 4.0, &law, SMALL, MUTED, false);
 
-        // The key ruler: held notes lit, their Repeat octaves glowing.
-        for note in layout::LOW_NOTE as u32..layout::HIGH_NOTE as u32 {
-            let (top, bottom) = (layout::note_y(note as f32 + 0.5), layout::note_y(note as f32 - 0.5));
+        // The key ruler. Under MIDI: held notes lit, their Repeat octaves
+        // glowing. Under Keys it is the Lower Keyboard: a target lit, a
+        // bypassed key in refusal ochre, an excluded one dark.
+        self.set_clip(Some(RULER));
+        let keys = state.keys_source();
+        for note in visible() {
+            let (top, bottom) = (y_of(note as f32 + 0.5), y_of(note as f32 - 0.5));
             let black = matches!(note % 12, 1 | 3 | 6 | 8 | 10);
-            let color = if held >> note & 1 == 1 {
+            let bare = if black { [0.012, 0.014, 0.018, 1.0] } else { [0.16, 0.17, 0.18, 1.0] };
+            let color = if keys {
+                if state.keys.get(KeyState::Bypass, note) {
+                    OCHRE
+                } else if state.keys.get(KeyState::Target, note) {
+                    opacity(MINT, if black { 0.65 } else { 0.9 })
+                } else {
+                    bare
+                }
+            } else if held >> note & 1 == 1 {
                 MINT
             } else if state.is_target(note) {
                 opacity(MINT, 0.45)
-            } else if black {
-                [0.012, 0.014, 0.018, 1.0]
             } else {
-                [0.16, 0.17, 0.18, 1.0]
+                bare
             };
             let w = if black { RULER.w * 0.62 } else { RULER.w };
-            self.solid(Rect::new(RULER.x, top + 0.5, w, bottom - top - 0.5), color);
+            let key = Rect::new(RULER.x, top + 0.5, w, bottom - top - 0.5);
+            self.solid(key, color);
+            if state.hover_control == Some(layout::Control::Key(note)) && keys {
+                self.outline(key, opacity(WHITE, 0.7));
+            }
         }
+        self.set_clip(None);
         // Octave rules and their names.
-        for octave in 2..=7u32 {
+        for octave in 0..=10u32 {
             let note = 12 + octave * 12;
-            let y = layout::note_y(note as f32);
+            let y = y_of(note as f32);
             if !(PLOT.y..=PLOT.y + PLOT.h).contains(&y) {
                 continue;
             }
@@ -236,17 +260,26 @@ impl Board {
         // note's lane full, a Repeat octave's fainter. A name that would
         // touch the one above it is left off (its lane still shows), and a
         // held note's name wins over a Repeat octave's.
+        // A dense grid (a chromatic keyboard) draws faint lanes and no names:
+        // the ruler already says it.
+        let dense = visible().filter(|&n| state.is_target(n)).count() > 24;
         let mut named: Vec<f32> = Vec::new();
         for pass_held in [true, false] {
-            for note in (layout::LOW_NOTE as u32..=layout::HIGH_NOTE as u32).rev() {
+            for note in visible().rev() {
                 let is_held = held >> note & 1 == 1;
                 if !state.is_target(note) || is_held != pass_held {
                     continue;
                 }
-                let y = layout::note_y(note as f32);
-                let strength = if is_held { 1.0 } else { 0.45 };
+                let y = y_of(note as f32);
+                let strength = if dense {
+                    0.3
+                } else if is_held {
+                    1.0
+                } else {
+                    0.45
+                };
                 self.solid(Rect::new(PLOT.x, y - 0.5, PLOT.w, 1.0), opacity(MINT, 0.22 * strength));
-                if named.iter().any(|&other| (other - y).abs() < 11.0) {
+                if dense || named.iter().any(|&other| (other - y).abs() < 11.0) {
                     continue;
                 }
                 named.push(y);
@@ -255,8 +288,8 @@ impl Board {
             }
         }
         // The map ceiling, in refusal ink: above it nothing unowned is bent.
-        let ceiling = layout::note_y(layout::hz_note(state.params.get(p::FMAX)));
-        if ceiling > PLOT.y {
+        let ceiling = y_of(layout::hz_note(state.params.get(p::FMAX)));
+        if ceiling > PLOT.y && ceiling < PLOT.y + PLOT.h {
             let mut x = PLOT.x;
             while x < PLOT.x + PLOT.w {
                 self.solid(Rect::new(x, ceiling - 0.5, 6.0, 1.0), opacity(OCHRE, 0.7));
@@ -266,7 +299,11 @@ impl Board {
         }
 
         if state.history.is_empty() {
-            let msg = "NO FEED  —  PLAY AUDIO THROUGH IT AND HOLD A CHORD ON THE MIDI SIDE CHAIN";
+            let msg = if keys {
+                "NO FEED  —  PLAY AUDIO THROUGH IT; THE KEYS LIT ON THE LEFT ARE THE TARGETS"
+            } else {
+                "NO FEED  —  PLAY AUDIO THROUGH IT AND HOLD A CHORD ON THE MIDI SIDE CHAIN"
+            };
             self.text(PLOT.x + PLOT.w * 0.5, PLOT.y + PLOT.h * 0.5 - 7.0, msg, SMALL, MUTED, true);
             return;
         }
@@ -292,9 +329,9 @@ impl Board {
                     continue;
                 };
                 let weight = (t.amp / loudest).sqrt().clamp(0.0, 1.0);
-                let (s0, s1) = (layout::note_y(layout::hz_note(q.f0)), layout::note_y(layout::hz_note(t.f0)));
+                let (s0, s1) = (y_of(layout::hz_note(q.f0)), y_of(layout::hz_note(t.f0)));
                 self.line(x0, s0, x1, s1, 1.0, opacity(INK, 0.10 + 0.25 * weight));
-                let (o0, o1) = (layout::note_y(layout::hz_note(q.out)), layout::note_y(layout::hz_note(t.out)));
+                let (o0, o1) = (y_of(layout::hz_note(q.out)), y_of(layout::hz_note(t.out)));
                 let color = if t.spared {
                     OCHRE
                 } else if t.newborn {
@@ -309,12 +346,27 @@ impl Board {
         let now = frames[n - 1];
         let x = x_of(n - 1);
         for t in &now.tracks[..now.n as usize] {
-            let (s, o) = (layout::note_y(layout::hz_note(t.f0)), layout::note_y(layout::hz_note(t.out)));
+            let (s, o) = (y_of(layout::hz_note(t.f0)), y_of(layout::hz_note(t.out)));
             self.line(x - 10.0, s, x - 2.0, o, 1.0, opacity(MINT, 0.6));
             self.disc(x - 10.0, s, 2.0, opacity(INK, 0.7));
             self.disc(x - 2.0, o, 2.6, if t.spared { OCHRE } else { WARM });
         }
         self.set_clip(None);
+    }
+
+    /// The screen's tabs (Map Source): one flat text button per label, the
+    /// live one underlined in mint.
+    fn tabs(&mut self, state: &PanelState, widget: &Widget) {
+        let Kind::Tabs(labels) = widget.kind else { return };
+        let r = widget.rect();
+        let value = state.params.get(widget.id()).round() as usize;
+        let hovered = state.hover_control == Some(widget.control);
+        let w = r.w / labels.len() as f32;
+        for (index, label) in labels.iter().enumerate() {
+            let tab = Rect::new(r.x + index as f32 * w, r.y, w - 2.0, r.h);
+            let over = hovered && state.pointer.is_some_and(|(x, _)| x >= tab.x && x < tab.x + w);
+            widgets::text_button(self, tab, label, index == value, over, MINT, INK);
+        }
     }
 
     /// Seconds before now, along the plot's foot: a tick every second, a
@@ -418,6 +470,8 @@ impl Board {
                 self.text(cx + 40.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
                 self.caption(widget, ink, hovered);
             }
+            // Drawn with the screen (`tabs`).
+            Kind::Tabs(_) => {}
         }
     }
 
@@ -478,9 +532,15 @@ impl Board {
         self.text(LCD.x + LCD.w - vw - 4.0, y, &vox, VALUE, WHITE, false);
         let _ = x;
 
-        // The twelve pitch classes: a filled box where any octave is held.
+        // The twelve pitch classes: a filled box where any octave is held
+        // (or, under Keys, is a target).
         let grid = state.held();
-        let classes = state.classes();
+        let keys = state.keys_source();
+        let classes = if keys {
+            std::array::from_fn(|pc| (pc as u32..128).step_by(12).any(|n| state.keys.get(KeyState::Target, n)))
+        } else {
+            state.classes()
+        };
         for (pc, held) in classes.iter().enumerate() {
             let (x, y) = cell(2.0 + pc as f32 * 8.0, 12.0);
             let r = Rect::new(x, y, 6.0 * layout::LCD_CELL, 6.0 * layout::LCD_CELL);
@@ -494,12 +554,34 @@ impl Board {
             }
         }
 
-        // The chord, by name, lowest first.
-        let held: Vec<String> = (0..128u32)
-            .filter(|n| grid >> n & 1 == 1)
-            .map(|n| format!("{}{}", NOTE_NAMES[(n % 12) as usize], n / 12 - 1))
-            .collect();
-        let chord = if held.is_empty() { "NO CHORD HELD".to_owned() } else { held.join(" ") };
+        // The chord, by name, lowest first; under Keys, the classes set and
+        // how many keys are bypassed.
+        let held: Vec<String> = if keys {
+            let names: Vec<String> =
+                (0..12).filter(|&pc| classes[pc]).map(|pc| NOTE_NAMES[pc].to_owned()).collect();
+            match names.len() {
+                12 => vec!["CHROMATIC".to_owned()],
+                _ => names,
+            }
+        } else {
+            (0..128u32)
+                .filter(|n| grid >> n & 1 == 1)
+                .map(|n| format!("{}{}", NOTE_NAMES[(n % 12) as usize], n / 12 - 1))
+                .collect()
+        };
+        let chord = match (keys, held.is_empty()) {
+            (false, true) => "NO CHORD HELD".to_owned(),
+            (true, true) => "KEYS: NO TARGETS".to_owned(),
+            (true, false) => {
+                let bypassed: Vec<&str> = (0..12usize)
+                    .filter(|&pc| (pc as u32..128).step_by(12).any(|n| state.keys.get(KeyState::Bypass, n)))
+                    .map(|pc| NOTE_NAMES[pc])
+                    .collect();
+                let tail = if bypassed.is_empty() { String::new() } else { format!(" BYP {}", bypassed.join(" ")) };
+                format!("{}{tail}", held.join(" "))
+            }
+            (false, false) => held.join(" "),
+        };
         let (x, y) = cell(2.0, 27.0);
         self.text(x, y, &chord, VALUE, WHITE, false);
 
@@ -544,12 +626,38 @@ impl Board {
     fn strip(&mut self, state: &PanelState) {
         self.solid(STRIP, BLACK);
         let y = STRIP.y + 3.0;
+        if let Some(layout::Control::Key(note)) = state.hover_control {
+            let name = format!("{}{}", NOTE_NAMES[(note % 12) as usize], note as i32 / 12 - 1);
+            let (head, line) = if !state.keys_source() {
+                (format!("{name}  {}", if state.held() >> note & 1 == 1 { "held" } else { "not held" }),
+                 "the notes held on the MIDI side chain; switch MAP SOURCE to KEYS to set them here")
+            } else {
+                let status = if state.keys.get(KeyState::Bypass, note) {
+                    "bypassed: passes unbent"
+                } else if state.keys.get(KeyState::Target, note) {
+                    "a target"
+                } else {
+                    "excluded: pulled to its neighbours"
+                };
+                (format!("{name}  {status}"),
+                 if state.repeat_scope() {
+                     "click: target or exclude, Option-click: bypass; drag to paint (Repeat: every octave)"
+                 } else {
+                     "click: target or exclude, Option-click: bypass; drag to paint (Custom: this key only)"
+                 })
+            };
+            self.text(STRIP.x + 4.0, y, &head, VALUE, MINT, false);
+            let x = STRIP.x + 4.0 + self.text_width(&head, VALUE) + 14.0;
+            self.text(x, y, line, VALUE, INK, false);
+            return;
+        }
         let Some(widget) = state.hover_control.and_then(layout::widget) else {
-            let line = format!(
-                "{}   /   Version {}   /   hold a chord on the MIDI side chain; everything pitched is pulled onto it",
-                crate::PLUGIN_NAME,
-                state.version
-            );
+            let how = if state.keys_source() {
+                "light keys on the left as targets; everything pitched is pulled onto them; the wheel scrolls the screen"
+            } else {
+                "hold a chord on the MIDI side chain; everything pitched is pulled onto it; the wheel scrolls the screen"
+            };
+            let line = format!("{}   /   Version {}   /   {how}", crate::PLUGIN_NAME, state.version);
             self.text(STRIP.x + 4.0, y, &line, VALUE, MUTED, false);
             return;
         };
@@ -644,6 +752,7 @@ fn help(id: usize) -> &'static str {
         p::TRANSITIONS => "what a newborn object sounds like: mapped at once, or dry until it settles",
         p::ALGORITHM => "HOUSE: the sound this plant always had   /   ORACLE: the reference's law (map or discard)",
         p::PURIFY => "fade the residue, the noise and the carry toward pure stamps",
+        p::SOURCE => "MIDI: the notes held on the side chain are the targets   /   KEYS: the keys lit on the screen's ruler are",
         _ => "",
     }
 }

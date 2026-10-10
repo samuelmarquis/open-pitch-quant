@@ -17,10 +17,14 @@ pub const SCREEN: Rect = Rect::new(40.0, 34.0, 1020.0, 426.0);
 /// names to its right, a caption row above.
 pub const PLOT: Rect = Rect::new(76.0, 54.0, 944.0, 392.0);
 pub const RULER: Rect = Rect::new(46.0, 54.0, 24.0, 392.0);
-/// The pitch range the transect shows: C2 to C7 (MIDI), where the tracker
-/// believes in anything (its claims thin out past both).
-pub const LOW_NOTE: f32 = 36.0;
-pub const HIGH_NOTE: f32 = 96.0;
+/// The transect shows five octaves of MIDI notes from a scrollable floor:
+/// by default C2 to C7, where the tracker believes in anything; the wheel
+/// over the screen scrolls through all 128.
+pub const VIEW_SPAN: f32 = 60.0;
+pub const VIEW_DEFAULT: f32 = 36.0;
+pub const VIEW_MAX: f32 = 127.0 - VIEW_SPAN;
+/// The Map Source switch, in the screen's header: MIDI | KEYS.
+pub const SOURCE_TABS: Rect = Rect::new(46.0, 37.0, 104.0, 15.0);
 
 /// The rack plates. Their bakes are exactly these sizes at 2x
 /// (assets/bake.py's PLATES).
@@ -53,6 +57,8 @@ const ROW_2: f32 = 494.0 + 178.0;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Control {
     Param(usize),
+    /// A key of the ruler (MIDI note): the Keys source's Lower Keyboard.
+    Key(u32),
 }
 
 /// The knob bakes, in the pack's KNOBS order.
@@ -77,6 +83,8 @@ pub enum Kind {
     Toggle(&'static str, &'static str),
     /// The algorithm's chickenhead.
     Selector,
+    /// Text tabs, one per label, left to right (the screen's switches).
+    Tabs(&'static [&'static str]),
 }
 
 /// Which plate a control sits on, for its ink.
@@ -86,6 +94,8 @@ pub enum Plate {
     Law,
     Finish,
     Module,
+    /// On the monitor's screen, not a plate.
+    Screen,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -99,9 +109,12 @@ pub struct Widget {
 }
 
 impl Widget {
+    /// Every widget is a parameter's.
     pub fn id(&self) -> usize {
-        let Control::Param(id) = self.control;
-        id
+        match self.control {
+            Control::Param(id) => id,
+            Control::Key(_) => unreachable!("keys are not widgets"),
+        }
     }
 
     /// The pressable area: the mechanism, generously.
@@ -110,6 +123,7 @@ impl Widget {
             Kind::Knob(_) => (KNOB, KNOB),
             Kind::Toggle(..) => (TOGGLE.0 + 18.0, TOGGLE.1 + 8.0),
             Kind::Selector => (SELECTOR, SELECTOR),
+            Kind::Tabs(_) => (SOURCE_TABS.w, SOURCE_TABS.h),
         };
         Rect::new(self.at.0 - w * 0.5, self.at.1 - h * 0.5, w, h)
     }
@@ -120,6 +134,7 @@ impl Widget {
             Kind::Knob(_) => KNOB * 0.5,
             Kind::Toggle(..) => TOGGLE.1 * 0.5 + 10.0,
             Kind::Selector => SELECTOR * 0.5 - 4.0,
+            Kind::Tabs(_) => SOURCE_TABS.h * 0.5,
         };
         self.at.1 + half + 2.0
     }
@@ -164,6 +179,14 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT] = {
         // The module: the output.
         w(p::MIX, Knob(Davies), (MODULE.x + 60.0, ROW_2 + 2.0), "MIX", Module),
         w(p::BYPASS, Toggle("RUN", "BYPASS"), (MODULE.x + 150.0, ROW_2 + 2.0), "BYPASS", Module),
+        // The screen: where the grid comes from.
+        w(
+            p::SOURCE,
+            Tabs(&["MIDI", "KEYS"]),
+            (SOURCE_TABS.x + SOURCE_TABS.w * 0.5, SOURCE_TABS.y + SOURCE_TABS.h * 0.5),
+            "MAP SOURCE",
+            Screen,
+        ),
     ]
 };
 
@@ -178,14 +201,30 @@ pub fn widget(control: Control) -> Option<&'static Widget> {
     WIDGETS.iter().find(|w| w.control == control)
 }
 
-/// What a press, the wheel or hover help at `(x, y)` acts on.
-pub fn target_at(x: f32, y: f32) -> Option<Control> {
-    WIDGETS.iter().find(|w| w.rect().contains(x, y)).map(|w| w.control)
+/// What a press, the wheel or hover help at `(x, y)` acts on, with the
+/// transect's floor at `view` (for the ruler's keys).
+pub fn target_at(view: f32, x: f32, y: f32) -> Option<Control> {
+    WIDGETS
+        .iter()
+        .find(|w| w.rect().contains(x, y))
+        .map(|w| w.control)
+        .or_else(|| RULER.contains(x, y).then(|| note_at(view, y)).flatten().map(Control::Key))
 }
 
-/// The transect's y for a pitch (MIDI, fractional).
-pub fn note_y(note: f32) -> f32 {
-    PLOT.y + PLOT.h * (HIGH_NOTE - note) / (HIGH_NOTE - LOW_NOTE)
+/// The transect's y for a pitch (MIDI, fractional), floor at `view`.
+pub fn note_y(view: f32, note: f32) -> f32 {
+    PLOT.y + PLOT.h * (view + VIEW_SPAN - note) / VIEW_SPAN
+}
+
+/// The MIDI note whose key holds `y`, floor at `view`.
+pub fn note_at(view: f32, y: f32) -> Option<u32> {
+    let note = (view + VIEW_SPAN - (y - PLOT.y) / PLOT.h * VIEW_SPAN).round();
+    (0.0..128.0).contains(&note).then_some(note as u32)
+}
+
+/// The transect's area for the wheel: the plot and the ruler.
+pub fn scrolls_view(x: f32, y: f32) -> bool {
+    PLOT.contains(x, y) || RULER.contains(x, y)
 }
 
 /// A frequency as a fractional MIDI note.
@@ -219,10 +258,24 @@ mod tests {
                 Plate::Law => LAW,
                 Plate::Finish => FINISH,
                 Plate::Module => MODULE,
+                Plate::Screen => {
+                    let r = w.rect();
+                    assert!(r.x >= SCREEN.x && r.x + r.w <= SCREEN.x + SCREEN.w && r.y >= SCREEN.y, "{}", w.caption);
+                    continue;
+                }
             };
             let r = w.rect();
             assert!(r.x >= plate.x && r.x + r.w <= plate.x + plate.w, "{}", w.caption);
             assert!(r.y >= plate.y && w.caption_y() + 26.0 <= plate.y + plate.h, "{}", w.caption);
         }
+    }
+
+    #[test]
+    fn the_ruler_answers_its_notes_and_the_view_scrolls_them() {
+        let y = note_y(VIEW_DEFAULT, 60.0);
+        assert_eq!(target_at(VIEW_DEFAULT, RULER.x + 4.0, y), Some(Control::Key(60)));
+        assert_eq!(note_at(VIEW_DEFAULT + 12.0, note_y(VIEW_DEFAULT + 12.0, 80.0)), Some(80));
+        assert_eq!(note_at(VIEW_MAX, PLOT.y), Some(127));
+        assert_eq!(note_at(0.0, PLOT.y + PLOT.h), Some(0));
     }
 }

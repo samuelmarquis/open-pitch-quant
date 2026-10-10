@@ -78,8 +78,20 @@ messages, and behavior belongs in the README; neither is kept here.
   WIN's rerun of F5/F6 (and save-while-still-off) and an automation
   smoothness check.
 
-- [ ] When panelkit's generic offset anchor lands (interaction), replace
-  fittings.rs's own `ReleaseAnchor` with it; same behaviour.
+- PITCHMAP without MIDI (0.4.0, done; Sam: "full pitchmap
+  non-midi-input compat with vertical scrolling in the main window and
+  clicking on the keys on the left bar"): Map Source MIDI/Keys, the ruler
+  as the Lower Keyboard (target / exclude / bypass, Repeat or Custom
+  scope, drag to paint), the wheel scrolling all 128 notes, key states in
+  the document's product section (v3), the host told its state is dirty.
+  - [ ] Not yet PITCHMAP's: the per-source Pitch Mapping Sliders (127
+    slots, this-goes-there, -12..+23), Xclude Round mode (up/down/
+    nearest for excluded pitches), Regular mode's note-ons latch-toggling
+    the keys, Global Threshold, shift-click sine reference, Key Transform
+    (root + scale presets), snapshots.
+  - [ ] Live check of Keys on sam-pc: edit keys, save, reopen; the set
+    shows unsaved after a key edit (mark_dirty).
+- panelkit's `Grabbed` anchor (0.4.0, done) replaces fittings.rs's own.
 
 ## Rulings
 

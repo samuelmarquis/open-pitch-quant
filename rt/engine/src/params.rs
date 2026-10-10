@@ -13,9 +13,10 @@ use pluginkit::param::{ParamSpec, Text};
 use crate::{Algorithm, EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned};
 
 /// Version 1 was the pre-pluginkit id-keyed document (18 parameters);
-/// version 2 is pluginkit's, with ALGORITHM and PURIFY.
-pub const STATE_VERSION: u32 = 2;
-pub const PARAM_COUNT: usize = 20;
+/// version 2 is pluginkit's, with ALGORITHM and PURIFY; version 3 adds
+/// SOURCE and the key states as the document's product section.
+pub const STATE_VERSION: u32 = 3;
+pub const PARAM_COUNT: usize = 21;
 
 pub const BYPASS: usize = 0;
 pub const MIX: usize = 1;
@@ -37,6 +38,7 @@ pub const CARRY: usize = 16;
 pub const TRANSITIONS: usize = 17;
 pub const ALGORITHM: usize = 18;
 pub const PURIFY: usize = 19;
+pub const SOURCE: usize = 20;
 
 const OFF_ON: Text = Text::Labels(&["Off", "On"]);
 
@@ -102,7 +104,67 @@ pub static SPECS: [ParamSpec; PARAM_COUNT] = [
     // as the plugin always has); ORACLE is the PITCHMAP-faithful policy.
     labels(ALGORITHM, "Algorithm", &["House", "Oracle"], 0.0),
     row(PURIFY, "Purify", 0.0, 1.0, 0.0, "%", false),
+    // Where the target grid comes from: the notes held on the MIDI side
+    // chain (PITCHMAP's MIDI MAP), or the keys set on the panel (its
+    // Lower Keyboard, with per-key Bypass).
+    labels(SOURCE, "Map Source", &["MIDI", "Keys"], 0.0),
 ];
+
+/// The keys set on the panel, for the Keys source: bit n of `target` is MIDI
+/// note n as an allowed target (PITCHMAP's Lower Keyboard, un-Xcluded); bit
+/// n of `bypass` lets an object sitting on note n pass unbent. Not host
+/// parameters: saved as the document's product section.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Keys {
+    pub target: u128,
+    pub bypass: u128,
+}
+
+impl Default for Keys {
+    /// Every note a target, none bypassed: chromatic, as PITCHMAP starts.
+    fn default() -> Self {
+        Self { target: u128::MAX, bypass: 0 }
+    }
+}
+
+/// Which of a key's two states an edit touches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KeyState {
+    Target,
+    Bypass,
+}
+
+impl Keys {
+    pub fn get(&self, state: KeyState, note: u32) -> bool {
+        let mask = match state {
+            KeyState::Target => self.target,
+            KeyState::Bypass => self.bypass,
+        };
+        note < 128 && mask >> note & 1 == 1
+    }
+
+    /// Set `note`'s state to `on`: every octave of it when `repeat`
+    /// (PITCHMAP's Repeat), else that note alone (Custom).
+    pub fn set(&mut self, state: KeyState, note: u32, on: bool, repeat: bool) {
+        let mask = match state {
+            KeyState::Target => &mut self.target,
+            KeyState::Bypass => &mut self.bypass,
+        };
+        let notes = (0..128u32).filter(|&n| if repeat { n % 12 == note % 12 } else { n == note });
+        for n in notes {
+            if on {
+                *mask |= 1 << n;
+            } else {
+                *mask &= !(1 << n);
+            }
+        }
+    }
+
+    /// The target grid as the engine's held-note array.
+    pub fn held(&self) -> [bool; 128] {
+        std::array::from_fn(|n| self.target >> n & 1 == 1)
+    }
+}
 
 /// The whole parameter set, plain values indexed by id.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -130,6 +192,11 @@ impl Params {
 
     fn on(&self, id: usize) -> bool {
         self.values[id] >= 0.5
+    }
+
+    /// The grid comes from the panel's keys, not the MIDI side chain.
+    pub fn keys_source(&self) -> bool {
+        self.on(SOURCE)
     }
 
     /// The engine's view of this set. Bypass is realized as mix = 0: the
@@ -258,5 +325,21 @@ mod tests {
         assert_eq!(SPECS[ALGORITHM].parse("house"), Some(0.0));
         assert_eq!(SPECS[PURIFY].format(0.25), "25%");
         assert_eq!(SPECS[BYPASS].format(1.0), "On");
+        assert_eq!(SPECS[SOURCE].format(1.0), "Keys");
+    }
+
+    #[test]
+    fn keys_set_one_note_or_every_octave() {
+        let mut k = Keys { target: 0, bypass: 0 };
+        k.set(KeyState::Target, 60, true, false);
+        assert!(k.get(KeyState::Target, 60) && !k.get(KeyState::Target, 72));
+        k.set(KeyState::Target, 64, true, true);
+        assert!((0..128).filter(|n| n % 12 == 4).all(|n| k.get(KeyState::Target, n)));
+        k.set(KeyState::Target, 76, false, true);
+        assert!(!k.get(KeyState::Target, 64));
+        k.set(KeyState::Bypass, 67, true, false);
+        assert!(k.get(KeyState::Bypass, 67) && !k.get(KeyState::Target, 67));
+        assert_eq!(k.held().iter().filter(|&&h| h).count(), 1);
+        assert_eq!(Keys::default().held(), [true; 128]);
     }
 }

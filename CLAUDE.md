@@ -133,9 +133,10 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.3.0 (release) as CLAP, VST3 and AU; 20 host parameters,
+- Installed: 0.4.0 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
-  params.rs`); saved state is pluginkit's document, version 2. Entry,
+  params.rs`); saved state is pluginkit's document, version 3, with the
+  Keys source's key states as its product section. Entry,
   ports and sample conversion are wrac_shell's. The wrapper build needs
   `nix develop` (cmake).
 - Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f).

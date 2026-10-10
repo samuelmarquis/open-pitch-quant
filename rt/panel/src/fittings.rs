@@ -10,11 +10,20 @@
 //! - The wheel over a knob moves it 2% of its travel a notch (a step for a
 //!   stepped one); over a switch, it throws it toward the wheel.
 //! - Escape during a drag puts the value back where the drag began.
+//! - The screen's tabs (Map Source) take the label clicked.
+//! - With the Keys source, the ruler is PITCHMAP's Lower Keyboard: a click
+//!   toggles a key as a target, Option/Alt-click its Bypass, and a drag
+//!   paints the same state over the keys it crosses; in Repeat scope an
+//!   edit reaches every octave of the key. With the MIDI source the keys
+//!   only show the held notes.
+//! - The wheel over the screen (plot or ruler) scrolls the pitch view,
+//!   fingers up for higher notes.
 //!
-//! Every value is echoed into `state.params` before it is returned.
+//! Every value is echoed into `state.params` (and `state.keys`) before it is
+//! returned.
 use crate::layout::{self, Control, Kind};
 use crate::{Edit, Modifiers, PanelState};
-use opq_engine::params::SPECS;
+use opq_engine::params::{KeyState, SPECS};
 use panelkit::interaction;
 use panelkit::widgets;
 
@@ -22,22 +31,21 @@ use panelkit::widgets;
 const DIAL_PX: f32 = 180.0;
 /// One wheel notch over a knob, as a fraction of its travel.
 const WHEEL_STEP: f32 = 0.02;
+/// One wheel notch over the screen, in semitones.
+const VIEW_STEP: f32 = 2.0;
 
-/// What a drag asks of the pointer: knobs are relative, a held switch
-/// follows the cursor.
-pub type PointerCapture = interaction::PointerCapture<ReleaseAnchor>;
+/// What a drag asks of the pointer: knobs are relative and release where
+/// they were grabbed (panelkit's `Grabbed`, the family's ruling), a held
+/// switch or a key paint follows the cursor.
+pub type PointerCapture = interaction::PointerCapture<interaction::Grabbed<Knob>>;
 
-/// Where a knob drag's cursor lands: the knob, where it was pressed on it.
+/// A knob, as a release target: its centre.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct ReleaseAnchor {
-    control: Control,
-    offset: (f32, f32),
-}
+pub struct Knob(Control);
 
-impl interaction::ReleaseAnchor<PanelState> for ReleaseAnchor {
+impl interaction::ReleaseAnchor<PanelState> for Knob {
     fn position(self, _: &PanelState) -> Option<(f32, f32)> {
-        let (x, y) = layout::widget(self.control)?.at;
-        Some((x + self.offset.0, y + self.offset.1))
+        layout::widget(self.0).map(|w| w.at)
     }
 }
 
@@ -49,10 +57,20 @@ enum Capture {
         start: f32,
         normalized: f32,
         last_y: f32,
-        anchor: ReleaseAnchor,
+        anchor: interaction::Grabbed<Knob>,
     },
     /// A switch held down after its press acted.
     Switch,
+    /// Painting keys: the state and the value every key crossed takes, and
+    /// the last key painted.
+    Keys { state: KeyState, on: bool, last: u32 },
+}
+
+/// Set `note`'s `state` to `on` (every octave in Repeat scope), as an edit.
+fn paint(state: &mut PanelState, key_state: KeyState, note: u32, on: bool) -> Edit {
+    let repeat = state.repeat_scope();
+    state.keys.set(key_state, note, on, repeat);
+    Edit::Keys(state.keys)
 }
 
 #[derive(Default)]
@@ -87,7 +105,7 @@ impl Fittings {
     pub fn capture(&self) -> Option<PointerCapture> {
         match self.capture.as_ref()? {
             Capture::Dial { anchor, .. } => Some(PointerCapture::Relative(*anchor)),
-            Capture::Switch => Some(PointerCapture::Absolute),
+            Capture::Switch | Capture::Keys { .. } => Some(PointerCapture::Absolute),
         }
     }
 
@@ -98,15 +116,27 @@ impl Fittings {
     pub fn hover_with_modifiers(&mut self, state: &mut PanelState, x: f32, y: f32, _mods: Modifiers) {
         state.pointer = (x >= 0.0 && y >= 0.0).then_some((x, y));
         if self.capture.is_none() {
-            state.hover_control = layout::target_at(x, y);
+            state.hover_control = layout::target_at(state.view, x, y);
         }
     }
 
-    pub fn down(&mut self, state: &mut PanelState, x: f32, y: f32, _mods: Modifiers, clicks: u32) -> Vec<Edit> {
+    pub fn down(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers, clicks: u32) -> Vec<Edit> {
         let mut edits = self.focus_lost(state);
-        let Some(control) = layout::target_at(x, y) else {
+        let Some(control) = layout::target_at(state.view, x, y) else {
             return edits;
         };
+        if let Control::Key(note) = control {
+            // The keys are the Keys source's to edit; under MIDI they show
+            // the held notes only.
+            if state.keys_source() {
+                let key_state = if mods.alt { KeyState::Bypass } else { KeyState::Target };
+                let on = !state.keys.get(key_state, note);
+                edits.push(paint(state, key_state, note, on));
+                self.capture = Some(Capture::Keys { state: key_state, on, last: note });
+                state.pressed_control = Some(control);
+            }
+            return edits;
+        }
         let Some(widget) = layout::widget(control) else {
             return edits;
         };
@@ -126,7 +156,7 @@ impl Fittings {
                     start,
                     normalized: normalized(id, start),
                     last_y: y,
-                    anchor: ReleaseAnchor { control, offset: (x - cx, y - cy) },
+                    anchor: interaction::Grabbed::new(Knob(control), (x, y), (cx, cy)),
                 });
                 edits.push(Edit::Begin(id));
             }
@@ -135,12 +165,38 @@ impl Fittings {
                 edits.extend(gesture(state, id, value));
                 self.capture = Some(Capture::Switch);
             }
+            Kind::Tabs(labels) => {
+                let r = widget.rect();
+                let index = ((x - r.x) / r.w * labels.len() as f32).floor().clamp(0.0, labels.len() as f32 - 1.0);
+                if state.params.get(id) != index {
+                    edits.extend(gesture(state, id, index));
+                }
+                self.capture = Some(Capture::Switch);
+            }
         }
         edits
     }
 
     pub fn drag(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers) -> Vec<Edit> {
         state.pointer = Some((x, y));
+        if let Some(Capture::Keys { state: key_state, on, last }) = self.capture.as_mut() {
+            // Paint every key between the last and this one, so a fast
+            // drag leaves no gaps.
+            let Some(note) = layout::note_at(state.view, y) else {
+                return Vec::new();
+            };
+            if note == *last {
+                return Vec::new();
+            }
+            let (from, to) = ((*last).min(note), (*last).max(note));
+            let (key_state, on) = (*key_state, *on);
+            *last = note;
+            let repeat = state.repeat_scope();
+            for n in from..=to {
+                state.keys.set(key_state, n, on, repeat);
+            }
+            return vec![Edit::Keys(state.keys)];
+        }
         let Some(Capture::Dial { id, normalized, last_y, .. }) = self.capture.as_mut() else {
             return Vec::new();
         };
@@ -179,9 +235,16 @@ impl Fittings {
         // During a drag the wheel moves the dragged knob.
         let control = match &self.capture {
             Some(Capture::Dial { id, .. }) => Some(Control::Param(*id)),
-            Some(Capture::Switch) => return Vec::new(),
-            None => layout::target_at(x, y),
+            Some(Capture::Switch | Capture::Keys { .. }) => return Vec::new(),
+            None => layout::target_at(state.view, x, y),
         };
+        // Over the screen (the plot or a key), the wheel scrolls the view.
+        if matches!(control, None | Some(Control::Key(_))) {
+            if layout::scrolls_view(x, y) {
+                state.view = (state.view + delta * VIEW_STEP).clamp(0.0, layout::VIEW_MAX);
+            }
+            return Vec::new();
+        }
         let Some(widget) = control.and_then(layout::widget) else {
             return Vec::new();
         };
@@ -194,7 +257,7 @@ impl Fittings {
                 let n = normalized(id, now) + delta * WHEEL_STEP * mods.fine();
                 plain(id, n.clamp(0.0, 1.0))
             }
-            Kind::Toggle(..) | Kind::Selector => {
+            Kind::Toggle(..) | Kind::Selector | Kind::Tabs(_) => {
                 if delta > 0.0 {
                     spec.max
                 } else {
@@ -288,5 +351,49 @@ mod tests {
         assert_eq!(v, v.round());
         let wheel = f.scroll(&mut s, x, y, 1.0, Modifiers::default());
         assert_eq!(wheel, vec![Edit::Value(p::VOICES, v + 1.0)]);
+    }
+
+    fn key_point(s: &PanelState, note: u32) -> (f32, f32) {
+        (layout::RULER.x + 6.0, layout::note_y(s.view, note as f32))
+    }
+
+    #[test]
+    fn keys_edit_only_under_the_keys_source_and_paint_on_a_drag() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = key_point(&s, 61);
+        assert!(f.down(&mut s, x, y, Modifiers::default(), 1).is_empty(), "MIDI source: the keys only show");
+        s.params.set(p::SOURCE, 1.0);
+        s.params.set(p::SCOPE, 1.0); // Custom: one key at a time
+        let edits = f.down(&mut s, x, y, Modifiers::default(), 1);
+        assert_eq!(edits, vec![Edit::Keys(s.keys)]);
+        assert!(!s.keys.get(KeyState::Target, 61) && s.keys.get(KeyState::Target, 73));
+        // Drag down to 58: 60, 59 and 58 are excluded too.
+        let (_, y58) = key_point(&s, 58);
+        f.drag(&mut s, x, y58, Modifiers::default());
+        assert!((58..=61).all(|n| !s.keys.get(KeyState::Target, n)));
+        assert!(s.keys.get(KeyState::Target, 57) && s.keys.get(KeyState::Target, 62));
+        assert!(f.up(&mut s).is_empty());
+        // Alt-click bypasses, in Repeat scope across the octaves.
+        s.params.set(p::SCOPE, 0.0);
+        let (x, y) = key_point(&s, 64);
+        f.down(&mut s, x, y, Modifiers { alt: true, ..Modifiers::default() }, 1);
+        assert!(s.keys.get(KeyState::Bypass, 64) && s.keys.get(KeyState::Bypass, 76));
+    }
+
+    #[test]
+    fn the_wheel_over_the_screen_scrolls_the_view_and_the_tabs_take_their_label() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = (layout::PLOT.x + 100.0, layout::PLOT.y + 100.0);
+        assert!(f.scroll(&mut s, x, y, 1.0, Modifiers::default()).is_empty());
+        assert_eq!(s.view, layout::VIEW_DEFAULT + VIEW_STEP);
+        f.scroll(&mut s, x, y, 100.0, Modifiers::default());
+        assert_eq!(s.view, layout::VIEW_MAX);
+        let r = layout::WIDGETS.iter().find(|w| w.id() == p::SOURCE).unwrap().rect();
+        let edits = f.down(&mut s, r.x + r.w * 0.75, r.y + 4.0, Modifiers::default(), 1);
+        assert_eq!(edits[1], Edit::Value(p::SOURCE, 1.0));
+        f.up(&mut s);
+        assert!(f.down(&mut s, r.x + r.w * 0.75, r.y + 4.0, Modifiers::default(), 1).is_empty());
     }
 }

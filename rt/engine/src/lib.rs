@@ -118,6 +118,10 @@ pub struct EngineParams {
     /// reference's "resonance" character lives. 0 = neutral.
     pub purify: f64,
     pub newborn: Newborn,
+    /// Bit n set: an object whose source sits nearest MIDI note n passes
+    /// unbent, as Threshold spares it (PITCHMAP's per-key Bypass on the
+    /// Lower Keyboard). 0 = none, the HOUSE baseline.
+    pub bypass_keys: u128,
 }
 
 impl Default for EngineParams {
@@ -144,6 +148,7 @@ impl Default for EngineParams {
             carry: 1.0,
             purify: 0.0,
             newborn: Newborn::Map,
+            bypass_keys: 0,
         }
     }
 }
@@ -1109,6 +1114,13 @@ impl Engine {
                 let in_tune = (trk.f0 / f_chrom).ln().abs() * cents < p.threshold_cents;
                 let untransposed = (trk.tgt / f_chrom).ln().abs() * cents < 1.0;
                 bypass = in_tune && untransposed;
+            }
+            // Per-key Bypass: the source's own nearest note passes unbent.
+            if p.bypass_keys != 0 {
+                let note = (69.0 + 12.0 * (trk.f0 / 440.0).log2()).round();
+                if (0.0..128.0).contains(&note) && p.bypass_keys >> note as u32 & 1 == 1 {
+                    bypass = true;
+                }
             }
             let r_to = (trk.tgt / trk.f0).ln();
             let r_eff = if glide_frames > 0.0 {

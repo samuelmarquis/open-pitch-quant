@@ -76,9 +76,7 @@ pub(crate) struct OpqPlugin {
 
 impl OpqPlugin {
     pub(crate) fn new(context: PluginCoreContext) -> Self {
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-        let _ = &context;
-        let shared = Arc::new(SharedState::new());
+        let shared = Arc::new(SharedState::with_host(Some(context.host_state_dirty_notifier.clone())));
         Self {
             #[cfg(any(target_os = "macos", target_os = "windows"))]
             gui: Arc::new(PanelGui::new(

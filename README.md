@@ -32,7 +32,20 @@ stem separation, ~93 ms latency, live.
   chord and a crawling tally of the session). Knobs drag vertically
   (Command for fine, double-click resets, the wheel works); switches throw
   on a click. The strip along the bottom names what the pointer is over,
-  its value, and what it does. `cargo run --release -p opq-panel --bin
+  its value, and what it does.
+
+  **Map Source** (the MIDI | KEYS tabs at the top left of the screen):
+  under **MIDI** the targets are the notes held on the MIDI side chain
+  (PITCHMAP's MIDI MAP). Under **KEYS** they are set on the screen's key
+  ruler, PITCHMAP's Lower Keyboard without MIDI: click a key to make it a
+  target or exclude it (an excluded pitch is pulled to its nearest
+  target), Option/Alt-click to bypass it (anything sitting on it passes
+  unbent, drawn in ochre), and drag to paint the same state over every key
+  you cross. MIDI Scope applies: Repeat edits every octave of the key,
+  Custom only that key. Keys start chromatic (every note a target). The
+  key states are saved with the project, not automatable. The wheel over
+  the screen scrolls the pitch view through all 128 notes (fingers up for
+  higher). `cargo run --release -p opq-panel --bin
   panel-render -- --out DIR` renders it offline from the real engine;
   `rt/panel/assets/bake.py` bakes the plates and vendors the family
   artwork, with provenance. The old panel's design is
@@ -74,6 +87,13 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.4.0** — PITCHMAP without MIDI: a 21st parameter, **Map Source**
+  (MIDI / Keys), and the screen's key ruler as a Lower Keyboard with
+  per-key target, exclude and bypass (see `rt/panel` above). The wheel
+  scrolls the transect through all 128 notes. The saved document is
+  version 3, with the key states as its product section: **projects saved
+  with 0.3.x do not load** (pre-1.0). The knob drag's release anchor is
+  panelkit's `Grabbed` (same behaviour).
 - **0.3.2** — the bat toggles and the Algorithm selector are rendered under
   the family's footprint contract (the knobs' framing, extended to the
   switches by the template), so they sit at the knobs' size with every

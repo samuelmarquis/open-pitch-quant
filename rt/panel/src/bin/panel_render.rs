@@ -3,8 +3,8 @@
 //! voices (one with vibrato, one gliding a fourth) under a held chord.
 //!
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
-//! Scenarios: house, oracle, empty, drag (default: all).
-use opq_engine::params::{self as p, Params};
+//! Scenarios: house, oracle, keys, empty, drag (default: all).
+use opq_engine::params::{self as p, KeyState, Keys, Params};
 use opq_engine::Engine;
 use opq_panel::layout;
 use opq_panel::{pack, Board, Fittings, Modifiers, PanelState};
@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const SR: f64 = 48_000.0;
-const SCENARIOS: [&str; 4] = ["house", "oracle", "empty", "drag"];
+const SCENARIOS: [&str; 5] = ["house", "oracle", "keys", "empty", "drag"];
 
 fn midi_hz(note: f64) -> f64 {
     440.0 * ((note - 69.0) / 12.0).exp2()
@@ -45,10 +45,16 @@ impl Voice {
 fn feed(state: &mut PanelState, held: &[u8], seconds: f64) {
     let params: Params = state.params;
     let mut engine = Engine::new(SR, 2);
-    let mut keys = [false; 128];
-    for &n in held {
-        keys[n as usize] = true;
-    }
+    // As the plugin does: the Keys source's targets, or the held notes.
+    let keys = if params.keys_source() {
+        state.keys.held()
+    } else {
+        let mut keys = [false; 128];
+        for &n in held {
+            keys[n as usize] = true;
+        }
+        keys
+    };
     let mut voices = [
         // A3 a little sharp, singing with vibrato.
         Voice { phase: [0.0; 8], pitch: |t| 57.3 + 0.35 * (TAU * 5.5 * t).sin(), level: 0.16 },
@@ -59,7 +65,10 @@ fn feed(state: &mut PanelState, held: &[u8], seconds: f64) {
     ];
     let block = 512;
     let (mut l, mut r) = (vec![0.0f32; block], vec![0.0f32; block]);
-    let engine_params = params.engine();
+    let mut engine_params = params.engine();
+    if params.keys_source() {
+        engine_params.bypass_keys = state.keys.bypass;
+    }
     let mut t = 0.0f64;
     for _ in 0..(seconds * SR / block as f64) as usize {
         for i in 0..block {
@@ -94,6 +103,20 @@ fn scenario(name: &str) -> PanelState {
             state.params.set(p::VOICES, 3.0);
             feed(&mut state, &[57, 60, 64, 69, 72], 11.0);
             let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::PURIFY).unwrap().at;
+            Fittings::default().hover(&mut state, x, y);
+        }
+        "keys" => {
+            // The Keys source: C major in every octave, E bypassed, the view
+            // scrolled up an octave, the pointer on a key.
+            state.params.set(p::SOURCE, 1.0);
+            state.keys = Keys { target: 0, bypass: 0 };
+            for pc in [0, 2, 4, 5, 7, 9, 11] {
+                state.keys.set(KeyState::Target, pc, true, true);
+            }
+            state.keys.set(KeyState::Bypass, 4, true, true);
+            state.view = layout::VIEW_DEFAULT + 12.0;
+            feed(&mut state, &[], 11.0);
+            let (x, y) = (layout::RULER.x + 6.0, layout::note_y(state.view, 69.0));
             Fittings::default().hover(&mut state, x, y);
         }
         "drag" => {
