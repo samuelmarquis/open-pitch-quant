@@ -66,9 +66,12 @@ messages, and behavior belongs in the README; neither is kept here.
        - MIX as bottom-row text, the OUTPUT plate gone (0.6.0, done): on
          panelkit `strip` (c2c5514); the LCD module and lamps went with
          the plate; the three plates rebaked wider on DESIGN's farm.
-       - [ ] MIX typed entry (right-click → Edit value, the family's
-         `entry::TextEdit`): waits on terrible-cepstra's panelkit key
-         policy (after extraction E). Don't mirror cepstrum's key code.
+       - MIX typed entry (0.6.1, done): panelkit `keys` (5518dfa) policy
+         in both mounts, `entry::TextEdit` opened by a right-click or
+         Enter over MIX.
+         - [ ] Open question to terrible-cepstra/Sam: pluginkit reads a
+           bare typed number for a `%` parameter as 0..1, so "75" sets
+           100% (clamped). Proposed: a bare number means percent.
        - [ ] Display-mode keys stacked left from the screen's top-right
          edge: panelkit's key row (extraction E, in progress) plus
          DESIGN's key bake (after the template's seat-on-surface and key

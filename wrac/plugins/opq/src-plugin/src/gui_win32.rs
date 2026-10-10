@@ -22,6 +22,7 @@ use crate::gui_shared::{Scene, ViewState, apply};
 use crate::state::SharedState;
 use opq_panel::{Edit, HEIGHT, Modifiers, WIDTH};
 use panelkit::interaction::GestureDelivery;
+use panelkit::keys;
 use panelkit::mount::{self, MainCell, PointerLock, ViewWindowHandle, release_capture};
 use std::cell::{Cell, RefCell};
 use std::ffi::c_void;
@@ -44,7 +45,8 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     RegisterWindowMessageW, RemovePropW, SW_HIDE, SW_SHOW, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOZORDER, SendMessageW,
     SetCursor, SetPropW, SetTimer, SetWindowLongPtrW, SetWindowPos, ShowWindow, WM_CANCELMODE, WM_CAPTURECHANGED,
     WM_CHAR, WM_DESTROY, WM_ERASEBKGND, WM_KEYDOWN, WM_KEYUP, WM_KILLFOCUS, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN,
-    WM_LBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_NCCREATE, WM_NCDESTROY, WM_SETCURSOR, WM_TIMER, WNDCLASSW,
+    WM_LBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_NCCREATE, WM_NCDESTROY, WM_RBUTTONDOWN, WM_SETCURSOR, WM_TIMER,
+    WNDCLASSW,
     WS_CHILD, WS_VISIBLE, WindowFromPoint,
 };
 use wrac_clap_adapter::{
@@ -209,18 +211,6 @@ fn system_key_down() -> bool {
     (unsafe { GetKeyState(VK_LWIN as i32) } < 0) || (unsafe { GetKeyState(VK_RWIN as i32) } < 0)
 }
 
-/// The panel's one key, as the Cocoa mount maps it: Escape, never with
-/// Command.
-fn panel_key(vk: u16, character: u16, mods: Modifiers) -> Option<&'static str> {
-    if mods.command {
-        return None;
-    }
-    match (vk, character) {
-        (0x1b, _) | (_, 0x1b) => Some("Escape"),
-        _ => None,
-    }
-}
-
 /// SDK KeyModifier bits from the VST3 key bridge: shift 1, alternate 2,
 /// command 4. Control (8) on Windows is a host combination: decline it.
 fn callback_modifiers(bits: u16) -> Option<Modifiers> {
@@ -237,18 +227,37 @@ fn key_message() -> u32 {
     *MESSAGE
 }
 
-/// Delivers a panel key; false when the key is not the panel's.
+/// Delivers a key (a virtual key and/or its typed character) the panel
+/// takes, on panelkit's key policy; false when it is the host's.
 fn dispatch_key(hwnd: HWND, vk: u16, character: u16, mods: Modifiers) -> bool {
-    let Some(key) = panel_key(vk, character, mods) else { return false };
-    if key == "Escape" && window_of(hwnd).is_some_and(|window| window.delivery.is_active()) {
+    if (vk == 0x1b || character == 0x1b) && window_of(hwnd).is_some_and(|window| window.delivery.is_active()) {
         if let Some(window) = window_of(hwnd) {
             window.delivery.request_rollback();
         }
         cancel(hwnd);
         return true;
     }
-    dispatch(hwnd, |st| st.fittings.key(&mut st.panel, key, mods));
-    true
+    let mut handled = false;
+    dispatch(hwnd, |st| {
+        let mut buffer = [0; 4];
+        let key = keys::win32_name(vk, character, mods, &mut buffer);
+        if !st.fittings.wants_key(&st.panel, key, mods) {
+            return Vec::new();
+        }
+        handled = true;
+        st.fittings.key(&mut st.panel, key, mods)
+    });
+    handled
+}
+
+/// A printable key-down waits for its WM_CHAR while the panel takes text.
+fn awaits_character(hwnd: HWND, vk: u16, mods: Modifiers) -> bool {
+    window_of(hwnd).is_some_and(|window| {
+        window
+            .state
+            .try_borrow()
+            .is_ok_and(|st| keys::win32_awaits_character(vk, mods, &st.fittings.keys_open(&st.panel)))
+    })
 }
 
 /// Hands a key the panel does not use back to the host's window.
@@ -532,17 +541,38 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
         WM_KEYDOWN => {
             let mods = modifiers();
             hover(hwnd, None, mods);
-            if !system_key_down() && dispatch_key(hwnd, wparam as u16, 0, mods) {
+            let system = system_key_down();
+            if !system && dispatch_key(hwnd, wparam as u16, 0, mods) {
                 return 0;
+            }
+            if !system && awaits_character(hwnd, wparam as u16, mods) {
+                return 0; // TranslateMessage supplies the one printable WM_CHAR.
             }
             forward_host_key(hwnd, msg, wparam, lparam)
         }
         WM_CHAR => {
-            // Control characters follow key-downs handled above (Escape):
-            // never dispatch them twice. Text goes to the host.
+            let mods = modifiers();
+            if !system_key_down() && dispatch_key(hwnd, 0, wparam as u16, mods) {
+                return 0;
+            }
+            // Control characters follow key-downs handled above: never
+            // dispatch a second Backspace, Enter or Ctrl shortcut. Text the
+            // panel doesn't take goes to the host.
             if wparam >= 0x20 && wparam != 0x7f {
                 return forward_host_key(hwnd, msg, wparam, lparam);
             }
+            0
+        }
+        WM_RBUTTONDOWN => {
+            // A right-click: a text value starts typing.
+            unsafe { SetFocus(hwnd) };
+            let (cx, cy) = client_xy(lparam);
+            let at = mount::logical_point(hwnd, cx, cy, (WIDTH, HEIGHT));
+            dispatch(hwnd, |st| {
+                let Some((x, y)) = at else { return Vec::new() };
+                st.pointer = (x, y);
+                st.fittings.context(&mut st.panel, x, y)
+            });
             0
         }
         _ => unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) },

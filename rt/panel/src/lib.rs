@@ -49,22 +49,19 @@ pub enum Edit {
     Keys(Keys),
 }
 
-/// Keyboard modifiers held with a pointer event. Command is fine
-/// adjustment, as everywhere in the family.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Modifiers {
-    pub shift: bool,
-    pub alt: bool,
-    pub command: bool,
-}
+/// Keyboard modifiers held with a pointer event or a key: panelkit's
+/// (`command` is Command on macOS, Ctrl on Windows).
+pub use panelkit::keys::Modifiers;
+/// A value typed in place (MIX's right-click or Enter), panelkit's.
+pub use panelkit::entry::TextEdit;
 
-impl Modifiers {
-    pub fn fine(self) -> f32 {
-        if self.command {
-            0.1
-        } else {
-            1.0
-        }
+/// A drag's or the wheel's scale: Command (Ctrl) is fine adjustment, as
+/// everywhere in the family.
+pub fn fine(mods: Modifiers) -> f32 {
+    if mods.command {
+        0.1
+    } else {
+        1.0
     }
 }
 
@@ -84,6 +81,8 @@ pub struct PanelState {
     /// The control under the pointer, and the one pressed.
     pub hover_control: Option<layout::Control>,
     pub pressed_control: Option<layout::Control>,
+    /// A value being typed in place of its text (MIX), if any.
+    pub text_edit: Option<TextEdit>,
     /// Session tallies the LCD reports: objects born, onsets seen.
     pub born: u64,
     pub onsets: u64,
@@ -123,6 +122,7 @@ impl PanelState {
             pointer: None,
             hover_control: None,
             pressed_control: None,
+            text_edit: None,
             born: 0,
             onsets: 0,
             last_id: -1,

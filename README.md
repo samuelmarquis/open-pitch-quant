@@ -37,7 +37,11 @@ stem separation, ~93 ms latency, live.
   version. A knob's caption shows its value while it is in use, and
   briefly whenever the value moves (automation, the host's panel). Knobs
   and MIX drag vertically (Command, or Ctrl on Windows, for fine;
-  double-click resets; the wheel works); switches throw on a click.
+  double-click resets; the wheel works); switches throw on a click. MIX
+  can also be typed: right-click it, or press Enter over it, then type a
+  value with its % sign (for now a bare number is read as 0..1) and press
+  Enter; Escape cancels. Every other key, Space included, stays the
+  host's.
 
   **Map Source** (the SOURCE switch on LAW, beside SCOPE): under **MIDI**
   the targets are the notes held on the MIDI side chain (PITCHMAP's MIDI
@@ -95,6 +99,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.6.1** — MIX can be typed in place: right-click or Enter over it,
+  Enter commits, Escape cancels. The editor now takes keys from the host
+  by the family's shared policy (panelkit), on both macOS and Windows.
 - **0.6.0** — the OUTPUT plate is gone (catalogue/v13):
   - MIX is text in the bottom row, the family's (panelkit's strip).
   - The OUTPUT plate's backlit LCD (chord, pitch classes, session tally)
@@ -121,7 +128,7 @@ use this for something, open an issue.
     anodized blue.
   - Tonality Gate reads with one decimal; it is continuous.
 
-  Still to come: display-mode keys, and typing a value into MIX.
+  Still to come: display-mode keys.
 - **0.4.6** — no change to the sound (every HOUSE render is
   byte-identical). The STFT framing, FFTs and overlap-add come from the
   family's shared frame, `audiokit::stft`, and the audio thread no

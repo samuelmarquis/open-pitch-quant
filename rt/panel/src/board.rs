@@ -485,8 +485,13 @@ impl Board {
                 // The family's strip value: its name and value in the
                 // accent, white over a glow while hovered or held.
                 let r = widget.rect();
-                let text = format!("{}  {}", widget.caption, SPECS[id].format(value));
                 let accent = value_ink(widget.plate);
+                // Being typed: the family's entry in its place.
+                if let Some(edit) = state.text_edit.as_ref().filter(|edit| edit.id == id) {
+                    edit.draw(&mut self.canvas, r, accent, VALUE);
+                    return;
+                }
+                let text = format!("{}  {}", widget.caption, SPECS[id].format(value));
                 let (ink, glow) = strip::affordance(opacity(accent, 0.9), accent, hovered);
                 let at = (r.center().0, strip::text_top(r));
                 strip::glow_text(&mut self.canvas, 0, at, &text, VALUE, ink, glow, true);

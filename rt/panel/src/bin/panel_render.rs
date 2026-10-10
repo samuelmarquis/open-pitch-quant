@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const SR: f64 = 48_000.0;
-const SCENARIOS: [&str; 5] = ["house", "oracle", "keys", "empty", "drag"];
+const SCENARIOS: [&str; 6] = ["house", "oracle", "keys", "empty", "drag", "typing"];
 
 fn midi_hz(note: f64) -> f64 {
     440.0 * ((note - 69.0) / 12.0).exp2()
@@ -130,6 +130,17 @@ fn scenario(name: &str) -> PanelState {
             let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::FEEL).unwrap().at;
             f.down(&mut state, x, y, Modifiers::default(), 1);
             f.drag(&mut state, x, y - 60.0, Modifiers::default());
+        }
+        "typing" => {
+            // MIX right-clicked and half typed: the family's entry in place.
+            feed(&mut state, &chord, 11.0);
+            let mut f = Fittings::default();
+            let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::MIX).unwrap().at;
+            f.hover(&mut state, x, y);
+            f.context(&mut state, x, y);
+            for key in ["7", "5"] {
+                f.key(&mut state, key, Modifiers::default());
+            }
         }
         _ => {}
     }

@@ -133,7 +133,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.6.0 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.6.1 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -147,7 +147,7 @@ convention existed.
   plate, MIX in the bottom row (panelkit strip), the stepped Voices knob.
   No local Blender (see TODO): renders come from DESIGN's farm. Waiting
   on Sam's viewer picks plus DESIGN's key bake (panelkit widgets::Keys
-  is ready), and terrible-cepstra's key policy (typed MIX); see
+  is ready); typed MIX is on panelkit's key policy (0.6.1); see
   LISTENING-LOG "Panel round 1" and TODO. The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

@@ -10,6 +10,10 @@
 //! - The wheel over a knob moves it 2% of its travel a notch (a step for a
 //!   stepped one); over a switch, it throws it toward the wheel.
 //! - Escape during a drag puts the value back where the drag began.
+//! - MIX's value can be typed (the family's entry): right-click it, or press
+//!   Enter while over it; Enter commits, Escape cancels, a press anywhere
+//!   else commits. Which keys the editor takes from the host is panelkit's
+//!   policy (`wants_key`).
 //! - With the Keys source, the ruler is PITCHMAP's Lower Keyboard: a click
 //!   toggles a key as a target, Option/Alt-click its Bypass, and a drag
 //!   paints the same state over the keys it crosses; in Repeat scope an
@@ -24,10 +28,10 @@
 //! Every value is echoed into `state.params` (and `state.keys`) before it is
 //! returned.
 use crate::layout::{self, Control, Kind};
-use crate::{Edit, Modifiers, PanelState};
+use crate::{fine, Edit, Modifiers, PanelState, TextEdit};
 use opq_engine::params::{KeyState, SPECS};
-use panelkit::interaction;
-use panelkit::widgets;
+use panelkit::entry::EntryKey;
+use panelkit::{interaction, keys, widgets};
 
 /// Vertical travel across a knob's whole range, logical px (OpenCepstrum's).
 const DIAL_PX: f32 = 180.0;
@@ -99,6 +103,17 @@ fn gesture(state: &mut PanelState, id: usize, value: f32) -> Vec<Edit> {
     vec![Edit::Begin(id), Edit::Value(id, value), Edit::End(id)]
 }
 
+/// Start typing `id`'s value: its text, all selected.
+fn open_entry(state: &mut PanelState, id: usize) {
+    state.text_edit = Some(TextEdit::new(id, SPECS[id].format(state.params.get(id))));
+}
+
+/// The text value (MIX) under the pointer, if one is.
+fn hovered_text(state: &PanelState) -> Option<usize> {
+    let widget = state.hover_control.and_then(layout::widget)?;
+    (widget.kind == Kind::Text).then(|| widget.id())
+}
+
 /// A switch's other position (the selector's too: two positions).
 fn thrown(state: &PanelState, id: usize) -> f32 {
     let spec = &SPECS[id];
@@ -125,7 +140,15 @@ impl Fittings {
     }
 
     pub fn down(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers, clicks: u32) -> Vec<Edit> {
-        let mut edits = self.focus_lost(state);
+        // A value being typed: a press in its box keeps typing; anywhere
+        // else commits it (or drops it, when it doesn't parse) and goes on.
+        if state.text_edit.as_ref().is_some_and(|edit| {
+            layout::widget(Control::Param(edit.id)).is_some_and(|w| w.rect().contains(x, y))
+        }) {
+            return Vec::new();
+        }
+        let mut edits = self.down_outside_entry(state, x, y);
+        edits.extend(self.focus_lost(state));
         let Some(control) = layout::target_at(state.view, x, y) else {
             return edits;
         };
@@ -215,7 +238,7 @@ impl Fittings {
             return Vec::new();
         };
         let id = *id;
-        *normalized = widgets::drag_value(*normalized, *last_y, y, mods.fine(), DIAL_PX);
+        *normalized = widgets::drag_value(*normalized, *last_y, y, fine(mods), DIAL_PX);
         *last_y = y;
         let value = plain(id, *normalized);
         if value == state.params.get(id) {
@@ -233,13 +256,68 @@ impl Fittings {
         }
     }
 
-    /// The gesture ends where it is (release outside, focus lost).
+    /// The gesture ends where it is (release outside, focus lost); a value
+    /// being typed is dropped.
     pub fn cancel(&mut self, state: &mut PanelState) -> Vec<Edit> {
+        state.text_edit = None;
         self.up(state)
     }
 
     pub fn focus_lost(&mut self, state: &mut PanelState) -> Vec<Edit> {
         self.up(state)
+    }
+
+    /// A right-click: on a text value (MIX), start typing it.
+    pub fn context(&mut self, state: &mut PanelState, x: f32, y: f32) -> Vec<Edit> {
+        let mut edits = self.down_outside_entry(state, x, y);
+        if let Some(widget) = layout::target_at(state.view, x, y).and_then(layout::widget) {
+            if widget.kind == Kind::Text {
+                edits.extend(self.up(state));
+                open_entry(state, widget.id());
+            }
+        }
+        edits
+    }
+
+    /// What is open, for panelkit's key policy (and Win32's wait for a
+    /// typed character).
+    pub fn keys_open(&self, state: &PanelState) -> keys::Open {
+        keys::Open { entry: state.text_edit.is_some(), list: false, cancellable: self.capture.is_some() }
+    }
+
+    /// Whether the editor takes `key` from the host: panelkit's rules, plus
+    /// Enter over a text value (to start typing it).
+    pub fn wants_key(&self, state: &PanelState, key: &str, mods: Modifiers) -> bool {
+        keys::wants(key, mods, &self.keys_open(state), || key == "Enter" && hovered_text(state).is_some())
+    }
+
+    /// A press outside a value being typed commits it (or drops it when it
+    /// doesn't parse); inside, nothing.
+    fn down_outside_entry(&mut self, state: &mut PanelState, x: f32, y: f32) -> Vec<Edit> {
+        let Some(edit) = &state.text_edit else { return Vec::new() };
+        if layout::widget(Control::Param(edit.id)).is_some_and(|w| w.rect().contains(x, y)) {
+            return Vec::new();
+        }
+        let edits = self.commit_entry(state);
+        state.text_edit = None;
+        edits
+    }
+
+    /// Parse the typed value and set it as one gesture; on a parse failure
+    /// the entry stays open, marked.
+    fn commit_entry(&mut self, state: &mut PanelState) -> Vec<Edit> {
+        let Some(edit) = state.text_edit.as_mut() else { return Vec::new() };
+        match SPECS[edit.id].parse(&edit.text) {
+            Some(value) => {
+                let id = edit.id;
+                state.text_edit = None;
+                gesture(state, id, value)
+            }
+            None => {
+                edit.error = true;
+                Vec::new()
+            }
+        }
     }
 
     /// The wheel. `delta` is in physical notches (positive is up: values
@@ -284,7 +362,7 @@ impl Fittings {
         let value = match widget.kind {
             Kind::Knob(_) | Kind::Stepped | Kind::Text if spec.stepped => spec.clamp(now + delta.signum()),
             Kind::Knob(_) | Kind::Stepped | Kind::Text => {
-                let n = normalized(id, now) + delta * WHEEL_STEP * mods.fine();
+                let n = normalized(id, now) + delta * WHEEL_STEP * fine(mods);
                 plain(id, n.clamp(0.0, 1.0))
             }
             Kind::Toggle(..) | Kind::Selector => {
@@ -307,7 +385,26 @@ impl Fittings {
     }
 
     /// Escape during a knob drag puts it back where the drag began.
-    pub fn key(&mut self, state: &mut PanelState, key: &str, _mods: Modifiers) -> Vec<Edit> {
+    /// A key the editor took (`wants_key`): the value being typed takes its
+    /// editing keys (Enter commits, Escape cancels); Enter over a text
+    /// value starts typing it; Escape during a drag undoes it.
+    pub fn key(&mut self, state: &mut PanelState, key: &str, mods: Modifiers) -> Vec<Edit> {
+        if let Some(edit) = state.text_edit.as_mut() {
+            if key == "Escape" {
+                state.text_edit = None;
+                return Vec::new();
+            }
+            return match edit.key(key, mods.shift, mods.command) {
+                EntryKey::Edited => Vec::new(),
+                EntryKey::Commit | EntryKey::Next { .. } => self.commit_entry(state),
+            };
+        }
+        if key == "Enter" {
+            if let Some(id) = hovered_text(state) {
+                open_entry(state, id);
+            }
+            return Vec::new();
+        }
         if key != "Escape" {
             return Vec::new();
         }
@@ -440,6 +537,55 @@ mod tests {
         f.down(&mut s, x, layout::SCROLL_BAR.y + layout::SCROLL_BAR.h - 2.0, Modifiers::default(), 1);
         assert_eq!(s.view, 0.0);
         f.up(&mut s);
+    }
+
+    fn typed(f: &mut Fittings, s: &mut PanelState, text: &str) -> Vec<Edit> {
+        let mut edits = Vec::new();
+        for c in text.chars() {
+            let key = c.to_string();
+            assert!(f.wants_key(s, &key, Modifiers::default()), "{key:?}");
+            edits.extend(f.key(s, &key, Modifiers::default()));
+        }
+        edits
+    }
+
+    #[test]
+    fn mix_is_typed_in_place_after_a_right_click_or_enter() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = at(p::MIX);
+        // Nothing open: the host keeps its keys, Enter included.
+        assert!(!f.wants_key(&s, "5", Modifiers::default()));
+        assert!(!f.wants_key(&s, "Enter", Modifiers::default()));
+        assert!(f.context(&mut s, x, y).is_empty());
+        assert!(s.text_edit.is_some());
+        // Space is the host's even while typing.
+        assert!(!f.wants_key(&s, " ", Modifiers::default()));
+        // pluginkit's rule: a percentage typed with its % sign (a bare
+        // number is the plain 0..1 value).
+        assert!(typed(&mut f, &mut s, "50%").is_empty());
+        assert!(f.wants_key(&s, "Enter", Modifiers::default()));
+        let commit = f.key(&mut s, "Enter", Modifiers::default());
+        assert_eq!(commit, vec![Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.5), Edit::End(p::MIX)]);
+        assert!(s.text_edit.is_none());
+        // Enter over MIX opens it too; nonsense stays open, marked; Escape
+        // drops it with no edit.
+        f.hover(&mut s, x, y);
+        assert!(f.wants_key(&s, "Enter", Modifiers::default()));
+        f.key(&mut s, "Enter", Modifiers::default());
+        typed(&mut f, &mut s, "loud");
+        assert!(f.key(&mut s, "Enter", Modifiers::default()).is_empty());
+        assert!(s.text_edit.as_ref().is_some_and(|e| e.error));
+        assert!(f.key(&mut s, "Escape", Modifiers::default()).is_empty());
+        assert!(s.text_edit.is_none());
+        assert_eq!(s.params.get(p::MIX), 0.5);
+        // A press elsewhere commits what was typed, and acts.
+        f.context(&mut s, x, y);
+        typed(&mut f, &mut s, "25%");
+        let (fx, fy) = at(p::FEEL);
+        let edits = f.down(&mut s, fx, fy, Modifiers::default(), 1);
+        assert_eq!(&edits[..3], &[Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.25), Edit::End(p::MIX)]);
+        assert_eq!(edits[3], Edit::Begin(p::FEEL));
     }
 
     #[test]

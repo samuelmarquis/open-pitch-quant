@@ -25,6 +25,7 @@ use objc2_foundation::{
 };
 use opq_panel::{Edit, HEIGHT, Modifiers, WIDTH};
 use panelkit::interaction::GestureDelivery;
+use panelkit::keys;
 use panelkit::mount::{self, MainCell, PointerLock, ViewWindowHandle};
 use std::cell::RefCell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -96,6 +97,8 @@ define_class!(
         fn mouse_dragged(&self, event: &NSEvent) { self.mouse(event, Mouse::Drag); }
         #[unsafe(method(mouseUp:))]
         fn mouse_up(&self, event: &NSEvent) { self.mouse(event, Mouse::Up); }
+        #[unsafe(method(rightMouseDown:))]
+        fn right_mouse_down(&self, event: &NSEvent) { self.context(event); }
         #[unsafe(method(scrollWheel:))]
         fn scroll_wheel(&self, event: &NSEvent) { self.scroll(event); }
         #[unsafe(method(windowDidResignKey:))]
@@ -273,25 +276,40 @@ impl OpqView {
     }
 
     fn key(&self, event: &NSEvent) {
-        let text = event.characters().map(|c| c.to_string()).unwrap_or_default();
-        let key = match text.as_str() {
-            "\u{1b}" => "Escape",
-            _ => "",
-        };
+        let mods = modifiers(event);
+        // Command-A reads "a": the characters before Command.
+        let characters = if mods.command { event.charactersIgnoringModifiers() } else { event.characters() };
+        let text = characters.map(|c| c.to_string()).unwrap_or_default();
+        let key = keys::cocoa_name(&text);
         if key == "Escape" && self.ivars().delivery.is_active() {
             self.ivars().delivery.request_rollback();
             self.cancel();
             return;
         }
-        if key.is_empty() || modifiers(event).command {
-            // Not ours: the host's shortcuts keep working.
+        // The panel takes only the keys it uses (panelkit's policy); the
+        // rest reach the host's own shortcuts and transport.
+        let wanted = self.ivars().state.try_borrow().is_ok_and(|st| st.fittings.wants_key(&st.panel, key, mods));
+        if !wanted {
             unsafe {
                 let _: () = msg_send![super(self), keyDown: event];
             }
             return;
         }
-        let mods = modifiers(event);
         self.dispatch(|st| st.fittings.key(&mut st.panel, key, mods));
+    }
+
+    /// A right-click: a text value starts typing.
+    fn context(&self, event: &NSEvent) {
+        let Some((x, y)) = mount::logical_point(self, event.locationInWindow(), (WIDTH, HEIGHT)) else {
+            return;
+        };
+        if let Some(window) = self.window() {
+            window.makeFirstResponder(Some(self));
+        }
+        self.dispatch(|st| {
+            st.pointer = (x, y);
+            st.fittings.context(&mut st.panel, x, y)
+        });
     }
 
     fn track(&self, event: &NSEvent) {
