@@ -116,6 +116,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.8** — the editor's window sizing comes from the family's shared
+  code (panelkit). It behaves the same.
 - **0.7.7** — under the family's rule (double-click resets, right-click
   edits), every knob and MIX has a right-click menu with **Edit
   value...**, which opens typed entry in place. Knobs can be typed now,
