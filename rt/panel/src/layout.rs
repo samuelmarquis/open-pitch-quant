@@ -85,10 +85,23 @@ pub const CAPTURE: Rect = Rect::new(16.0, 494.0, 336.0, 250.0);
 pub const LAW: Rect = Rect::new(360.0, 494.0, 380.0, 250.0);
 pub const FINISH: Rect = Rect::new(748.0, 494.0, 336.0, 250.0);
 
+/// Text sizes (logical px): values and the strip, captions, plate titles,
+/// the screen's header.
+pub const FONT_SIZES: [f32; 4] = [10.0, 12.0, 15.0, 11.0];
+
 /// The bottom row (panelkit's `strip`, the family's): right to left, the
-/// product and its version, then MIX as text.
+/// product and its version, then MIX as text, one gap apart. Each item is
+/// as wide as it looks collapsed (Sam, 2026-10-10): the version line its
+/// text (its digits at the widest digit's width), MIX the widest
+/// "MIX  value" it can show, so dragging it never moves the row. The
+/// widths are constants so the widgets stay a const table;
+/// `the_bottom_row_is_spaced_by_its_collapsed_look` measures them with
+/// panelkit's TextMetrics and fails when the version gains a digit.
 pub const BOTTOM: Rect = Rect::new(16.0, 750.0, 1068.0, 16.0);
-const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, 16.0, [190.0, 64.0]);
+const STRIP_GAP: f32 = 16.0;
+const VERSION_W: f32 = 94.0;
+const MIX_W: f32 = 43.0;
+const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, STRIP_GAP, [VERSION_W, MIX_W]);
 pub const VERSION: Rect = ROW[0];
 pub const MIX_TEXT: Rect = ROW[1];
 
@@ -360,6 +373,31 @@ pub fn hz_note(hz: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_bottom_row_is_spaced_by_its_collapsed_look() {
+        let bytes = crate::pack::embedded().bytes(crate::pack::FONT).unwrap();
+        let metrics = panelkit::canvas::TextMetrics::new(&bytes, &FONT_SIZES).unwrap();
+        let text = |t: &str| metrics.width(t, 0);
+        // The installed product's version, as the plugin shows it.
+        let manifest = include_str!("../../../wrac/plugins/opq/src-plugin/Cargo.toml");
+        let version = manifest
+            .lines()
+            .find_map(|line| line.strip_prefix("version = \""))
+            .and_then(|rest| rest.strip_suffix('"'))
+            .unwrap();
+        // Each digit at the widest digit's width, so a bump that keeps the
+        // version's digit count keeps the row.
+        let widest_digit = ('0'..='9').max_by(|a, b| text(&a.to_string()).total_cmp(&text(&b.to_string()))).unwrap();
+        let version: String = version.chars().map(|c| if c.is_ascii_digit() { widest_digit } else { c }).collect();
+        let line = text(&format!("{}  {}", crate::PLUGIN_NAME, version));
+        let spec = &p::SPECS[p::MIX];
+        let mix = (0..=200)
+            .map(|i| text(&format!("MIX  {}", spec.format(spec.plain(i as f32 / 200.0)))))
+            .fold(0.0, f32::max);
+        assert_eq!(VERSION_W, line.ceil(), "the version line's width");
+        assert_eq!(MIX_W, mix.ceil(), "MIX's widest look");
+    }
 
     #[test]
     fn every_parameter_but_bypass_has_one_control_and_nothing_overlaps() {

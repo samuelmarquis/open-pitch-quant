@@ -88,10 +88,20 @@ fn feed(state: &mut PanelState, held: &[u8], seconds: f64) {
     state.engine_info = (SR as f32, opq_engine::HOP as u32);
 }
 
+/// The version the plugin shows (its manifest's), so a still's bottom row
+/// is the plugin's.
+fn product_version() -> &'static str {
+    include_str!("../../../../wrac/plugins/opq/src-plugin/Cargo.toml")
+        .lines()
+        .find_map(|line| line.strip_prefix("version = \""))
+        .and_then(|rest| rest.strip_suffix('"'))
+        .expect("the plugin manifest's version")
+}
+
 fn scenario(name: &str) -> PanelState {
     let start = Instant::now();
     let mut state = PanelState::new(start);
-    state.version = "(offline render)";
+    state.version = product_version();
     let chord = [60u8, 64, 67, 71];
     match name {
         "house" => {

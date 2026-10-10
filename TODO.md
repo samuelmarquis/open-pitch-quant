@@ -187,6 +187,17 @@ messages, and behavior belongs in the README; neither is kept here.
   session's. bake.py's
   Blender steps refuse to run unless OPQ_BLENDER_FARM=1 (farm hosts only);
   `--only stepped --renders DIR` composites the farm's renders locally.
+- **The strip and slider laws (Sam, 2026-10-10, template bc932bf,
+  panelkit 3829893):** (1) sliders jump to a press and leave the cursor
+  where the drag ended, knobs give it back at the grab point. OPQ has
+  no sliders, and its knobs already return the cursor (panelkit's
+  PointerLock). (2) No bypass button on the bottom strip: OPQ never had
+  one, and Bypass is host-only. (3) The strip is spaced by each item's
+  collapsed look with one gap: done in 0.7.9, with the widths fenced by
+  a TextMetrics test (`the_bottom_row_is_spaced_by_its_collapsed_look`,
+  which fails when the version gains a digit). OPQ has no family-probe/1
+  geometry export yet; cepstrum's `family_geometry` is the pattern if
+  the probe is to cover OPQ.
 - **Double-click resets, right-click edits (Sam, 2026-10-10, family law,
   template 1e73c9d):** on every value control a double-click sets its
   default, and typed entry opens only from the right-click menu's "Edit

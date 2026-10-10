@@ -116,6 +116,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.9** — the bottom row is spaced by what it shows (the family's
+  rule): MIX now sits one even gap left of the version line, not about
+  100 px out. Offline stills show the product's real version.
 - **0.7.8** — the editor's window sizing comes from the family's shared
   code (panelkit). It behaves the same.
 - **0.7.7** — under the family's rule (double-click resets, right-click

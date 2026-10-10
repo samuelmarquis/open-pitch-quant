@@ -26,9 +26,7 @@ use panelkit::{strip, widgets};
 use std::path::Path;
 
 const VERTEX_CAPACITY: usize = 600_000;
-/// Text sizes (logical px): values and the strip, captions, plate titles,
-/// the screen's header.
-const FONT_SIZES: [f32; 4] = [10.0, 12.0, 15.0, 11.0];
+use layout::FONT_SIZES;
 const VALUE: usize = 0;
 const CAPTION: usize = 1;
 const TITLE: usize = 2;
