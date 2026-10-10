@@ -56,12 +56,16 @@ const PEAKINESS: Text = Text::Custom {
 };
 
 /// Glide is stored in seconds and reads in milliseconds; typed text is
-/// milliseconds unless it ends in a bare `s`.
+/// milliseconds unless it ends in a bare `s`, or in microseconds (the
+/// family's law: typing takes μs, µs or us).
 const MILLISECONDS: Text = Text::Custom {
     format: |_, v| format!("{:.0} ms", v * 1000.0),
     parse: |spec, text| {
+        let micro = ["μs", "µs", "us"].iter().find_map(|unit| text.strip_suffix(unit));
         let (number, per_second) = if let Some(ms) = text.strip_suffix("ms") {
             (ms, 1000.0)
+        } else if let Some(us) = micro {
+            (us, 1_000_000.0)
         } else if let Some(s) = text.strip_suffix('s') {
             (s, 1.0)
         } else {
@@ -324,6 +328,9 @@ mod tests {
         let glide = &SPECS[GLIDE];
         assert_eq!(glide.format(0.12), "120 ms");
         assert_eq!(glide.parse("120 ms"), Some(0.12));
+        for micro in ["120000 μs", "120000 µs", "120000us"] {
+            assert_eq!(glide.parse(micro), Some(0.12), "{micro}");
+        }
         assert_eq!(glide.parse("120"), Some(0.12));
         assert_eq!(glide.parse("0.2 s"), Some(0.2));
         assert_eq!(SPECS[VOICES].format(6.0), "6");

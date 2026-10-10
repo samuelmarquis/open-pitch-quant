@@ -114,6 +114,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.4** — Glide can be typed in microseconds ("120000 μs", "µs" or
+  "us"), under the family's rule that typing accepts every spelling. Host-
+  typed text now reaches the plugin as UTF-8 over VST3 (open-wrac).
+  Nothing we display needed changing: no value of ours reads "inf" or
+  "us".
 - **0.7.3** — the viewer keys are baked keys on the bezel, with the
   shown viewer's LED lit (catalogue/v15, v15-ladders, v15-scope). The
   monitor housing is rebaked under the template's corrected rack light,
