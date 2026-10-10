@@ -26,8 +26,9 @@ pub use board::Board;
 pub use fittings::{Fittings, PointerCapture};
 pub use layout::{HEIGHT, WIDTH};
 
-use opq_engine::params::{Keys, Params};
+use opq_engine::params::{Keys, Params, PARAM_COUNT};
 use opq_engine::VizFrame;
+use panelkit::hover::{Guide, HoverLine};
 use std::collections::VecDeque;
 use std::time::Instant;
 
@@ -90,9 +91,16 @@ pub struct PanelState {
     was_onset: bool,
     pub started: Instant,
     pub now: Instant,
-    /// The product's version, for the strip: the mount sets the plugin's
-    /// (the panel crate's own version is not the product's).
+    /// The product's version, for the bottom row: the mount sets the
+    /// plugin's (the panel crate's own version is not the product's).
     pub version: &'static str,
+    /// The infotext line (panelkit's): which target it describes, since
+    /// when, so its help types in.
+    hover_line: HoverLine<layout::Control>,
+    /// Per parameter, the family's guide: a control shows its value in
+    /// place of its caption while in use, and briefly whenever the value
+    /// moves any other way (automation, the host's panel, a load).
+    guides: [Guide; PARAM_COUNT],
 }
 
 impl Default for PanelState {
@@ -103,8 +111,11 @@ impl Default for PanelState {
 
 impl PanelState {
     pub fn new(now: Instant) -> Self {
+        let params = Params::default();
         Self {
-            params: Params::default(),
+            hover_line: HoverLine::new(now),
+            guides: std::array::from_fn(|id| Guide::new(params.get(id))),
+            params,
             keys: Keys::default(),
             view: layout::VIEW_DEFAULT,
             history: VecDeque::with_capacity(HISTORY),
@@ -180,8 +191,25 @@ impl PanelState {
         self.params.get(opq_engine::params::SCOPE) < 0.5
     }
 
+    /// One frame: the clock, the infotext's target, and every guide.
     pub fn update(&mut self, now: Instant) {
         self.now = now;
+        let info = board::hover_info(self);
+        self.hover_line.track(info.as_ref(), now);
+        for (id, guide) in self.guides.iter_mut().enumerate() {
+            let control = Some(layout::Control::Param(id));
+            let active = self.hover_control == control || self.pressed_control == control;
+            guide.update(active, self.params.get(id), now);
+        }
+    }
+
+    /// How far a control's value shows in place of its caption, 0..1.
+    pub fn guide(&self, id: usize) -> f32 {
+        self.guides[id].opacity(self.now)
+    }
+
+    pub(crate) fn hover_line(&self) -> &HoverLine<layout::Control> {
+        &self.hover_line
     }
 
     /// Seconds since the editor opened: the board's animation clock.

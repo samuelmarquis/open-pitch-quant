@@ -120,18 +120,25 @@ fn scenario(name: &str) -> PanelState {
             Fittings::default().hover(&mut state, x, y);
         }
         "drag" => {
+            // TRANSIENTS thrown, then FEEL held mid-drag: its caption
+            // shows its value.
             feed(&mut state, &chord, 11.0);
             let mut f = Fittings::default();
+            let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::TRANSIENT).unwrap().at;
+            f.down(&mut state, x, y, Modifiers::default(), 1);
+            f.up(&mut state);
             let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::FEEL).unwrap().at;
             f.down(&mut state, x, y, Modifiers::default(), 1);
             f.drag(&mut state, x, y - 60.0, Modifiers::default());
-            let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::TRANSIENT).unwrap().at;
-            Fittings::default().down(&mut state, x, y, Modifiers::default(), 1);
-            state.params.set(p::BYPASS, 1.0);
         }
         _ => {}
     }
-    state.update(start + Duration::from_secs_f64(3.3));
+    // Frames as the mount would tick them: the scenario's own settings
+    // show and fade like any other change, a hovered control's help types
+    // in, and a knob held in a drag keeps showing its value.
+    for t in [0.0, 1.0, 2.0, 3.0, 3.3] {
+        state.update(start + Duration::from_secs_f64(t));
+    }
     state
 }
 

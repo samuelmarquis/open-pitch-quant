@@ -21,33 +21,38 @@ stem separation, ~93 ms latency, live.
   `wrac/PROVENANCE.txt`).
 - **`rt/panel`** — the editor board, in the family idiom (open-panelkit,
   wgpu; no webview, no toolkit), 1100×768, resizable. A monitor carries
-  the **belief transect**: each pitch object's source pitch (dim), the
-  pitch it is sung at (warm; ochre where Threshold spared it), the held
-  targets as mint lanes (fainter for Repeat octaves), the map ceiling, and
-  onsets. Beneath it, four baked plates, one control per parameter:
+  the **belief transect**, ink on a paper-white screen: each pitch
+  object's source pitch (pencil), the pitch it is sung at (black ink;
+  sepia where Threshold spared it, vermilion while newborn), the targets
+  as blue lanes (fainter for Repeat octaves), the map ceiling, and onsets.
+  A scroll bar on the screen's right, always shown, moves the view through
+  all 128 notes. Under the monitor, the infotext line names what the
+  pointer is over and its value, then types in what it does. Beneath,
+  four baked plates, one control per parameter (Bypass is the host's):
   CAPTURE (Voices, Tonality Gate, Map Ceiling, Gate Mode, Map Unowned,
-  Transients), LAW (the Algorithm selector, Feel, Glide, Threshold,
-  Rounding, MIDI Scope), FINISH (Purify, Grit, Formant, Carry, Coherence,
-  Transitions) and OUTPUT (Mix, Bypass, lamps for chord / onset / voices
-  full, and a backlit LCD with the algorithm, the held pitch classes, the
-  chord and a crawling tally of the session). Knobs drag vertically
+  Transients), LAW (the Algorithm selector, Feel, Glide, Map Source, MIDI
+  Scope, Threshold, Rounding), FINISH (Purify, Grit, Formant, Carry,
+  Coherence, Transitions) and OUTPUT (Mix, lamps for chord / onset /
+  voices full, and a backlit LCD with the algorithm, the held pitch
+  classes, the chord and a crawling tally of the session). A knob's
+  caption shows its value while it is in use, and briefly whenever the
+  value moves (automation, the host's panel). Knobs drag vertically
   (Command, or Ctrl on Windows, for fine; double-click resets; the wheel
-  works); switches throw
-  on a click. The strip along the bottom names what the pointer is over,
-  its value, and what it does.
+  works); switches throw on a click.
 
-  **Map Source** (the MIDI | KEYS tabs at the top left of the screen):
-  under **MIDI** the targets are the notes held on the MIDI side chain
-  (PITCHMAP's MIDI MAP). Under **KEYS** they are set on the screen's key
-  ruler, PITCHMAP's Lower Keyboard without MIDI: click a key to make it a
-  target or exclude it (an excluded pitch is pulled to its nearest
-  target), Option/Alt-click to bypass it (anything sitting on it passes
-  unbent, drawn in ochre), and drag to paint the same state over every key
-  you cross. MIDI Scope applies: Repeat edits every octave of the key,
-  Custom only that key. Keys start chromatic (every note a target). The
-  key states are saved with the project, not automatable. The wheel over
-  the screen scrolls the pitch view through all 128 notes (fingers up for
-  higher). `cargo run --release -p opq-panel --bin
+  **Map Source** (the SOURCE knob on LAW, beside SCOPE): under **MIDI**
+  the targets are the notes held on the MIDI side chain (PITCHMAP's MIDI
+  MAP). Under **KEYS** they are set on the screen's key ruler, PITCHMAP's
+  Lower Keyboard without MIDI: click a key to make it a target or exclude
+  it (an excluded pitch is pulled to its nearest target), Option/Alt-click
+  to bypass it (anything sitting on it passes unbent, drawn in sepia), and
+  drag to paint the same state over every key you cross. SCOPE applies:
+  Repeat edits every octave of the key, Custom only that key. Keys start
+  chromatic (every note a target). The key states are saved with the
+  project, not automatable. The wheel over the screen scrolls the pitch
+  view as content, following the system's natural-scrolling setting
+  (knobs always follow the wheel's physical direction).
+  `cargo run --release -p opq-panel --bin
   panel-render -- --out DIR` renders it offline from the real engine;
   `rt/panel/assets/bake.py` bakes the plates and vendors the family
   artwork, with provenance. The old panel's design is
@@ -91,6 +96,23 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.5.0** — the panel's first round of Sam's notes (catalogue/v11):
+  - The screen is ink on paper: a paper-white field with dark markings.
+    It has an always-shown scroll bar, and the wheel follows natural
+    scrolling there. Its header text is gone.
+  - The infotext line between the monitor and the plates says what the
+    pointer is over (panelkit's hover line). Knobs no longer show their
+    values all the time; the caption shows the value while in use.
+  - Map Source is now a knob on LAW beside SCOPE (the screen's MIDI/KEYS
+    tabs are gone).
+  - The Bypass control is gone; the host's bypass is Bypass.
+  - FEEL, GLIDE and THRESHOLD use the plain black knob. CAPTURE is
+    anodized blue.
+  - Tonality Gate reads with one decimal; it is continuous.
+
+  Still to come: the lighter monitor housing, the stepped knob for Voices
+  and Source, a new FINISH face, display-mode keys, and MIX moving to the
+  bottom row.
 - **0.4.6** — no change to the sound (every HOUSE render is
   byte-identical). The STFT framing, FFTs and overlap-add come from the
   family's shared frame, `audiokit::stft`, and the audio thread no

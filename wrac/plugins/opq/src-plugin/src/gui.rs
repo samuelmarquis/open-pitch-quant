@@ -260,12 +260,15 @@ impl OpqView {
             return;
         };
         let mods = modifiers(event);
+        // Knobs read the physical direction; the pitch view scrolls as
+        // content, with the user's natural-scrolling setting.
         let delta = mount::scroll_notches(event);
+        let content = mount::scroll_content_notches(event);
         self.dispatch(|st| {
             if st.fittings.capture().is_none() {
                 st.pointer = (x, y);
             }
-            st.fittings.scroll(&mut st.panel, x, y, delta, mods)
+            st.fittings.scroll(&mut st.panel, x, y, delta, content, mods)
         });
     }
 

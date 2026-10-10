@@ -45,9 +45,30 @@ messages, and behavior belongs in the README; neither is kept here.
      - The switches' size contract (0.3.2, done): DESIGN's template
        6796dcc (plate p174); bake.py renders toggle-bat and the
        chickenhead itself under it, and the stopgap crops are gone.
-     - [ ] Sam's fuller notes on v07/v08, then more nit rounds. Still
-       known: plate titles are drawn text, not the panel-board's backlit
-       cut titles (title-bake/1).
+     - Round 1 of Sam's notes (2026-10-10, verbatim in LISTENING-LOG
+       "Panel round 1"). Done in 0.5.0 (catalogue/v11): the paper screen
+       and its palette; the always-shown scroll bar; natural scrolling
+       over the screen (panelkit `scroll_content_notches`, 71b01e3); the
+       infotext line (panelkit `hover`); values only while in use (the
+       guide); the SOURCE knob beside SCOPE; no Bypass control; no
+       witchhat or handwheel; anodized-blue CAPTURE; no display header;
+       Tonality Gate read as continuous.
+       - [ ] The lighter monitor housing (our own bake): DESIGN p179
+         option plates, Sam picks.
+       - [ ] The stepped knob for Voices and Source: DESIGN p180, Sam
+         picks. Until then they borrow the black knob, and SOURCE shows
+         no positions.
+       - [ ] FINISH's new face (not verdigris): DESIGN p181, Sam picks.
+       - [ ] Display modes as viewer keys stacked left from the screen's
+         top-right edge: DESIGN's key-row recipe. Candidate viewers are
+         in docs/design/04-panel-ideas.md.
+       - [ ] MIX as bottom-row text, the OUTPUT plate gone: on panelkit
+         `strip` (terrible-cepstra's step C; it will ping). The LCD and
+         lamps need a new home then.
+       - [ ] The stale vendor files (knob-handwheel, knob-witchhat-black,
+         led-red-*) are no longer packed; delete them with Sam's OK.
+     - [ ] Still known: plate titles are drawn text, not the
+       panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
        (25 of them, with effort marks; Claude's first picks are basins,
        residual octaves, harmonic ladders and LCD alarms).

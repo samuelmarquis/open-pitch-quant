@@ -166,13 +166,13 @@
   },
   "plate-capture.png": {
    "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-capture.png",
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-capture.png",
     "--w",
     "2.58",
     "--h",
     "2.5",
     "--face",
-    "black-paint",
+    "anodized-blue",
     "--fasteners",
     "screws",
     "--edge",
@@ -194,12 +194,12 @@
     258,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=black-paint fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.58 [ortho:516x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-capture.png",
-   "sha256": "dcf4027e4439c2d87e1b4e6cb9f0ae57d8cd91f103ca0d9401415d609d379247"
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=anodized-blue fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.58 [ortho:516x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-capture.png",
+   "sha256": "b8036faa5b7ee7d3c0491f3c1ed137797d803864d902514cff5339a646280592"
   },
   "plate-finish.png": {
    "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-finish.png",
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-finish.png",
     "--w",
     "2.58",
     "--h",
@@ -227,12 +227,12 @@
     258,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=verdigris fastener=steel-hw fasteners=rivets h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.58 [ortho:516x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-finish.png",
-   "sha256": "0bb87178a7b7c924ef5825a8bfffcc645daaa89510b307ed94610122eb3fd7ac"
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=verdigris fastener=steel-hw fasteners=rivets h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.58 [ortho:516x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-finish.png",
+   "sha256": "7898a661dbc66fae88b86b3f304d562c52809e9483a265bea002fd11c243a031"
   },
   "plate-law.png": {
    "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-law.png",
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-law.png",
     "--w",
     "3.0",
     "--h",
@@ -260,12 +260,12 @@
     300,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=brass fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=3 [ortho:600x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-law.png",
-   "sha256": "50957d4556ddced0bb4e04a1d1da6097275d3dc14d5e11b43d63ecb5f04efc0c"
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=brass fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=3 [ortho:600x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-law.png",
+   "sha256": "96441dcbbe28a9cd4f491bd2e6cb52c1d02355c20278c7776c5a765de3ae9c23"
   },
   "plate-module.png": {
    "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-module.png",
+    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-module.png",
     "--w",
     "2.28",
     "--h",
@@ -293,8 +293,8 @@
     228,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=worn-steel fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.28 [ortho:456x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmplyuz87t2/plate-module.png",
-   "sha256": "b3edd1bf6193a421e17af09d2c4d35d280b2527f152f6cc8d20af47fa979d67b"
+   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=worn-steel fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=2.28 [ortho:456x500 200px/unit] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.xoo8me/tmpe8vnnuu5/plate-module.png",
+   "sha256": "7cfcd07abfdd59cf2085057f3f7a3a2b12201c05dc2eb94a645242b40ee185c3"
   },
   "selector-house.png": {
    "args": [
@@ -406,7 +406,7 @@
   }
  },
  "sources": {
-  "open-cepstrum": "527c866b8f9d12c9f4a211af1fd462adbd3f1256",
-  "open-plugin-template": "e5265f43aadf7a607cf1aed5b596e0acef383612"
+  "open-cepstrum": "4a36918876ed479fee14a69c43dbf98c77a7d261",
+  "open-plugin-template": "a846f26dd3caa3cff4e851b455623f442d707621"
  }
 }

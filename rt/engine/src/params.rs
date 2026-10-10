@@ -42,9 +42,16 @@ pub const SOURCE: usize = 20;
 
 const OFF_ON: Text = Text::Labels(&["Off", "On"]);
 
-/// A whole number: the voice count, the tonality gate's peakiness.
+/// A whole number: the voice count.
 const WHOLE: Text = Text::Custom {
     format: |_, v| format!("{v:.0}"),
+    parse: |spec, text| spec.parse_number(text).map(|v| spec.clamp(v)),
+};
+
+/// The tonality gate's peakiness, a continuous ratio: one decimal (whole
+/// numbers made it read as stepped).
+const PEAKINESS: Text = Text::Custom {
+    format: |_, v| format!("{v:.1}"),
     parse: |spec, text| spec.parse_number(text).map(|v| spec.clamp(v)),
 };
 
@@ -89,7 +96,7 @@ pub static SPECS: [ParamSpec; PARAM_COUNT] = [
     row(GRIT, "Grit", 0.0, 1.0, 0.0, "%", false),
     row(VOICES, "Voices", 1.0, 12.0, 6.0, "", true).with_text(WHOLE),
     row(UNOWNED, "Map Unowned", 0.0, 1.0, 0.0, "", true).with_text(OFF_ON),
-    row(GATE, "Tonality Gate", 0.0, 6.0, 0.0, "", false).with_text(WHOLE),
+    row(GATE, "Tonality Gate", 0.0, 6.0, 0.0, "", false).with_text(PEAKINESS),
     labels(GATE_MODE, "Gate Mode", &["Fresh", "Bypass"], 0.0),
     row(FMAX, "Map Ceiling", 1000.0, 20000.0, 5000.0, "Hz", false),
     row(TRANSIENT, "Transient Bypass", 0.0, 1.0, 1.0, "", true).with_text(OFF_ON),

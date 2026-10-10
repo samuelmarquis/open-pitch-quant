@@ -1,9 +1,10 @@
 //! Where everything is, in logical px, and the one hit test
 //! ([`target_at`]) that presses, the wheel and hover help all ask.
 //!
-//! The board: a monitor across the top (the transect), a rack of four
-//! plates beneath in signal order (CAPTURE, LAW, FINISH, then the module
-//! with the LCD and the output), and the hover strip along the bottom.
+//! The board: a monitor across the top (the transect), the infotext line
+//! under it, a rack of four plates beneath in signal order (CAPTURE, LAW,
+//! FINISH, then the module with the LCD and the output), and the bottom
+//! row.
 use opq_engine::params as p;
 use panelkit::canvas::Rect;
 
@@ -11,20 +12,26 @@ pub const WIDTH: u32 = 1100;
 pub const HEIGHT: u32 = 768;
 
 /// The monitor housing (OpenCepstrum's bake, nine-sliced) and its screen.
-pub const MONITOR: Rect = Rect::new(16.0, 10.0, 1068.0, 474.0);
-pub const SCREEN: Rect = Rect::new(40.0, 34.0, 1020.0, 426.0);
+pub const MONITOR: Rect = Rect::new(16.0, 10.0, 1068.0, 458.0);
+pub const SCREEN: Rect = Rect::new(40.0, 34.0, 1020.0, 410.0);
 /// The transect's plot inside the screen: the key ruler to its left, note
-/// names to its right, a caption row above.
-pub const PLOT: Rect = Rect::new(76.0, 54.0, 944.0, 392.0);
-pub const RULER: Rect = Rect::new(46.0, 54.0, 24.0, 392.0);
+/// names to its right, then the scroll bar.
+pub const PLOT: Rect = Rect::new(76.0, 40.0, 936.0, 390.0);
+pub const RULER: Rect = Rect::new(46.0, 40.0, 24.0, 390.0);
+/// The pitch view's scroll bar, always shown: its thumb is the five
+/// octaves in view out of all 128 notes, highest at the top.
+pub const SCROLL_BAR: Rect = Rect::new(1046.0, 40.0, 8.0, 390.0);
 /// The transect shows five octaves of MIDI notes from a scrollable floor:
 /// by default C2 to C7, where the tracker believes in anything; the wheel
-/// over the screen scrolls through all 128.
+/// over the screen and the scroll bar move through all 128.
 pub const VIEW_SPAN: f32 = 60.0;
 pub const VIEW_DEFAULT: f32 = 36.0;
 pub const VIEW_MAX: f32 = 127.0 - VIEW_SPAN;
-/// The Map Source switch, in the screen's header: MIDI | KEYS.
-pub const SOURCE_TABS: Rect = Rect::new(46.0, 37.0, 104.0, 15.0);
+
+/// The infotext line between the monitor and the plates (OpenCepstrum's
+/// idiom, panelkit's `hover`): what the pointer is over, its value, and
+/// what it does.
+pub const INFO: Rect = Rect::new(22.0, 473.0, 1056.0, 16.0);
 
 /// The rack plates. Their bakes are exactly these sizes at 2x
 /// (assets/bake.py's PLATES).
@@ -37,8 +44,9 @@ pub const MODULE: Rect = Rect::new(856.0, 494.0, 228.0, 250.0);
 pub const LCD: Rect = Rect::new(872.0, 524.0, 196.0, 92.0);
 pub const LCD_CELL: f32 = 2.0;
 
-/// The hover strip: what the pointer is over, its value, and what it does.
-pub const STRIP: Rect = Rect::new(16.0, 748.0, 1068.0, 18.0);
+/// The bottom row: the product's name and version for now; MIX and the
+/// family's standard row come with panelkit's `strip`.
+pub const BOTTOM: Rect = Rect::new(16.0, 748.0, 1068.0, 18.0);
 
 /// Knob, toggle and selector draw sizes.
 pub const KNOB: f32 = 58.0;
@@ -59,14 +67,16 @@ pub enum Control {
     Param(usize),
     /// A key of the ruler (MIDI note): the Keys source's Lower Keyboard.
     Key(u32),
+    /// The pitch view's scroll bar.
+    ScrollBar,
 }
 
-/// The knob bakes, in the pack's KNOBS order.
+/// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
+/// is for continuous controls; the stepped controls (Voices, Map Source)
+/// borrow it until their own stepped style is baked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Skin {
-    Handwheel,
     Hifi,
-    Witchhat,
     Heady,
     Catalin,
     Leather,
@@ -83,8 +93,6 @@ pub enum Kind {
     Toggle(&'static str, &'static str),
     /// The algorithm's chickenhead.
     Selector,
-    /// Text tabs, one per label, left to right (the screen's switches).
-    Tabs(&'static [&'static str]),
 }
 
 /// Which plate a control sits on, for its ink.
@@ -94,8 +102,6 @@ pub enum Plate {
     Law,
     Finish,
     Module,
-    /// On the monitor's screen, not a plate.
-    Screen,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -113,7 +119,7 @@ impl Widget {
     pub fn id(&self) -> usize {
         match self.control {
             Control::Param(id) => id,
-            Control::Key(_) => unreachable!("keys are not widgets"),
+            Control::Key(_) | Control::ScrollBar => unreachable!("only parameters are widgets"),
         }
     }
 
@@ -123,7 +129,6 @@ impl Widget {
             Kind::Knob(_) => (KNOB, KNOB),
             Kind::Toggle(..) => (TOGGLE.0 + 18.0, TOGGLE.1 + 8.0),
             Kind::Selector => (SELECTOR, SELECTOR),
-            Kind::Tabs(_) => (SOURCE_TABS.w, SOURCE_TABS.h),
         };
         Rect::new(self.at.0 - w * 0.5, self.at.1 - h * 0.5, w, h)
     }
@@ -134,7 +139,6 @@ impl Widget {
             Kind::Knob(_) => KNOB * 0.5,
             Kind::Toggle(..) => TOGGLE.1 * 0.5 + 10.0,
             Kind::Selector => SELECTOR * 0.5 - 4.0,
-            Kind::Tabs(_) => SOURCE_TABS.h * 0.5,
         };
         self.at.1 + half + 2.0
     }
@@ -149,26 +153,29 @@ const fn w(id: usize, kind: Kind, at: (f32, f32), caption: &'static str, plate: 
     Widget { control: Control::Param(id), kind, at, caption, plate }
 }
 
-/// Every control on the board, one per parameter.
-pub const WIDGETS: [Widget; p::PARAM_COUNT] = {
+/// Every control on the board: one per parameter, except Bypass, which
+/// the host owns (Sam, 2026-10-10).
+pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
     use Kind::*;
     use Plate::*;
     use Skin::*;
     [
         // CAPTURE: what the tracker may hold and hear.
-        w(p::VOICES, Knob(Handwheel), (c(0.0), ROW_1), "VOICES", Capture),
+        w(p::VOICES, Knob(Hifi), (c(0.0), ROW_1), "VOICES", Capture),
         w(p::GATE, Knob(Hifi), (c(1.0), ROW_1), "TONALITY", Capture),
         w(p::FMAX, Knob(Hifi), (c(2.0), ROW_1), "CEILING", Capture),
         w(p::GATE_MODE, Toggle("FRESH", "BYPASS"), (c(0.0), ROW_2), "GATE MODE", Capture),
         w(p::UNOWNED, Toggle("DRY", "MAP"), (c(1.0), ROW_2), "UNOWNED", Capture),
         w(p::TRANSIENT, Toggle("BEND", "PASS"), (c(2.0), ROW_2), "TRANSIENTS", Capture),
-        // LAW: where it goes and how it gets there.
+        // LAW: where it goes and how it gets there. The grid's source and
+        // its scope sit together on the lower row.
         w(p::ALGORITHM, Selector, (LAW.x + 70.0, ROW_1 + 22.0), "ALGORITHM", Law),
-        w(p::FEEL, Knob(Witchhat), (LAW.x + 176.0, ROW_1), "FEEL", Law),
-        w(p::GLIDE, Knob(Witchhat), (LAW.x + 252.0, ROW_1), "GLIDE", Law),
-        w(p::THRESHOLD, Knob(Witchhat), (LAW.x + 176.0, ROW_2), "THRESHOLD", Law),
-        w(p::ROUNDING, Toggle("SMART", "NEAREST"), (LAW.x + 252.0, ROW_2), "ROUNDING", Law),
-        w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 70.0, ROW_2 + 4.0), "SCOPE", Law),
+        w(p::FEEL, Knob(Hifi), (LAW.x + 186.0, ROW_1), "FEEL", Law),
+        w(p::GLIDE, Knob(Hifi), (LAW.x + 258.0, ROW_1), "GLIDE", Law),
+        w(p::SOURCE, Knob(Hifi), (LAW.x + 40.0, ROW_2), "SOURCE", Law),
+        w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 112.0, ROW_2 + 4.0), "SCOPE", Law),
+        w(p::THRESHOLD, Knob(Hifi), (LAW.x + 186.0, ROW_2), "THRESHOLD", Law),
+        w(p::ROUNDING, Toggle("SMART", "NEAREST"), (LAW.x + 258.0, ROW_2), "ROUNDING", Law),
         // FINISH: what the sung result is made of.
         w(p::PURIFY, Knob(Heady), (FINISH.x + 49.0, ROW_1), "PURIFY", Finish),
         w(p::GRIT, Knob(Catalin), (FINISH.x + 129.0, ROW_1), "GRIT", Finish),
@@ -176,17 +183,8 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT] = {
         w(p::CARRY, Knob(Ebony), (FINISH.x + 49.0, ROW_2), "CARRY", Finish),
         w(p::COHERENCE, Knob(HeatTint), (FINISH.x + 129.0, ROW_2), "COHERENCE", Finish),
         w(p::TRANSITIONS, Toggle("MAP", "DRY"), (FINISH.x + 209.0, ROW_2), "TRANSITIONS", Finish),
-        // The module: the output.
+        // The module: the output, until MIX moves to the bottom row.
         w(p::MIX, Knob(Davies), (MODULE.x + 60.0, ROW_2 + 2.0), "MIX", Module),
-        w(p::BYPASS, Toggle("RUN", "BYPASS"), (MODULE.x + 150.0, ROW_2 + 2.0), "BYPASS", Module),
-        // The screen: where the grid comes from.
-        w(
-            p::SOURCE,
-            Tabs(&["MIDI", "KEYS"]),
-            (SOURCE_TABS.x + SOURCE_TABS.w * 0.5, SOURCE_TABS.y + SOURCE_TABS.h * 0.5),
-            "MAP SOURCE",
-            Screen,
-        ),
     ]
 };
 
@@ -204,11 +202,34 @@ pub fn widget(control: Control) -> Option<&'static Widget> {
 /// What a press, the wheel or hover help at `(x, y)` acts on, with the
 /// transect's floor at `view` (for the ruler's keys).
 pub fn target_at(view: f32, x: f32, y: f32) -> Option<Control> {
+    if scroll_bar_hit().contains(x, y) {
+        return Some(Control::ScrollBar);
+    }
     WIDGETS
         .iter()
         .find(|w| w.rect().contains(x, y))
         .map(|w| w.control)
         .or_else(|| RULER.contains(x, y).then(|| note_at(view, y)).flatten().map(Control::Key))
+}
+
+/// The scroll bar's pressable area: its track, a little wider.
+pub fn scroll_bar_hit() -> Rect {
+    Rect::new(SCROLL_BAR.x - 4.0, SCROLL_BAR.y, SCROLL_BAR.w + 8.0, SCROLL_BAR.h)
+}
+
+/// The scroll bar's thumb for a view floor: the span in view out of the
+/// whole range, the top of the track being the highest notes.
+pub fn scroll_thumb(view: f32) -> Rect {
+    let whole = VIEW_MAX + VIEW_SPAN;
+    let h = SCROLL_BAR.h * VIEW_SPAN / whole;
+    let y = SCROLL_BAR.y + (SCROLL_BAR.h - h) * (1.0 - view / VIEW_MAX);
+    Rect::new(SCROLL_BAR.x, y, SCROLL_BAR.w, h)
+}
+
+/// The view floor that puts the thumb's top at `top`.
+pub fn view_for_thumb(top: f32) -> f32 {
+    let travel = SCROLL_BAR.h - scroll_thumb(0.0).h;
+    (VIEW_MAX * (1.0 - (top - SCROLL_BAR.y) / travel)).clamp(0.0, VIEW_MAX)
 }
 
 /// The transect's y for a pitch (MIDI, fractional), floor at `view`.
@@ -222,9 +243,9 @@ pub fn note_at(view: f32, y: f32) -> Option<u32> {
     (0.0..128.0).contains(&note).then_some(note as u32)
 }
 
-/// The transect's area for the wheel: the plot and the ruler.
+/// The transect's area for the wheel: anywhere on the screen.
 pub fn scrolls_view(x: f32, y: f32) -> bool {
-    PLOT.contains(x, y) || RULER.contains(x, y)
+    SCREEN.contains(x, y)
 }
 
 /// A frequency as a fractional MIDI note.
@@ -237,9 +258,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_parameter_has_one_control_and_nothing_overlaps() {
+    fn every_parameter_but_bypass_has_one_control_and_nothing_overlaps() {
         for id in 0..p::PARAM_COUNT {
-            assert_eq!(WIDGETS.iter().filter(|w| w.id() == id).count(), 1, "{id}");
+            let want = usize::from(id != p::BYPASS);
+            assert_eq!(WIDGETS.iter().filter(|w| w.id() == id).count(), want, "{id}");
         }
         for (i, a) in WIDGETS.iter().enumerate() {
             for b in &WIDGETS[i + 1..] {
@@ -258,11 +280,6 @@ mod tests {
                 Plate::Law => LAW,
                 Plate::Finish => FINISH,
                 Plate::Module => MODULE,
-                Plate::Screen => {
-                    let r = w.rect();
-                    assert!(r.x >= SCREEN.x && r.x + r.w <= SCREEN.x + SCREEN.w && r.y >= SCREEN.y, "{}", w.caption);
-                    continue;
-                }
             };
             let r = w.rect();
             assert!(r.x >= plate.x && r.x + r.w <= plate.x + plate.w, "{}", w.caption);
@@ -278,4 +295,23 @@ mod tests {
         assert_eq!(note_at(VIEW_MAX, PLOT.y), Some(127));
         assert_eq!(note_at(0.0, PLOT.y + PLOT.h), Some(0));
     }
+
+    #[test]
+    fn the_scroll_bar_thumb_spans_the_view_and_round_trips() {
+        let top = scroll_thumb(VIEW_MAX);
+        assert_eq!(top.y, SCROLL_BAR.y);
+        let bottom = scroll_thumb(0.0);
+        assert!((bottom.y + bottom.h - (SCROLL_BAR.y + SCROLL_BAR.h)).abs() < 1e-3);
+        for view in [0.0, 12.5, VIEW_DEFAULT, VIEW_MAX] {
+            assert!((view_for_thumb(scroll_thumb(view).y) - view).abs() < 1e-3, "{view}");
+        }
+        assert_eq!(target_at(VIEW_DEFAULT, SCROLL_BAR.x + 2.0, SCROLL_BAR.y + 100.0), Some(Control::ScrollBar));
+        // Clear of the plot and the note names.
+        assert!(scroll_bar_hit().x >= PLOT.x + PLOT.w + 26.0);
+    }
+
+    // The scroll bar stays on the screen; the infotext sits between the
+    // monitor and the plates.
+    const _: () = assert!(SCROLL_BAR.x + SCROLL_BAR.w <= SCREEN.x + SCREEN.w);
+    const _: () = assert!(INFO.y >= MONITOR.y + MONITOR.h && INFO.y + INFO.h <= CAPTURE.y);
 }

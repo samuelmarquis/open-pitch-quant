@@ -1,22 +1,26 @@
 //! The board: one canvas, drawn the same mounted and offline.
 //!
 //! The family's look (OpenCepstrum's rt/panel there): a monitor housing on a
-//! black board carries the screen; baked plates beneath carry baked
-//! controls, each with its caption and its true value; a backlit LCD module
-//! (panelkit's lcd-module/1) shows the chord; a strip at the bottom says
-//! what the pointer is over.
+//! black board carries the screen; the infotext line under it says what the
+//! pointer is over; baked plates beneath carry baked controls, each with
+//! its caption, which shows the value while the control is in use
+//! (panelkit's guide); a backlit LCD module (panelkit's lcd-module/1) shows
+//! the chord; the bottom row carries the product's name.
 //!
-//! The screen's law, kept from the old panel: everything that indicates,
-//! indicates truly. The transect draws only what the engine reported: each
-//! object's source pitch (dim), the pitch it was sung at (warm), and the
-//! held targets (mint). Ochre is spent only on refusal: an object Threshold
-//! spared, and the map ceiling.
-use crate::layout::{self, Kind, Plate, Widget, LCD, MONITOR, PLOT, RULER, SCREEN, STRIP, WIDGETS};
+//! The screen is ink on paper (Sam, 2026-10-10: "it's almost like
+//! calligraphy on paper"): a paper-white field with dark markings. Its law,
+//! kept from the old panel: everything that indicates, indicates truly. The
+//! transect draws only what the engine reported: each object's source pitch
+//! (pencil), the pitch it was sung at (ink), and the targets (blue ink).
+//! Sepia is spent only on refusal: an object Threshold spared, a bypassed
+//! key, and the map ceiling.
+use crate::layout::{self, Control, Kind, Plate, Widget, BOTTOM, INFO, LCD, MONITOR, PLOT, RULER, SCREEN, WIDGETS};
 use crate::{pack, PanelState, HISTORY};
 use opq_engine::params::{self as p, KeyState, SPECS};
 use opq_engine::VizFrame;
 use panelkit::canvas::{opacity, paint, pixel_font, Canvas, Rect, TextGrid, FORMAT};
 use panelkit::gpu::Gpu;
+use panelkit::hover::HoverInfo;
 use panelkit::lcd::{Lcd, LcdLook};
 use panelkit::pack::Pack;
 use panelkit::widgets;
@@ -31,16 +35,29 @@ const CAPTION: usize = 1;
 const TITLE: usize = 2;
 const SMALL: usize = 3;
 
-// OpenCepstrum's palette (linear), plus the old panel's refusal ochre.
+// The board's palette (linear): OpenCepstrum's, for text on the black
+// board and the plates.
 const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const INK: [f32; 4] = [0.70, 0.76, 0.81, 1.0];
 const MUTED: [f32; 4] = [0.25, 0.30, 0.35, 1.0];
 const MINT: [f32; 4] = [0.12, 0.76, 0.91, 1.0];
-const WARM: [f32; 4] = [0.97, 0.88, 0.62, 1.0];
-const OCHRE: [f32; 4] = [0.72, 0.40, 0.06, 1.0];
-const AMBER: [f32; 4] = [0.98, 0.55, 0.12, 1.0];
-const SCREEN_FIELD: [f32; 4] = [0.0045, 0.007, 0.011, 1.0];
+
+// The screen's palette (linear): ink on paper.
+/// The paper: a warm off-white (sRGB 237 232 219).
+const PAPER: [f32; 4] = [0.846, 0.807, 0.708, 1.0];
+/// The white keys, a shade under the paper.
+const PAPER_KEY: [f32; 4] = [0.66, 0.62, 0.53, 1.0];
+/// Black ink: the sung pitch, rules, figures, the black keys.
+const SUMI: [f32; 4] = [0.006, 0.007, 0.011, 1.0];
+/// Pencil: the source pitch, what the tracker heard.
+const PENCIL: [f32; 4] = [0.16, 0.16, 0.17, 1.0];
+/// Blue ink: the targets (sRGB 31 56 140).
+const BLUE: [f32; 4] = [0.0137, 0.0395, 0.262, 1.0];
+/// Sepia: refusal only (sRGB 158 82 20).
+const SEPIA: [f32; 4] = [0.341, 0.0844, 0.007, 1.0];
+/// Vermilion: an object being born, an onset (sRGB 204 52 26).
+const VERMILION: [f32; 4] = [0.604, 0.034, 0.010, 1.0];
 
 /// The housing bake's bezel: 24 logical px (48 at its 2x), its inner
 /// corner's rounding inside 36.
@@ -66,6 +83,11 @@ const LCD_LOOK: LcdLook = LcdLook {
 
 const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+/// `a` toward `b` by `t`, opaque.
+fn mix(a: [f32; 4], b: [f32; 4], t: f32) -> [f32; 4] {
+    [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, 1.0]
+}
+
 /// A MIDI note's name, octave signed (note 0 is C-1).
 fn note_name(note: u32) -> String {
     format!("{}{}", NOTE_NAMES[(note % 12) as usize], (note / 12) as i32 - 1)
@@ -79,11 +101,11 @@ const BYPASS_CLICK: &str = if cfg!(target_os = "macos") { "Option-click" } else 
 struct Textures {
     bezel: usize,
     plates: [usize; 4],
-    knobs: [usize; 10],
+    knobs: [usize; 8],
     selector: [usize; 2],
     toggle: [usize; 2],
-    /// Green, amber, red; off and on.
-    leds: [[usize; 2]; 3],
+    /// Green, amber; off and on.
+    leds: [[usize; 2]; 2],
 }
 
 pub struct Board {
@@ -113,11 +135,11 @@ fn lcd_font(size: usize) -> &'static pixel_font::PixelFont {
     }
 }
 
-/// A plate's ink: captions are engraved light on dark faces, dark on the
-/// brass and the verdigris.
+/// A plate's ink: captions are engraved light on the anodized blue and the
+/// steel, dark on the brass and the finish face.
 fn plate_ink(plate: Plate) -> [f32; 4] {
     match plate {
-        Plate::Capture | Plate::Module | Plate::Screen => [0.82, 0.84, 0.86, 1.0],
+        Plate::Capture | Plate::Module => [0.86, 0.88, 0.90, 1.0],
         Plate::Law => [0.02, 0.012, 0.004, 1.0],
         Plate::Finish => [0.0, 0.012, 0.012, 1.0],
     }
@@ -126,7 +148,8 @@ fn plate_ink(plate: Plate) -> [f32; 4] {
 /// A plate's value ink: the true value, in the plate's accent.
 fn value_ink(plate: Plate) -> [f32; 4] {
     match plate {
-        Plate::Capture | Plate::Module | Plate::Screen => MINT,
+        Plate::Capture => [0.98, 0.80, 0.30, 1.0],
+        Plate::Module => MINT,
         Plate::Law => [0.16, 0.012, 0.004, 1.0],
         Plate::Finish => [0.0, 0.018, 0.09, 1.0],
     }
@@ -141,7 +164,7 @@ impl Board {
             bezel: up(pack::BEZEL)?,
             plates: [up(pack::PLATE_CAPTURE)?, up(pack::PLATE_LAW)?, up(pack::PLATE_FINISH)?, up(pack::PLATE_MODULE)?],
             knobs: {
-                let mut knobs = [0; 10];
+                let mut knobs = [0; 8];
                 for (slot, key) in knobs.iter_mut().zip(pack::KNOBS) {
                     *slot = up(key)?;
                 }
@@ -152,7 +175,6 @@ impl Board {
             leds: [
                 [up(pack::LED_GREEN_OFF)?, up(pack::LED_GREEN_ON)?],
                 [up(pack::LED_AMBER_OFF)?, up(pack::LED_AMBER_ON)?],
-                [up(pack::LED_RED_OFF)?, up(pack::LED_RED_ON)?],
             ],
         };
         let lcd = Lcd::new(&canvas.gpu, FORMAT, canvas.size, scale as f32);
@@ -181,15 +203,17 @@ impl Board {
         self.solid(Rect::new(0.0, 0.0, layout::WIDTH as f32, layout::HEIGHT as f32), BLACK);
         let bezel = self.t.bezel;
         self.nine_slice(bezel, MONITOR, BEZEL_SLICE, BEZEL_SLICE * 2.0, WHITE, paint::ART);
-        self.solid(SCREEN, SCREEN_FIELD);
+        self.solid(SCREEN, PAPER);
         self.transect(state);
+        self.scroll_bar(state);
+        self.info(state);
         self.plates();
         for widget in &WIDGETS {
             self.widget(state, widget);
         }
         self.lamps(state);
         self.lcd_module(state);
-        self.strip(state);
+        self.bottom_row(state);
         self.submit(state)
     }
 
@@ -200,52 +224,36 @@ impl Board {
         let view = state.view;
         let y_of = |note: f32| layout::note_y(view, note);
         let visible = || (view.ceil() as u32)..=((view + layout::VIEW_SPAN).floor() as u32).min(127);
-        // Header: the Map Source tabs, what this is, and the law in force.
-        let source = layout::widget(layout::Control::Param(p::SOURCE)).copied();
-        if let Some(widget) = source {
-            self.tabs(state, &widget);
-        }
-        let title_x = layout::SOURCE_TABS.x + layout::SOURCE_TABS.w + 12.0;
-        self.text(title_x, SCREEN.y + 4.0, "REC-1859  BELIEF TRANSECT", SMALL, MUTED, false);
-        let algorithm = SPECS[p::ALGORITHM].format(state.params.get(p::ALGORITHM)).to_uppercase();
-        let law = format!(
-            "{algorithm}   /   FEEL {}   /   GLIDE {}   /   {} VOICES",
-            SPECS[p::FEEL].format(state.params.get(p::FEEL)),
-            SPECS[p::GLIDE].format(state.params.get(p::GLIDE)),
-            state.params.get(p::VOICES).round() as usize,
-        );
-        let lw = self.text_width(&law, SMALL);
-        self.text(SCREEN.x + SCREEN.w - 8.0 - lw, SCREEN.y + 4.0, &law, SMALL, MUTED, false);
 
-        // The key ruler. Under MIDI: held notes lit, their Repeat octaves
-        // glowing. Under Keys it is the Lower Keyboard: a target lit, a
-        // bypassed key in refusal ochre, an excluded one dark.
+        // The key ruler. Under MIDI: held notes inked blue, their Repeat
+        // octaves paler. Under Keys it is the Lower Keyboard: a target in
+        // blue, a bypassed key in refusal sepia, an excluded one bare.
         self.set_clip(Some(RULER));
         let keys = state.keys_source();
         for note in visible() {
             let (top, bottom) = (y_of(note as f32 + 0.5), y_of(note as f32 - 0.5));
             let black = matches!(note % 12, 1 | 3 | 6 | 8 | 10);
-            let bare = if black { [0.012, 0.014, 0.018, 1.0] } else { [0.16, 0.17, 0.18, 1.0] };
+            let bare = if black { SUMI } else { PAPER_KEY };
             let color = if keys {
                 if state.keys.get(KeyState::Bypass, note) {
-                    OCHRE
+                    SEPIA
                 } else if state.keys.get(KeyState::Target, note) {
-                    opacity(MINT, if black { 0.65 } else { 0.9 })
+                    mix(bare, BLUE, 0.85)
                 } else {
                     bare
                 }
             } else if held >> note & 1 == 1 {
-                MINT
+                BLUE
             } else if state.is_target(note) {
-                opacity(MINT, 0.45)
+                mix(bare, BLUE, 0.5)
             } else {
                 bare
             };
             let w = if black { RULER.w * 0.62 } else { RULER.w };
             let key = Rect::new(RULER.x, top + 0.5, w, bottom - top - 0.5);
             self.solid(key, color);
-            if state.hover_control == Some(layout::Control::Key(note)) && keys {
-                self.outline(key, opacity(WHITE, 0.7));
+            if state.hover_control == Some(Control::Key(note)) && keys {
+                self.outline(key, opacity(SUMI, 0.8));
             }
         }
         self.set_clip(None);
@@ -256,11 +264,10 @@ impl Board {
             if !(PLOT.y..=PLOT.y + PLOT.h).contains(&y) {
                 continue;
             }
-            self.solid(Rect::new(PLOT.x, y, PLOT.w, 1.0), opacity(INK, 0.045));
-            // Under its rule, so the top one clears the header; the floor's
-            // would fall off the plot.
+            self.solid(Rect::new(PLOT.x, y, PLOT.w, 1.0), opacity(SUMI, 0.10));
+            // Under its rule; the floor's would fall off the plot.
             if y + 16.0 <= PLOT.y + PLOT.h {
-                self.text(PLOT.x + 4.0, y + 2.0, &format!("C{}", octave), VALUE, opacity(INK, 0.35), false);
+                self.text(PLOT.x + 4.0, y + 2.0, &format!("C{}", octave), VALUE, opacity(SUMI, 0.5), false);
             }
         }
         self.time_axis(state);
@@ -286,13 +293,13 @@ impl Board {
                 } else {
                     0.45
                 };
-                self.solid(Rect::new(PLOT.x, y - 0.5, PLOT.w, 1.0), opacity(MINT, 0.22 * strength));
+                self.solid(Rect::new(PLOT.x, y - 0.5, PLOT.w, 1.0), opacity(BLUE, 0.30 * strength));
                 if dense || named.iter().any(|&other| (other - y).abs() < 11.0) {
                     continue;
                 }
                 named.push(y);
                 let name = note_name(note);
-                self.text(PLOT.x + PLOT.w + 6.0, y - 7.0, &name, VALUE, opacity(MINT, strength), false);
+                self.text(PLOT.x + PLOT.w + 6.0, y - 7.0, &name, VALUE, opacity(BLUE, strength), false);
             }
         }
         // The map ceiling, in refusal ink: above it nothing unowned is bent.
@@ -300,19 +307,19 @@ impl Board {
         if ceiling > PLOT.y && ceiling < PLOT.y + PLOT.h {
             let mut x = PLOT.x;
             while x < PLOT.x + PLOT.w {
-                self.solid(Rect::new(x, ceiling - 0.5, 6.0, 1.0), opacity(OCHRE, 0.7));
+                self.solid(Rect::new(x, ceiling - 0.5, 6.0, 1.0), opacity(SEPIA, 0.8));
                 x += 12.0;
             }
-            self.text(PLOT.x + PLOT.w - 50.0, ceiling - 13.0, "CEILING", VALUE, OCHRE, false);
+            self.text(PLOT.x + PLOT.w - 50.0, ceiling - 13.0, "CEILING", VALUE, SEPIA, false);
         }
 
         if state.history.is_empty() {
             let msg = if keys {
-                "NO FEED  —  PLAY AUDIO THROUGH IT; THE KEYS LIT ON THE LEFT ARE THE TARGETS"
+                "NO FEED  —  PLAY AUDIO THROUGH IT; THE KEYS INKED ON THE LEFT ARE THE TARGETS"
             } else {
                 "NO FEED  —  PLAY AUDIO THROUGH IT AND HOLD A CHORD ON THE MIDI SIDE CHAIN"
             };
-            self.text(PLOT.x + PLOT.w * 0.5, PLOT.y + PLOT.h * 0.5 - 7.0, msg, SMALL, MUTED, true);
+            self.text(PLOT.x + PLOT.w * 0.5, PLOT.y + PLOT.h * 0.5 - 7.0, msg, SMALL, opacity(SUMI, 0.5), true);
             return;
         }
 
@@ -320,14 +327,15 @@ impl Board {
         let n = state.history.len();
         let x_of = |i: usize| PLOT.x + PLOT.w - (n - 1 - i) as f32 * (PLOT.w / HISTORY as f32);
         let frames: Vec<&VizFrame> = state.history.iter().collect();
-        // Onsets: a faint column where transient handling went dry.
+        // Onsets: a faint wash where transient handling went dry.
         for (i, f) in frames.iter().enumerate() {
             if f.transient > 0.0 {
                 let x = x_of(i);
-                self.solid(Rect::new(x - 1.0, PLOT.y, 2.0, PLOT.h), opacity(AMBER, 0.05 * f.transient));
+                self.solid(Rect::new(x - 1.0, PLOT.y, 2.0, PLOT.h), opacity(VERMILION, 0.07 * f.transient));
             }
         }
-        // Each object's path: source (dim) and sung (warm, ochre if spared).
+        // Each object's path: source (pencil) and sung (ink; sepia if
+        // spared, vermilion while newborn).
         for i in 1..n {
             let (prev, cur) = (frames[i - 1], frames[i]);
             let (x0, x1) = (x_of(i - 1), x_of(i));
@@ -338,16 +346,16 @@ impl Board {
                 };
                 let weight = (t.amp / loudest).sqrt().clamp(0.0, 1.0);
                 let (s0, s1) = (y_of(layout::hz_note(q.f0)), y_of(layout::hz_note(t.f0)));
-                self.line(x0, s0, x1, s1, 1.0, opacity(INK, 0.10 + 0.25 * weight));
+                self.line(x0, s0, x1, s1, 1.0, opacity(PENCIL, 0.15 + 0.35 * weight));
                 let (o0, o1) = (y_of(layout::hz_note(q.out)), y_of(layout::hz_note(t.out)));
                 let color = if t.spared {
-                    OCHRE
+                    SEPIA
                 } else if t.newborn {
-                    WHITE
+                    VERMILION
                 } else {
-                    WARM
+                    SUMI
                 };
-                self.line(x0, o0, x1, o1, 1.6, opacity(color, 0.25 + 0.75 * weight));
+                self.line(x0, o0, x1, o1, 1.6, opacity(color, 0.35 + 0.65 * weight));
             }
         }
         // Now: each object's bend, source to sung, at the right edge.
@@ -355,26 +363,36 @@ impl Board {
         let x = x_of(n - 1);
         for t in &now.tracks[..now.n as usize] {
             let (s, o) = (y_of(layout::hz_note(t.f0)), y_of(layout::hz_note(t.out)));
-            self.line(x - 10.0, s, x - 2.0, o, 1.0, opacity(MINT, 0.6));
-            self.disc(x - 10.0, s, 2.0, opacity(INK, 0.7));
-            self.disc(x - 2.0, o, 2.6, if t.spared { OCHRE } else { WARM });
+            self.line(x - 10.0, s, x - 2.0, o, 1.0, opacity(BLUE, 0.7));
+            self.disc(x - 10.0, s, 2.0, opacity(PENCIL, 0.8));
+            self.disc(x - 2.0, o, 2.6, if t.spared { SEPIA } else { SUMI });
         }
         self.set_clip(None);
     }
 
-    /// The screen's tabs (Map Source): one flat text button per label, the
-    /// live one underlined in mint.
-    fn tabs(&mut self, state: &PanelState, widget: &Widget) {
-        let Kind::Tabs(labels) = widget.kind else { return };
-        let r = widget.rect();
-        let value = state.params.get(widget.id()).round() as usize;
-        let hovered = state.hover_control == Some(widget.control);
-        let w = r.w / labels.len() as f32;
-        for (index, label) in labels.iter().enumerate() {
-            let tab = Rect::new(r.x + index as f32 * w, r.y, w - 2.0, r.h);
-            let over = hovered && state.pointer.is_some_and(|(x, _)| x >= tab.x && x < tab.x + w);
-            widgets::text_button(self, tab, label, index == value, over, MINT, INK);
-        }
+    /// The pitch view's scroll bar, always shown: a pencilled track and an
+    /// inked thumb over the notes in view.
+    fn scroll_bar(&mut self, state: &PanelState) {
+        let track = layout::SCROLL_BAR;
+        self.solid(Rect::new(track.x + track.w * 0.5 - 0.5, track.y, 1.0, track.h), opacity(SUMI, 0.18));
+        let thumb = layout::scroll_thumb(state.view);
+        let held = state.pressed_control == Some(Control::ScrollBar);
+        let over = state.hover_control == Some(Control::ScrollBar);
+        let ink = if held {
+            0.75
+        } else if over {
+            0.55
+        } else {
+            0.35
+        };
+        // A pill, opaque (ink mixed into the paper) so its parts overlap
+        // without darkening.
+        let color = mix(PAPER, SUMI, ink);
+        let r = thumb.w * 0.5;
+        let (cx, top, bottom) = (thumb.x + r, thumb.y + r, thumb.y + thumb.h - r);
+        self.solid(Rect::new(thumb.x, top, thumb.w, bottom - top), color);
+        self.disc(cx, top, r, color);
+        self.disc(cx, bottom, r, color);
     }
 
     /// Seconds before now, along the plot's foot: a tick every second, a
@@ -395,10 +413,10 @@ impl Board {
                 break;
             }
             let major = second % 2 == 0;
-            self.solid(Rect::new(x - 0.5, foot - if major { 6.0 } else { 3.0 }, 1.0, if major { 6.0 } else { 3.0 }), opacity(INK, 0.3));
+            self.solid(Rect::new(x - 0.5, foot - if major { 6.0 } else { 3.0 }, 1.0, if major { 6.0 } else { 3.0 }), opacity(SUMI, 0.45));
             if major && second > 0 && x > PLOT.x + 30.0 {
                 let label = format!("-{second} s");
-                self.text(x, foot - 18.0, &label, VALUE, opacity(INK, 0.3), true);
+                self.text(x, foot - 18.0, &label, VALUE, opacity(SUMI, 0.45), true);
             }
             second += 1;
         }
@@ -441,10 +459,19 @@ impl Board {
                 let source = sheet.cell(widgets::frame(SPECS[id].normalized(value), 101));
                 widgets::cast_shadow(self, texture, rect, source, &KNOB_SHADOW);
                 self.sprite(texture, rect, source, WHITE, paint::PREMULTIPLIED, 0);
-                self.caption(widget, ink, hovered);
-                let text = SPECS[id].format(value);
-                let y = widget.caption_y() + 14.0;
-                self.text(cx, y, &text, VALUE, value_ink(widget.plate), true);
+                // The caption, giving way to the value while the knob is in
+                // use (the family's guide).
+                let shown = state.guide(id);
+                if shown < 1.0 {
+                    let alpha = if hovered { 1.0 } else { 0.82 };
+                    let y = widget.caption_y();
+                    self.text(cx, y, widget.caption, CAPTION, opacity(ink, alpha * (1.0 - shown)), true);
+                }
+                if shown > 0.0 {
+                    let text = SPECS[id].format(value);
+                    let y = widget.caption_y();
+                    self.text(cx, y, &text, CAPTION, opacity(value_ink(widget.plate), shown), true);
+                }
             }
             Kind::Toggle(down, up) => {
                 let on = value >= 0.5;
@@ -478,8 +505,6 @@ impl Board {
                 self.text(cx + 40.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
                 self.caption(widget, ink, hovered);
             }
-            // Drawn with the screen (`tabs`).
-            Kind::Tabs(_) => {}
         }
     }
 
@@ -506,14 +531,6 @@ impl Board {
             self.sprite(texture, Rect::new(x - s * 0.5, y - s * 0.5, s, s), source, WHITE, paint::ART, 0);
             self.text(x, y + 10.0, name, VALUE, opacity(ink, 0.8), true);
         }
-        // Bypass's lamp, beside its toggle: the one red thing.
-        let bypass = state.params.get(p::BYPASS) >= 0.5;
-        let texture = self.t.leds[2][usize::from(bypass)];
-        let s = layout::LED * 0.8;
-        let (bx, by) = layout::widget(layout::Control::Param(p::BYPASS)).map_or((0.0, 0.0), |w| w.at);
-        let source = Rect::new(0.0, 0.0, self.textures[texture].width, self.textures[texture].height);
-        // Left of its toggle, between it and Mix, clear of the lamp row.
-        self.sprite(texture, Rect::new(bx - 34.0 - s * 0.5, by - s * 0.5, s, s), source, WHITE, paint::ART, 0);
     }
 
     // ---- the LCD module --------------------------------------------------
@@ -629,49 +646,42 @@ impl Board {
         self.solid(Rect::new(r.x + r.w - c, r.y, c, r.h), WHITE);
     }
 
-    // ---- the strip -------------------------------------------------------
+    // ---- the infotext and the bottom row ---------------------------------
 
-    fn strip(&mut self, state: &PanelState) {
-        self.solid(STRIP, BLACK);
-        let y = STRIP.y + 3.0;
-        if let Some(layout::Control::Key(note)) = state.hover_control {
-            let name = note_name(note);
-            let (head, line) = if !state.keys_source() {
-                (format!("{name}  {}", if state.held() >> note & 1 == 1 { "held" } else { "not held" }),
-                 "the notes held on the MIDI side chain; switch MAP SOURCE to KEYS to set them here".to_owned())
-            } else {
-                let status = if state.keys.get(KeyState::Bypass, note) {
-                    "bypassed: passes unbent"
-                } else if state.keys.get(KeyState::Target, note) {
-                    "a target"
+    /// The infotext line between the monitor and the plates: what the
+    /// pointer is over, its value at once, its help typing in (panelkit's
+    /// hover line). Over nothing, how the board works, muted.
+    fn info(&mut self, state: &PanelState) {
+        let y = INFO.y + 2.0;
+        match hover_info(state) {
+            Some(info) => {
+                let line = state.hover_line().text(&info, state.now);
+                // The name and value in the accent, the help in ink.
+                let head = info.prefix.as_ref();
+                self.set_clip(Some(INFO));
+                self.text(INFO.x, y, head, VALUE, MINT, false);
+                let rest = &line[head.len()..];
+                let x = INFO.x + self.text_width(head, VALUE);
+                self.text(x, y, rest, VALUE, INK, false);
+                self.set_clip(None);
+            }
+            None => {
+                let how = if state.keys_source() {
+                    "Keys: the keys inked on the screen's left are the targets; everything pitched is pulled onto them. The wheel scrolls the screen."
                 } else {
-                    "excluded: pulled to its neighbours"
+                    "MIDI: hold a chord on the side chain; everything pitched is pulled onto it. The wheel scrolls the screen."
                 };
-                let scope = if state.repeat_scope() { "Repeat: every octave" } else { "Custom: this key only" };
-                (format!("{name}  {status}"),
-                 format!("click: target or exclude, {BYPASS_CLICK}: bypass; drag to paint ({scope})"))
-            };
-            self.text(STRIP.x + 4.0, y, &head, VALUE, MINT, false);
-            let x = STRIP.x + 4.0 + self.text_width(&head, VALUE) + 14.0;
-            self.text(x, y, &line, VALUE, INK, false);
-            return;
+                self.text(INFO.x, y, how, VALUE, MUTED, false);
+            }
         }
-        let Some(widget) = state.hover_control.and_then(layout::widget) else {
-            let how = if state.keys_source() {
-                "light keys on the left as targets; everything pitched is pulled onto them; the wheel scrolls the screen"
-            } else {
-                "hold a chord on the MIDI side chain; everything pitched is pulled onto it; the wheel scrolls the screen"
-            };
-            let line = format!("{}   /   Version {}   /   {how}", crate::PLUGIN_NAME, state.version);
-            self.text(STRIP.x + 4.0, y, &line, VALUE, MUTED, false);
-            return;
-        };
-        let id = widget.id();
-        let spec = &SPECS[id];
-        let head = format!("{}  {}", spec.name.to_uppercase(), spec.format(state.params.get(id)));
-        self.text(STRIP.x + 4.0, y, &head, VALUE, MINT, false);
-        let x = STRIP.x + 4.0 + self.text_width(&head, VALUE) + 14.0;
-        self.text(x, y, help(id), VALUE, INK, false);
+    }
+
+    /// The bottom row: the product's name and version for now. MIX and
+    /// the family's standard row arrive with panelkit's `strip`.
+    fn bottom_row(&mut self, state: &PanelState) {
+        let line = format!("{}  {}", crate::PLUGIN_NAME, state.version);
+        let w = self.text_width(&line, VALUE);
+        self.text(BOTTOM.x + BOTTOM.w - 6.0 - w, BOTTOM.y + 3.0, &line, VALUE, MUTED, false);
     }
 
     // ---- submission ------------------------------------------------------
@@ -734,6 +744,46 @@ impl Board {
     }
 }
 
+/// What the infotext says about the target under the pointer (or being
+/// dragged): a parameter's name, value and help; a key's note and state;
+/// the scroll bar's span.
+pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
+    let control = state.pressed_control.or(state.hover_control)?;
+    match control {
+        Control::Param(id) => {
+            let spec = &SPECS[id];
+            Some(HoverInfo::parameter(control, spec.name, &spec.format(state.params.get(id)), help(id)))
+        }
+        Control::Key(note) => {
+            let name = note_name(note);
+            let (head, detail) = if !state.keys_source() {
+                let held = if state.held() >> note & 1 == 1 { "held" } else { "not held" };
+                (format!("{name}: {held}"), "the notes held on the MIDI side chain; turn SOURCE to KEYS to set them here".to_owned())
+            } else {
+                let status = if state.keys.get(KeyState::Bypass, note) {
+                    "bypassed, passes unbent"
+                } else if state.keys.get(KeyState::Target, note) {
+                    "a target"
+                } else {
+                    "excluded, pulled to its neighbours"
+                };
+                let scope = if state.repeat_scope() { "Repeat: every octave" } else { "Custom: this key only" };
+                (format!("{name}: {status}"), format!("click: target or exclude, {BYPASS_CLICK}: bypass; drag to paint ({scope})"))
+            };
+            Some(HoverInfo::help(control, head, detail))
+        }
+        Control::ScrollBar => {
+            let low = state.view.ceil() as u32;
+            let high = ((state.view + layout::VIEW_SPAN).floor() as u32).min(127);
+            Some(HoverInfo::help(
+                control,
+                format!("VIEW: {} to {}", note_name(low), note_name(high)),
+                "drag to scroll through all 128 notes; the wheel over the screen scrolls too",
+            ))
+        }
+    }
+}
+
 /// Hover help: what a control does, in a line.
 fn help(id: usize) -> &'static str {
     match id {
@@ -757,7 +807,7 @@ fn help(id: usize) -> &'static str {
         p::TRANSITIONS => "what a newborn object sounds like: mapped at once, or dry until it settles",
         p::ALGORITHM => "HOUSE: the sound this plant always had   /   ORACLE: the reference's law (map or discard)",
         p::PURIFY => "fade the residue, the noise and the carry toward pure stamps",
-        p::SOURCE => "MIDI: the notes held on the side chain are the targets   /   KEYS: the keys lit on the screen's ruler are",
+        p::SOURCE => "MIDI: the notes held on the side chain are the targets   /   KEYS: the keys inked on the screen's ruler are (SCOPE says how an edit spreads)",
         _ => "",
     }
 }

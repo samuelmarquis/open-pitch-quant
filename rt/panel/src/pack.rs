@@ -13,9 +13,7 @@ panelkit::pack! {
     PLATE_FINISH = "assets/vendor/plate-finish.png";
     PLATE_MODULE = "assets/vendor/plate-module.png";
     /// Knob atlases (cepstrum-knob-preview/1), in layout::Skin order.
-    KNOB_HANDWHEEL = "assets/vendor/knobs/knob-handwheel.png";
     KNOB_HIFI = "assets/vendor/knobs/knob-hifi-black-turned.png";
-    KNOB_WITCHHAT = "assets/vendor/knobs/knob-witchhat-black.png";
     KNOB_HEADY = "assets/vendor/knobs/knob-heady.png";
     KNOB_CATALIN = "assets/vendor/knobs/knob-catalin.png";
     KNOB_LEATHER = "assets/vendor/knobs/knob-leather-oxblood.png";
@@ -32,15 +30,11 @@ panelkit::pack! {
     LED_GREEN_ON = "assets/vendor/led-green-on.png";
     LED_AMBER_OFF = "assets/vendor/led-amber-off.png";
     LED_AMBER_ON = "assets/vendor/led-amber-on.png";
-    LED_RED_OFF = "assets/vendor/led-red-off.png";
-    LED_RED_ON = "assets/vendor/led-red-on.png";
 }
 
 /// The knob atlases in layout::Skin order.
-pub const KNOBS: [&str; 10] = [
-    KNOB_HANDWHEEL,
+pub const KNOBS: [&str; 8] = [
     KNOB_HIFI,
-    KNOB_WITCHHAT,
     KNOB_HEADY,
     KNOB_CATALIN,
     KNOB_LEATHER,

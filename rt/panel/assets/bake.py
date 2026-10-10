@@ -42,7 +42,8 @@ CEP_VENDOR = CEPSTRUM / "rt/panel/assets/vendor"
 # plate renders orthographic at 200 px per world unit, so 1 world unit is
 # 100 logical px and the bake is exactly 2x. Must match layout.rs.
 PLATES = {
-    "plate-capture": (258, 250, ["--face", "black-paint", "--fasteners", "screws"]),
+    # Sam, 2026-10-10: "switch the capture panel to anodized-blue".
+    "plate-capture": (258, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
     "plate-law": (300, 250, ["--face", "brass", "--fasteners", "screws"]),
     "plate-finish": (258, 250, ["--face", "verdigris", "--fasteners", "rivets"]),
     "plate-module": (228, 250, ["--face", "worn-steel", "--fasteners", "screws"]),
@@ -52,9 +53,10 @@ PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
 
 # Knob atlases (cepstrum-knob-preview/1: 11x10 cells of 120 px, frames
 # 0..100 row-major, sRGB-encoded linear-premultiplied), copied as baked.
-KNOBS = ["handwheel", "hifi-black-turned", "witchhat-black", "heady", "catalin",
-         "leather-oxblood", "wood-ebony", "chrome-heat-tint", "davies-black",
-         "ceramic-cobalt"]
+# No witchhat (Sam, 2026-10-10: "hate the witchhat knob. nix it") and no
+# handwheel (it is for a One Knob situation, which this board isn't).
+KNOBS = ["hifi-black-turned", "heady", "catalin", "leather-oxblood", "wood-ebony",
+         "chrome-heat-tint", "davies-black", "ceramic-cobalt"]
 
 # Controls rendered here under the family's footprint contract (the knobs'
 # own, extended to the button family by DESIGN, template 6796dcc): render
@@ -80,8 +82,6 @@ SPRITES = {
     "led-green-on": ("led-indicator/renders/led_green_b15.png", 80, 80, None),
     "led-amber-off": ("led-indicator/renders/led_amber_b00.png", 80, 80, None),
     "led-amber-on": ("led-indicator/renders/led_amber_b15.png", 80, 80, None),
-    "led-red-off": ("led-indicator/renders/led_red_b00.png", 80, 80, None),
-    "led-red-on": ("led-indicator/renders/led_red_b15.png", 80, 80, None),
 }
 
 COPIES = {

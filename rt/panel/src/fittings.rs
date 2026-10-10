@@ -10,14 +10,16 @@
 //! - The wheel over a knob moves it 2% of its travel a notch (a step for a
 //!   stepped one); over a switch, it throws it toward the wheel.
 //! - Escape during a drag puts the value back where the drag began.
-//! - The screen's tabs (Map Source) take the label clicked.
 //! - With the Keys source, the ruler is PITCHMAP's Lower Keyboard: a click
 //!   toggles a key as a target, Option/Alt-click its Bypass, and a drag
 //!   paints the same state over the keys it crosses; in Repeat scope an
 //!   edit reaches every octave of the key. With the MIDI source the keys
 //!   only show the held notes.
-//! - The wheel over the screen (plot or ruler) scrolls the pitch view,
-//!   fingers up for higher notes.
+//! - The wheel over the screen (plot or ruler) scrolls the pitch view as
+//!   content: the system's natural-scrolling setting applies, unlike the
+//!   knobs (Sam, 2026-10-10; the mount passes both deltas).
+//! - The scroll bar's thumb drags the view; a press on its track brings
+//!   the thumb's centre there and keeps dragging.
 //!
 //! Every value is echoed into `state.params` (and `state.keys`) before it is
 //! returned.
@@ -64,6 +66,8 @@ enum Capture {
     /// Painting keys: the state and the value every key crossed takes, and
     /// the last key painted.
     Keys { state: KeyState, on: bool, last: u32 },
+    /// Dragging the scroll bar's thumb, held this far below its top.
+    Thumb { grab: f32 },
 }
 
 /// Set `note`'s `state` to `on` (every octave in Repeat scope), as an edit.
@@ -105,7 +109,7 @@ impl Fittings {
     pub fn capture(&self) -> Option<PointerCapture> {
         match self.capture.as_ref()? {
             Capture::Dial { anchor, .. } => Some(PointerCapture::Relative(*anchor)),
-            Capture::Switch | Capture::Keys { .. } => Some(PointerCapture::Absolute),
+            Capture::Switch | Capture::Keys { .. } | Capture::Thumb { .. } => Some(PointerCapture::Absolute),
         }
     }
 
@@ -125,6 +129,19 @@ impl Fittings {
         let Some(control) = layout::target_at(state.view, x, y) else {
             return edits;
         };
+        if control == Control::ScrollBar {
+            let thumb = layout::scroll_thumb(state.view);
+            let grab = if (thumb.y..thumb.y + thumb.h).contains(&y) {
+                y - thumb.y
+            } else {
+                // The track: centre the thumb on the press, then drag.
+                state.view = layout::view_for_thumb(y - thumb.h * 0.5);
+                thumb.h * 0.5
+            };
+            self.capture = Some(Capture::Thumb { grab });
+            state.pressed_control = Some(control);
+            return edits;
+        }
         if let Control::Key(note) = control {
             // The keys are the Keys source's to edit; under MIDI they show
             // the held notes only.
@@ -166,20 +183,16 @@ impl Fittings {
                 edits.extend(gesture(state, id, value));
                 self.capture = Some(Capture::Switch);
             }
-            Kind::Tabs(labels) => {
-                let r = widget.rect();
-                let index = ((x - r.x) / r.w * labels.len() as f32).floor().clamp(0.0, labels.len() as f32 - 1.0);
-                if state.params.get(id) != index {
-                    edits.extend(gesture(state, id, index));
-                }
-                self.capture = Some(Capture::Switch);
-            }
         }
         edits
     }
 
     pub fn drag(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers) -> Vec<Edit> {
         state.pointer = Some((x, y));
+        if let Some(Capture::Thumb { grab }) = self.capture {
+            state.view = layout::view_for_thumb(y - grab);
+            return Vec::new();
+        }
         if let Some(Capture::Keys { state: key_state, on, last }) = self.capture.as_mut() {
             // Paint every key between the last and this one, so a fast
             // drag leaves no gaps.
@@ -229,21 +242,37 @@ impl Fittings {
         self.up(state)
     }
 
-    pub fn scroll(&mut self, state: &mut PanelState, x: f32, y: f32, delta: f32, mods: Modifiers) -> Vec<Edit> {
-        if delta == 0.0 {
+    /// The wheel. `delta` is in physical notches (positive is up: values
+    /// rise); `content` is the same event for scrolling a view, after the
+    /// system's natural-scrolling setting (positive toward the top: higher
+    /// notes). panelkit's `scroll_notches` and `scroll_content_notches`.
+    pub fn scroll(
+        &mut self,
+        state: &mut PanelState,
+        x: f32,
+        y: f32,
+        delta: f32,
+        content: f32,
+        mods: Modifiers,
+    ) -> Vec<Edit> {
+        if delta == 0.0 && content == 0.0 {
             return Vec::new();
         }
         // During a drag the wheel moves the dragged knob.
         let control = match &self.capture {
             Some(Capture::Dial { id, .. }) => Some(Control::Param(*id)),
-            Some(Capture::Switch | Capture::Keys { .. }) => return Vec::new(),
+            Some(Capture::Switch | Capture::Keys { .. } | Capture::Thumb { .. }) => return Vec::new(),
             None => layout::target_at(state.view, x, y),
         };
-        // Over the screen (the plot or a key), the wheel scrolls the view.
-        if matches!(control, None | Some(Control::Key(_))) {
+        // Over the screen (the plot, a key, the scroll bar), the wheel
+        // scrolls the view.
+        if matches!(control, None | Some(Control::Key(_) | Control::ScrollBar)) {
             if layout::scrolls_view(x, y) {
-                state.view = (state.view + delta * VIEW_STEP).clamp(0.0, layout::VIEW_MAX);
+                state.view = (state.view + content * VIEW_STEP).clamp(0.0, layout::VIEW_MAX);
             }
+            return Vec::new();
+        }
+        if delta == 0.0 {
             return Vec::new();
         }
         let Some(widget) = control.and_then(layout::widget) else {
@@ -258,7 +287,7 @@ impl Fittings {
                 let n = normalized(id, now) + delta * WHEEL_STEP * mods.fine();
                 plain(id, n.clamp(0.0, 1.0))
             }
-            Kind::Toggle(..) | Kind::Selector | Kind::Tabs(_) => {
+            Kind::Toggle(..) | Kind::Selector => {
                 if delta > 0.0 {
                     spec.max
                 } else {
@@ -350,8 +379,8 @@ mod tests {
         let drag = f.drag(&mut s, x, y - 20.0, Modifiers::default());
         let Edit::Value(_, v) = drag[0] else { panic!() };
         assert_eq!(v, v.round());
-        let wheel = f.scroll(&mut s, x, y, 1.0, Modifiers::default());
-        assert_eq!(wheel, vec![Edit::Value(p::VOICES, v + 1.0)]);
+        let wheel = f.scroll(&mut s, x, y, 1.0, -1.0, Modifiers::default());
+        assert_eq!(wheel, vec![Edit::Value(p::VOICES, v + 1.0)], "a knob reads the physical delta");
     }
 
     fn key_point(s: &PanelState, note: u32) -> (f32, f32) {
@@ -383,18 +412,45 @@ mod tests {
     }
 
     #[test]
-    fn the_wheel_over_the_screen_scrolls_the_view_and_the_tabs_take_their_label() {
+    fn the_wheel_over_the_screen_scrolls_the_view_as_content() {
         let mut s = PanelState::default();
         let mut f = Fittings::default();
         let (x, y) = (layout::PLOT.x + 100.0, layout::PLOT.y + 100.0);
-        assert!(f.scroll(&mut s, x, y, 1.0, Modifiers::default()).is_empty());
-        assert_eq!(s.view, layout::VIEW_DEFAULT + VIEW_STEP);
-        f.scroll(&mut s, x, y, 100.0, Modifiers::default());
+        // Natural scrolling: fingers up (physical +1) moves the content up,
+        // toward lower notes (content -1).
+        assert!(f.scroll(&mut s, x, y, 1.0, -1.0, Modifiers::default()).is_empty());
+        assert_eq!(s.view, layout::VIEW_DEFAULT - VIEW_STEP);
+        f.scroll(&mut s, x, y, 0.0, 100.0, Modifiers::default());
         assert_eq!(s.view, layout::VIEW_MAX);
-        let r = layout::WIDGETS.iter().find(|w| w.id() == p::SOURCE).unwrap().rect();
-        let edits = f.down(&mut s, r.x + r.w * 0.75, r.y + 4.0, Modifiers::default(), 1);
-        assert_eq!(edits[1], Edit::Value(p::SOURCE, 1.0));
+    }
+
+    #[test]
+    fn the_scroll_bar_drags_its_thumb_and_pages_on_the_track() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let thumb = layout::scroll_thumb(s.view);
+        let x = layout::SCROLL_BAR.x + 2.0;
+        // Grab the thumb mid-way and drag it to the top: the highest view.
+        f.down(&mut s, x, thumb.y + 5.0, Modifiers::default(), 1);
+        assert!(f.capture().is_some_and(|c| !c.is_relative()));
+        f.drag(&mut s, x, layout::SCROLL_BAR.y - 50.0, Modifiers::default());
+        assert_eq!(s.view, layout::VIEW_MAX);
         f.up(&mut s);
-        assert!(f.down(&mut s, r.x + r.w * 0.75, r.y + 4.0, Modifiers::default(), 1).is_empty());
+        // A press low on the track brings the thumb there.
+        f.down(&mut s, x, layout::SCROLL_BAR.y + layout::SCROLL_BAR.h - 2.0, Modifiers::default(), 1);
+        assert_eq!(s.view, 0.0);
+        f.up(&mut s);
+    }
+
+    #[test]
+    fn map_source_is_a_stepped_knob() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = at(p::SOURCE);
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        let drag = f.drag(&mut s, x, y - 120.0, Modifiers::default());
+        assert_eq!(drag, vec![Edit::Value(p::SOURCE, 1.0)]);
+        assert!(s.keys_source());
+        f.up(&mut s);
     }
 }

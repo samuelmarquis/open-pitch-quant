@@ -133,13 +133,17 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.4.6 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.5.0 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
   ports and sample conversion are wrac_shell's. The wrapper build needs
   `nix develop` (cmake).
 - Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f).
-- Panel: the family-idiom rebuild's first pass (0.3.0, catalogue/v07);
-  next are Sam's nit rounds. The Live device-off edit loss is fixed
-  (open-wrac P27) and checked on sam-pc with 0.4.1.
+- Panel: the family-idiom rebuild (0.3.0, catalogue/v07), with Sam's
+  first nit round in progress: 0.5.0 (catalogue/v11) has the paper screen,
+  infotext and SOURCE knob. Waiting on DESIGN's option plates (housing,
+  stepped knob, FINISH face, viewer keys) and on panelkit `strip` (MIX in
+  the bottom row); see LISTENING-LOG "Panel round 1" and TODO. The Live
+  device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
+  with 0.4.1.

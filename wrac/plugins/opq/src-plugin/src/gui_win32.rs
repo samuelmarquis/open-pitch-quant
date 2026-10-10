@@ -506,15 +506,18 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             let mut point = POINT { x: sx, y: sy };
             unsafe { ScreenToClient(hwnd, &mut point) };
             let at = mount::logical_point(hwnd, point.x, point.y, (WIDTH, HEIGHT));
-            // Wheel up raises the value, as on the Mac.
-            let delta = mount::scroll_notches(((wparam >> 16) & 0xffff) as u16 as i16);
+            // Wheel up raises the value, as on the Mac; the pitch view
+            // scrolls as content, in the user's scrolling direction.
+            let wheel = ((wparam >> 16) & 0xffff) as u16 as i16;
+            let delta = mount::scroll_notches(wheel);
+            let content = mount::scroll_content_notches(wheel);
             let mods = modifiers();
             dispatch(hwnd, |st| {
                 let Some((x, y)) = at else { return Vec::new() };
                 if st.fittings.capture().is_none() {
                     st.pointer = (x, y);
                 }
-                st.fittings.scroll(&mut st.panel, x, y, delta, mods)
+                st.fittings.scroll(&mut st.panel, x, y, delta, content, mods)
             });
             0
         }

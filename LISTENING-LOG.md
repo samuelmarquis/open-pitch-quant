@@ -423,3 +423,78 @@ Character interaction note for the future taste-map: Feel×Formant = the
 "sliding" vocal character; feel 0 + formant 100 = locked/hard-cut.
 
 **Verdict:** *(pending)*
+
+---
+
+## Panel round 1 — the family-idiom rebuild's look test (2026-10-10)
+
+`catalogue/v07.png` … `v10-keys.png` (0.3.0–0.4.0, the first pass of
+the rebuilt panel). **Question:** after the first pass of the rebuild,
+what reads wrong?
+
+**Verdict (2026-10-10), verbatim:**
+- "The display panel's bezel is so dark I can barely see it. Honestly,
+  looking at this display, it's almost like calligraphy on paper; so
+  maybe use a ligher texture there and a paper-white screen background
+  with dark markings instead of the dark-mode thing you have going on
+  right now"
+- "the placement of custom/repeat relative to MIDI/KEYS makes their
+  relation non-obvious. I'd say MIDI/KEYS should move to a knob in that
+  space"
+- "bypass does not need a control, it's owned by the host"
+- "honestly nix the output panel; the MIX knob should be text in the
+  bottom right (ask terrible-cepstra about the standardized bottom-row
+  controls) next to the info-panel/preset-switcher/whatever else they
+  have down there that's applicable to us"
+- "knobs should not display their value all the time; we want
+  scrolling infotext between the display panel and the control panels
+  (defer to opencepstrum's idiom)"
+- "switch the capture panel to anodized-blue"
+- "always show vertical scroll bar in the main window"
+- "scrolling direction in the main window, unlike the knobs, should
+  respect natural scrolling"
+- "hate the witchhat knob. nix it"
+- "voices and tonality are both discrete knobs but don't share a style;
+  not sure What Is To Be Done there but they should have the same style
+  which will be neither of their current styles (the black knobs should
+  be for the continuous controls, the handwheel is only for a One Knob
+  kind of situation)"
+- "switch from verdigris to a different texture on the finish panel"
+- "ditch the REC-1859... and HOUSE / FEEL ... info text in the display
+  panel"
+- "if you want to have multiple different display modes (which I am in
+  favor of!) the idiomatic way to handle that is panel buttons stacked
+  left from the top-right edge (as cep does it) that switch the panel's
+  display style to a different viewer"
+
+**Interpretation and action:**
+- *Light screen:* the transect becomes ink on paper: a paper-white field
+  with dark markings, and a lighter monitor housing baked as our own
+  matte. DESIGN was asked for the housing recipe.
+- *Controls:* Map Source becomes a knob on the LAW plate beside MIDI
+  Scope. The bypass control goes; the host owns Bypass.
+- *Bottom row:* the OUTPUT plate goes and MIX becomes bottom-row text, on
+  panelkit `strip` when terrible-cepstra lands it.
+- *Infotext:* knob values show only while in use, and the infotext line
+  between the display and the plates is panelkit's `hover`.
+- *Plates and knobs:* CAPTURE goes anodized-blue and FINISH gets a new
+  face. The witchhat goes; the black knob is for continuous controls. The
+  stepped controls (Voices, Tonality Gate, Map Source) get one new
+  stepped style, which DESIGN was asked for.
+- *Screen:* a scroll bar is always shown, and the wheel follows the
+  system's natural scrolling. The display's info texts go. Display modes
+  come later, as viewer keys at the top right (DESIGN recipe).
+
+**Built (0.5.0, catalogue/v11, v11-keys, v11-drag):**
+- Done: everything that needs no new art or kit.
+- Still waiting:
+  - for Sam's pick of DESIGN's option plates: the housing, the stepped
+    knob, the FINISH face, and the viewer-key recipe;
+  - for panelkit `strip`: MIX in the bottom row.
+- Interim: Voices and SOURCE wear the black knob, and SOURCE prints no
+  positions yet.
+- Found on the way: Tonality Gate was never stepped. It's a continuous
+  peakiness ratio that only *read* as whole numbers, so it now shows one
+  decimal and keeps a continuous black knob.
+
+**Verdict:** *(pending)*
