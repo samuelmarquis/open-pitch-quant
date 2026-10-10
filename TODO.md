@@ -96,7 +96,8 @@ messages, and behavior belongs in the README; neither is kept here.
     the keys, Global Threshold, shift-click sine reference, Key Transform
     (root + scale presets), snapshots.
   - Live check of Keys on sam-pc (0.4.1, K1–K4 passed 2026-10-10). K4's
-    bottom label "D4294967295" (octave −1 unsigned) is fixed in 0.4.2.
+    bottom label "D4294967295" (octave −1 unsigned) is fixed in 0.4.2
+    (unit-tested; no Windows recheck queued, per the ruling below).
 - panelkit's `Grabbed` anchor (0.4.0, done) replaces fittings.rs's own.
 
 ## Rulings
@@ -106,6 +107,12 @@ messages, and behavior belongs in the README; neither is kept here.
   (panelkit's `mount::scroll_notches` returns that; our fittings take a
   positive notch as more); after a relative drag the cursor returns where
   it was grabbed (our anchor: the knob's centre plus the press offset).
+
+- **Windows checks are sequenced late (Sam via terrible-cepstra,
+  2026-10-10):** sam-pc's priority is real audio work. Don't queue
+  WIN-COMPUTER-USE runs for patch bumps or knob checks; running things
+  on Windows comes far later. A cross-compile (`cargo check --target
+  x86_64-pc-windows-gnu`) is still fine.
 
 - **Compatibility (Sam, 2026-10-09):** "we do not care about backwards
   compatibility anywhere — break things freely to keep everyone on a
