@@ -178,7 +178,12 @@ messages, and behavior belongs in the README; neither is kept here.
   v0.1.0, pre-1.0) may break saved projects.
 - **No local Blender (Sam via DESIGN, 2026-10-10):** after a bake thrashed
   the workstation, every Blender render goes through the template's
-  design-lab session and its farm, one process per machine. bake.py's
+  design-lab session and its farm, one process per machine. Sam later
+  made this Mac a farm host too ("You can run blender jobs here
+  too--just make sure it's strictly sequenced to one-at-a-time, same
+  locking mechanism as those two"). It shares ~/farm/.lock with leilan
+  and solidgoldmagikarp, but jobs are still the farm's, not this
+  session's. bake.py's
   Blender steps refuse to run unless OPQ_BLENDER_FARM=1 (farm hosts only);
   `--only stepped --renders DIR` composites the farm's renders locally.
 - **The CLI writes the family's Int24 (Sam via terrible-cepstra,
