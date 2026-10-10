@@ -561,9 +561,9 @@ mod tests {
         assert!(s.text_edit.is_some());
         // Space is the host's even while typing.
         assert!(!f.wants_key(&s, " ", Modifiers::default()));
-        // pluginkit's rule: a percentage typed with its % sign (a bare
-        // number is the plain 0..1 value).
-        assert!(typed(&mut f, &mut s, "50%").is_empty());
+        // A bare number is a percentage, as the value reads (pluginkit
+        // 6752fb6).
+        assert!(typed(&mut f, &mut s, "50").is_empty());
         assert!(f.wants_key(&s, "Enter", Modifiers::default()));
         let commit = f.key(&mut s, "Enter", Modifiers::default());
         assert_eq!(commit, vec![Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.5), Edit::End(p::MIX)]);
@@ -581,7 +581,7 @@ mod tests {
         assert_eq!(s.params.get(p::MIX), 0.5);
         // A press elsewhere commits what was typed, and acts.
         f.context(&mut s, x, y);
-        typed(&mut f, &mut s, "25%");
+        typed(&mut f, &mut s, "25%"); // the % sign is fine too
         let (fx, fy) = at(p::FEEL);
         let edits = f.down(&mut s, fx, fy, Modifiers::default(), 1);
         assert_eq!(&edits[..3], &[Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.25), Edit::End(p::MIX)]);

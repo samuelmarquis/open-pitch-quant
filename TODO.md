@@ -69,9 +69,9 @@ messages, and behavior belongs in the README; neither is kept here.
        - MIX typed entry (0.6.1, done): panelkit `keys` (5518dfa) policy
          in both mounts, `entry::TextEdit` opened by a right-click or
          Enter over MIX.
-         - [ ] Open question to terrible-cepstra/Sam: pluginkit reads a
-           bare typed number for a `%` parameter as 0..1, so "75" sets
-           100% (clamped). Proposed: a bare number means percent.
+         - A bare typed number for a `%` parameter used to read as
+           0..1 ("75" set 100%); terrible-cepstra ruled it a bug and
+           fixed it in pluginkit 6752fb6 (0.6.2): "75" is 75%.
        - [ ] Display-mode keys stacked left from the screen's top-right
          edge: panelkit's key row (extraction E, in progress) plus
          DESIGN's key bake (after the template's seat-on-surface and key

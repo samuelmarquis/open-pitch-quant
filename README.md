@@ -39,8 +39,7 @@ stem separation, ~93 ms latency, live.
   and MIX drag vertically (Command, or Ctrl on Windows, for fine;
   double-click resets; the wheel works); switches throw on a click. MIX
   can also be typed: right-click it, or press Enter over it, then type a
-  value with its % sign (for now a bare number is read as 0..1) and press
-  Enter; Escape cancels. Every other key, Space included, stays the
+  value ("75" or "75%") and press Enter; Escape cancels. Every other key, Space included, stays the
   host's.
 
   **Map Source** (the SOURCE switch on LAW, beside SCOPE): under **MIDI**
@@ -99,6 +98,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.6.2** — a percentage typed without its % sign means percent: "75"
+  is 75%, in MIX's entry and in the host's own parameter text entry
+  (pluginkit's fix). Before, a bare 75 clamped to 100%.
 - **0.6.1** — MIX can be typed in place: right-click or Enter over it,
   Enter commits, Escape cancels. The editor now takes keys from the host
   by the family's shared policy (panelkit), on both macOS and Windows.

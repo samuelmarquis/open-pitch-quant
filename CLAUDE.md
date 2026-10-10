@@ -133,7 +133,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.6.1 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.6.2 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
