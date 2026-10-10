@@ -87,6 +87,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.4.3** — on Windows the editor no longer opens blank for about
+  20 seconds: panelkit now compiles its shaders with the DirectX shader
+  compiler linked into the plug-in. No change on macOS or to the sound.
 - **0.4.2** — the lowest octave's notes are named C-1…B-1 (they read as
   a huge unsigned number at the bottom of the ruler), and the strip names
   the bypass modifier as Windows does (Alt-click) there. Checked on
