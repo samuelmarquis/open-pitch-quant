@@ -3,7 +3,8 @@
 //! voices (one with vibrato, one gliding a fourth) under a held chord.
 //!
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
-//! Scenarios: house, oracle, keys, empty, drag (default: all).
+//! Scenarios: house, oracle, keys, empty, drag, typing, ladders, scope
+//! (default: all).
 use opq_engine::params::{self as p, KeyState, Keys, Params};
 use opq_engine::Engine;
 use opq_panel::layout;
@@ -14,7 +15,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const SR: f64 = 48_000.0;
-const SCENARIOS: [&str; 6] = ["house", "oracle", "keys", "empty", "drag", "typing"];
+const SCENARIOS: [&str; 8] = ["house", "oracle", "keys", "empty", "drag", "typing", "ladders", "scope"];
 
 fn midi_hz(note: f64) -> f64 {
     440.0 * ((note - 69.0) / 12.0).exp2()
@@ -141,6 +142,18 @@ fn scenario(name: &str) -> PanelState {
             for key in ["7", "5"] {
                 f.key(&mut state, key, Modifiers::default());
             }
+        }
+        "ladders" | "scope" => {
+            // The house material, its viewer picked by its key, the
+            // pointer resting on that key.
+            feed(&mut state, &chord, 11.0);
+            let viewer = if name == "ladders" { layout::Viewer::Ladders } else { layout::Viewer::Scope };
+            let key = layout::viewer_key(viewer);
+            let (x, y) = (key.x + key.w * 0.5, key.y + key.h * 0.5);
+            let mut f = Fittings::default();
+            f.hover(&mut state, x, y);
+            f.down(&mut state, x, y, Modifiers::default(), 1);
+            f.up(&mut state);
         }
         _ => {}
     }

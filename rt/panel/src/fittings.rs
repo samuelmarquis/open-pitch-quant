@@ -165,6 +165,11 @@ impl Fittings {
             state.pressed_control = Some(control);
             return edits;
         }
+        if let Control::Viewer(viewer) = control {
+            // Editor-local: what the screen shows is no parameter.
+            state.viewer = viewer;
+            return edits;
+        }
         if let Control::Key(note) = control {
             // The keys are the Keys source's to edit; under MIDI they show
             // the held notes only.
@@ -344,7 +349,7 @@ impl Fittings {
         };
         // Over the screen (the plot, a key, the scroll bar), the wheel
         // scrolls the view.
-        if matches!(control, None | Some(Control::Key(_) | Control::ScrollBar)) {
+        if matches!(control, None | Some(Control::Key(_) | Control::ScrollBar | Control::Viewer(_))) {
             if layout::scrolls_view(x, y) {
                 state.view = (state.view + content * VIEW_STEP).clamp(0.0, layout::VIEW_MAX);
             }
@@ -519,6 +524,23 @@ mod tests {
         assert_eq!(s.view, layout::VIEW_DEFAULT - VIEW_STEP);
         f.scroll(&mut s, x, y, 0.0, 100.0, Modifiers::default());
         assert_eq!(s.view, layout::VIEW_MAX);
+    }
+
+    #[test]
+    fn a_viewer_key_picks_the_screen_and_edits_nothing() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        assert_eq!(s.viewer, layout::Viewer::Transect);
+        for viewer in [layout::Viewer::Scope, layout::Viewer::Ladders, layout::Viewer::Transect] {
+            let key = layout::viewer_key(viewer);
+            let (x, y) = (key.x + 10.0, key.y + 8.0);
+            assert!(f.down(&mut s, x, y, Modifiers::default(), 1).is_empty());
+            assert!(f.up(&mut s).is_empty());
+            assert_eq!(s.viewer, viewer);
+            // The wheel over a key moves nothing.
+            assert!(f.scroll(&mut s, x, y, 1.0, 1.0, Modifiers::default()).is_empty());
+            assert_eq!(s.view, layout::VIEW_DEFAULT);
+        }
     }
 
     #[test]

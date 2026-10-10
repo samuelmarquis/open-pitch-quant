@@ -528,3 +528,31 @@ gets boss-ivory with knob-ring.
   return as a display mode.
 
 **Verdict:** *(pending)*
+
+## Panel round 1, the viewers (2026-10-10)
+
+`catalogue/v14.png`, `v14-ladders.png`, `v14-scope.png` (0.7.0).
+**Question:** which viewers beside the transect get keys? Claude offered
+ladders, residue and scope (docs/design/04-panel-ideas.md).
+
+**Sam, verbatim:** "let's do ladders and scope as the viewers?"
+
+**Interpretation and action:** three keys on the top bezel, stacked
+left from the screen's top-right edge (cep's idiom): TRANSECT, LADDERS,
+SCOPE. All three keep the ruler, the pitch axis, the target lanes and
+the ceiling, so Keys editing and scrolling work in every viewer.
+- LADDERS: one column per live object. Its h·f0 rungs over the last
+  second are inked where the de-mixer gave the object that harmonic and
+  pencilled where it didn't. Each column also shows the target, the sung
+  pitch, and "heard ±cents → target, N h".
+- SCOPE: the spectrum turned sideways onto the pitch axis. The input is
+  a pencil wash and the wet output an ink wash, each averaged over 4
+  frames, with a one-second sung peak hold.
+  - A first try with edge lines raked across the paper at every
+    valley, so it became abutting bars.
+  - The engine now ships `scope_in`/`scope_out` (288 bins, a third of a
+    semitone each, u8 at 0.5 dB) with each frame; HOUSE byte-identical.
+- The keys are panelkit `text_button` stand-ins. DESIGN has the baked
+  row queued behind the p183 key fixes.
+
+**Verdict:** *(pending)*

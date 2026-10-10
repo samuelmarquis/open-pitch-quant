@@ -184,6 +184,24 @@ struct Track {
 pub const VIZ_TRACKS: usize = 24;
 /// Analysis frames buffered for the GUI between drains.
 pub const VIZ_RING: usize = 16;
+/// The scope's lowest note (C1) and its resolution: bins per semitone.
+pub const SCOPE_FLOOR: f32 = 24.0;
+pub const SCOPE_PER_NOTE: usize = 3;
+/// The scope's bins: C1 up to C9, a third of a semitone each.
+pub const SCOPE_BINS: usize = 96 * SCOPE_PER_NOTE;
+/// A scope bin's level: `dB = value / 2 - 120` (0 is silence or above
+/// Nyquist; 0 dB is a full-scale sine).
+pub const SCOPE_DB_FLOOR: f32 = -120.0;
+
+/// A scope bin's centre note.
+pub fn scope_note(bin: usize) -> f32 {
+    SCOPE_FLOOR + bin as f32 / SCOPE_PER_NOTE as f32
+}
+
+/// A scope bin's level in dB.
+pub fn scope_db(value: u8) -> f32 {
+    value as f32 * 0.5 + SCOPE_DB_FLOOR
+}
 
 /// One tracked pitch object, as seen by the analysis display.
 #[derive(Clone, Copy, Default)]
@@ -231,6 +249,10 @@ pub struct VizFrame {
     /// Residual magnitude by octave band (C0..C8 at index 0..=7; band 7
     /// collects everything above). All zero on non-mapped frames.
     pub res_bands: [f32; 8],
+    /// The scope: the mid input spectrum and the mid output (synthesis)
+    /// spectrum on a pitch axis, peak level per bin ([`scope_db`]).
+    pub scope_in: [u8; SCOPE_BINS],
+    pub scope_out: [u8; SCOPE_BINS],
     /// Valid entries in `tracks`.
     pub n: u8,
     pub tracks: [VizTrack; VIZ_TRACKS],
@@ -246,6 +268,8 @@ impl Default for VizFrame {
             in_energy: 0.0,
             res_energy: 0.0,
             res_bands: [0.0; 8],
+            scope_in: [0; SCOPE_BINS],
+            scope_out: [0; SCOPE_BINS],
             n: 0,
             tracks: [VizTrack::default(); VIZ_TRACKS],
         }
@@ -340,6 +364,11 @@ pub struct Engine {
     viz_hmask: Vec<u64>,
     viz_res: f64,
     viz_res_bands: [f64; 8],
+    /// Per scope bin, the FFT bins it covers (`lo..hi`), or when it is
+    /// narrower than one, the fractional bin it samples between two.
+    scope_bins: Vec<(usize, usize, f64)>,
+    viz_scope_in: [u8; SCOPE_BINS],
+    viz_scope_out: [u8; SCOPE_BINS],
 }
 
 impl Engine {
@@ -419,6 +448,17 @@ impl Engine {
             viz_hmask: Vec::with_capacity(64),
             viz_res: 0.0,
             viz_res_bands: [0.0; 8],
+            scope_bins: (0..SCOPE_BINS)
+                .map(|b| {
+                    let bin_of = |note: f32| midi_freq(note as f64) * n_fft as f64 / sr;
+                    let half = 0.5 / SCOPE_PER_NOTE as f32;
+                    let (lo, hi) = (bin_of(scope_note(b) - half), bin_of(scope_note(b) + half));
+                    let (lo, hi) = (lo.ceil() as usize, (hi.ceil() as usize).min(bins));
+                    (lo.min(hi), hi, bin_of(scope_note(b)))
+                })
+                .collect(),
+            viz_scope_in: [0; SCOPE_BINS],
+            viz_scope_out: [0; SCOPE_BINS],
         };
         e.reset();
         e
@@ -457,6 +497,44 @@ impl Engine {
         self.viz_ring.pop_front()
     }
 
+    /// The scope's two traces for this frame: the mid input spectrum and
+    /// the mid of what synthesis made of it, each bin's peak in dB of a
+    /// full-scale sine (a Hann window's peak is a quarter of the frame).
+    fn measure_scope(&mut self) {
+        let full_scale = self.n_fft as f64 / 4.0;
+        let level = |magnitude: f64| -> u8 {
+            let db = 20.0 * (magnitude / full_scale).max(1e-12).log10();
+            ((db - SCOPE_DB_FLOOR as f64) * 2.0).round().clamp(0.0, 255.0) as u8
+        };
+        let nch = self.channels as f64;
+        let out_mag = |ysyn: &[Vec<Complex64>], k: usize| -> f64 {
+            ysyn.iter().map(|spectrum| spectrum[k]).sum::<Complex64>().norm() / nch
+        };
+        for (b, &(lo, hi, centre)) in self.scope_bins.iter().enumerate() {
+            let (input, output) = if lo < hi {
+                (lo..hi).fold((0.0f64, 0.0f64), |(i, o), k| {
+                    (i.max(self.mag[k]), o.max(out_mag(&self.ysyn, k)))
+                })
+            } else if centre + 1.0 < self.bins as f64 {
+                // Narrower than a bin: between its two neighbours.
+                let k = centre as usize;
+                let a = centre - k as f64;
+                let between = |m0: f64, m1: f64| m0 + (m1 - m0) * a;
+                (
+                    between(self.mag[k], self.mag[k + 1]),
+                    between(out_mag(&self.ysyn, k), out_mag(&self.ysyn, k + 1)),
+                )
+            } else {
+                // Above Nyquist.
+                self.viz_scope_in[b] = 0;
+                self.viz_scope_out[b] = 0;
+                continue;
+            };
+            self.viz_scope_in[b] = level(input);
+            self.viz_scope_out[b] = level(output);
+        }
+    }
+
     fn push_viz_frame(&mut self, t: i64, flux: f64, transient: f32, mapped: bool, mag_sum: f64) {
         let mut frame = VizFrame {
             t,
@@ -471,6 +549,8 @@ impl Engine {
             } else {
                 [0.0; 8]
             },
+            scope_in: self.viz_scope_in,
+            scope_out: self.viz_scope_out,
             n: 0,
             tracks: [VizTrack::default(); VIZ_TRACKS],
         };
@@ -709,6 +789,7 @@ impl Engine {
                 }
             }
         }
+        self.measure_scope();
         self.push_viz_frame(t, flux, viz_transient, viz_mapped, mag_sum);
         self.first_frame = false;
         self.prev_grid_mask = self.grid_mask;

@@ -14,10 +14,10 @@
 //! (pencil), the pitch it was sung at (ink), and the targets (blue ink).
 //! Sepia is spent only on refusal: an object Threshold spared, a bypassed
 //! key, and the map ceiling.
-use crate::layout::{self, Control, Kind, Plate, Widget, INFO, PLOT, RULER, SCREEN, WIDGETS};
+use crate::layout::{self, Control, Kind, Plate, Viewer, Widget, INFO, PLOT, RULER, SCREEN, WIDGETS};
 use crate::{pack, PanelState, HISTORY};
 use opq_engine::params::{self as p, KeyState, SPECS};
-use opq_engine::VizFrame;
+use opq_engine::{scope_db, scope_note, VizFrame, SCOPE_BINS, SCOPE_PER_NOTE};
 use panelkit::canvas::{opacity, paint, Canvas, Rect};
 use panelkit::gpu::Gpu;
 use panelkit::hover::HoverInfo;
@@ -67,6 +67,18 @@ const KNOB_SHADOW: [(f32, f32, f32, f32); 4] = [
 ];
 const KNOB_FILL: f32 = 1.03;
 const SWITCH_SHADOW: [(f32, f32, f32, f32); 2] = [(0.8, 1.6, 1.0, 0.30), (1.8, 3.2, 1.06, 0.12)];
+
+/// The ladders: a second of frames per column (47 a second at 48 kHz),
+/// the rungs the tracker reads (audiokit's 20 harmonics), and a column's
+/// widest.
+const LADDER_FRAMES: usize = 47;
+const LADDER_RUNGS: u32 = 20;
+const LADDER_COLUMN_MAX: f32 = 156.0;
+/// The scope: its level span (the left edge, up to a full-scale sine at
+/// the right), frames averaged for its traces, frames its peaks hold.
+const SCOPE_DB_MIN: f32 = -96.0;
+const SCOPE_AVERAGE_FRAMES: usize = 4;
+const SCOPE_PEAK_FRAMES: usize = 47;
 
 const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -182,6 +194,7 @@ impl Board {
         self.sprite(bezel, layout::HOUSING, source, WHITE, paint::ART, 0);
         self.solid(SCREEN, PAPER);
         self.transect(state);
+        self.viewer_keys(state);
         self.scroll_bar(state);
         self.info(state);
         self.plates();
@@ -245,7 +258,9 @@ impl Board {
                 self.text(PLOT.x + 4.0, y + 2.0, &format!("C{}", octave), VALUE, opacity(SUMI, 0.5), false);
             }
         }
-        self.time_axis(state);
+        if state.viewer == Viewer::Transect {
+            self.time_axis(state);
+        }
         // The targets: lanes across the plot, named at the right; a held
         // note's lane full, a Repeat octave's fainter. A name that would
         // touch the one above it is left off (its lane still shows), and a
@@ -299,6 +314,18 @@ impl Board {
         }
 
         self.set_clip(Some(PLOT));
+        match state.viewer {
+            Viewer::Transect => self.paths(state),
+            Viewer::Ladders => self.ladders(state),
+            Viewer::Scope => self.scope(state),
+        }
+        self.set_clip(None);
+    }
+
+    /// The transect proper: each object's path over the kept history.
+    fn paths(&mut self, state: &PanelState) {
+        let view = state.view;
+        let y_of = |note: f32| layout::note_y(view, note);
         let n = state.history.len();
         let x_of = |i: usize| PLOT.x + PLOT.w - (n - 1 - i) as f32 * (PLOT.w / HISTORY as f32);
         let frames: Vec<&VizFrame> = state.history.iter().collect();
@@ -342,7 +369,163 @@ impl Board {
             self.disc(x - 10.0, s, 2.0, opacity(PENCIL, 0.8));
             self.disc(x - 2.0, o, 2.6, if t.spared { SEPIA } else { SUMI });
         }
-        self.set_clip(None);
+    }
+
+    /// The ladders: one column per live object, low to high, each its
+    /// harmonics' rungs over the last second (h·f0 on the pitch axis): ink
+    /// where the de-mixer gave it that harmonic's region, pencil where the
+    /// harmonic went unclaimed. It shows what the engine believes an
+    /// object *is*. At each column's foot, its source and target.
+    fn ladders(&mut self, state: &PanelState) {
+        let view = state.view;
+        let y_of = |note: f32| layout::note_y(view, note);
+        let frames: Vec<&VizFrame> = state.history.iter().rev().take(LADDER_FRAMES).rev().collect();
+        let now = *frames.last().expect("history is not empty");
+        let mut objects: Vec<_> = now.tracks[..now.n as usize].to_vec();
+        if objects.is_empty() {
+            let msg = if now.grid_mask & !(1u128 << 127) == 0 {
+                "NO TARGETS  —  THE TRACKER RESTS UNTIL THERE IS SOMEWHERE TO MAP TO"
+            } else {
+                "NO PITCH OBJECTS IN THIS FRAME"
+            };
+            self.text(PLOT.x + PLOT.w * 0.5, PLOT.y + PLOT.h * 0.5 - 7.0, msg, SMALL, opacity(SUMI, 0.5), true);
+            return;
+        }
+        objects.sort_by(|a, b| a.f0.total_cmp(&b.f0));
+        let column = (PLOT.w / objects.len() as f32).min(LADDER_COLUMN_MAX);
+        let left = PLOT.x + (PLOT.w - column * objects.len() as f32) * 0.5;
+        let rung = (column - 24.0) / LADDER_FRAMES as f32;
+        let (top, bottom) = (PLOT.y, PLOT.y + PLOT.h);
+        for (index, object) in objects.iter().enumerate() {
+            let x0 = left + index as f32 * column + 12.0;
+            let x_end = x0 + rung * LADDER_FRAMES as f32;
+            // The rail: the object's own pencilled fundamental, now.
+            let ink = if object.spared {
+                SEPIA
+            } else if object.newborn {
+                VERMILION
+            } else {
+                SUMI
+            };
+            let offset = LADDER_FRAMES - frames.len();
+            for (i, frame) in frames.iter().enumerate() {
+                let Some(t) = frame.tracks[..frame.n as usize].iter().find(|t| t.id == object.id) else {
+                    continue;
+                };
+                let x = x0 + (offset + i) as f32 * rung;
+                let base = layout::hz_note(t.f0);
+                for h in 1..=LADDER_RUNGS {
+                    let y = y_of(base + 12.0 * (h as f32).log2());
+                    if y < top {
+                        break;
+                    }
+                    if y > bottom {
+                        continue;
+                    }
+                    let claimed = t.hmask >> (h - 1) & 1 == 1;
+                    let (color, alpha) = if claimed { (ink, 0.85) } else { (PENCIL, 0.30) };
+                    let thick = if h == 1 { 2.0 } else { 1.0 };
+                    self.solid(Rect::new(x, y - thick * 0.5, rung + 0.2, thick), opacity(color, alpha));
+                }
+            }
+            // Now, at the column's right: where the object is pulled (the
+            // target, blue) and where it was sung (ink).
+            let (s, o, g) = (
+                y_of(layout::hz_note(object.f0)),
+                y_of(layout::hz_note(object.out)),
+                y_of(layout::hz_note(object.tgt)),
+            );
+            self.solid(Rect::new(x_end + 1.0, g - 0.5, 9.0, 1.0), opacity(BLUE, 0.9));
+            self.line(x_end + 1.0, s, x_end + 8.0, o, 1.0, opacity(BLUE, 0.7));
+            self.disc(x_end + 8.0, o, 2.4, ink);
+            // The foot: heard → target, and how many harmonics it holds.
+            let heard = layout::hz_note(object.f0);
+            let near = heard.round().clamp(0.0, 127.0) as u32;
+            let cents = ((heard - near as f32) * 100.0).round() as i32;
+            let target = note_name(layout::hz_note(object.tgt).round().clamp(0.0, 127.0) as u32);
+            let cx = left + (index as f32 + 0.5) * column;
+            let label = if object.spared {
+                format!("{} {cents:+} c spared", note_name(near))
+            } else {
+                format!("{} {cents:+} c → {target}", note_name(near))
+            };
+            self.text(cx, bottom - 30.0, &label, VALUE, opacity(ink, 0.8), true);
+            self.text(cx, bottom - 17.0, &format!("{} h", object.nh), VALUE, opacity(PENCIL, 0.6), true);
+        }
+    }
+
+    /// The scope, laid on the pitch axis so the ruler, the targets' lanes
+    /// (the grid's teeth) and the ceiling read across it: level runs right.
+    /// Pencil is what came in, ink what the map sang (the wet, before MIX),
+    /// each averaged over the last few frames; ink dots hold the sung
+    /// peaks of the last second.
+    fn scope(&mut self, state: &PanelState) {
+        let view = state.view;
+        let y_of = |note: f32| layout::note_y(view, note);
+        let x_of = |db: f32| PLOT.x + PLOT.w * ((db - SCOPE_DB_MIN) / -SCOPE_DB_MIN).clamp(0.0, 1.0);
+        // The level rules, every 24 dB, named along the foot.
+        let foot = PLOT.y + PLOT.h;
+        for step in 0..=4 {
+            let db = SCOPE_DB_MIN + step as f32 * 24.0;
+            let x = x_of(db);
+            self.solid(Rect::new(x - 0.5, PLOT.y, 1.0, PLOT.h), opacity(SUMI, 0.08));
+            // The full-scale rule's name sits inside the plot.
+            let label_x = if step == 4 { x - 20.0 } else { x };
+            if step > 0 {
+                self.text(label_x, foot - 18.0, &format!("{db:.0} dB"), VALUE, opacity(SUMI, 0.45), true);
+            }
+        }
+        let frames: Vec<&VizFrame> = state.history.iter().rev().take(SCOPE_PEAK_FRAMES).collect();
+        let average = |b: usize, out: bool| -> f32 {
+            let recent = &frames[..frames.len().min(SCOPE_AVERAGE_FRAMES)];
+            let sum: f32 = recent.iter().map(|f| scope_db(if out { f.scope_out[b] } else { f.scope_in[b] })).sum();
+            sum / recent.len() as f32
+        };
+        let visible = |b: usize| {
+            let note = scope_note(b);
+            note >= view - 1.0 && note <= view + layout::VIEW_SPAN + 1.0
+        };
+        let band = PLOT.h / layout::VIEW_SPAN / SCOPE_PER_NOTE as f32;
+        let newest = frames[0];
+        // A bar per bin, out from the left edge to its level, the bars
+        // abutting into one silhouette: a spectrum's valleys stay valleys
+        // rather than lines raking across the paper.
+        for b in (0..SCOPE_BINS).filter(|&b| visible(b)) {
+            let y = y_of(scope_note(b));
+            let row = |x: f32| Rect::new(PLOT.x, y - band * 0.5, x - PLOT.x, band);
+            // What came in: a pencil wash.
+            if newest.scope_in[b] > 0 {
+                self.solid(row(x_of(average(b, false))), opacity(PENCIL, 0.14));
+            }
+            // What was sung: an ink wash over it, and its peak over the
+            // last second where that stands clear of now.
+            if newest.scope_out[b] > 0 {
+                let db = average(b, true);
+                if db > SCOPE_DB_MIN {
+                    self.solid(row(x_of(db)), opacity(SUMI, 0.38));
+                }
+                let peak = scope_db(frames.iter().map(|f| f.scope_out[b]).max().unwrap_or(0));
+                if peak > SCOPE_DB_MIN && peak > db + 6.0 {
+                    self.solid(Rect::new(x_of(peak) - 1.0, y - band * 0.5, 1.0, band), opacity(SUMI, 0.30));
+                }
+            }
+        }
+    }
+
+    /// The viewer keys on the top bezel, stacked left from the screen's
+    /// top-right edge. Stand-ins (panelkit's text button) until DESIGN's
+    /// baked key row lands.
+    fn viewer_keys(&mut self, state: &PanelState) {
+        for viewer in Viewer::ALL {
+            let rect = layout::viewer_key(viewer);
+            let accent = match viewer {
+                Viewer::Transect => [0.25, 0.42, 1.0, 1.0],
+                Viewer::Ladders => [1.0, 0.25, 0.12, 1.0],
+                Viewer::Scope => [0.20, 0.80, 0.50, 1.0],
+            };
+            let hovered = state.hover_control == Some(Control::Viewer(viewer));
+            widgets::text_button(&mut self.canvas, rect, viewer.label(), state.viewer == viewer, hovered, accent, INK);
+        }
     }
 
     /// The pitch view's scroll bar, always shown: a pencilled track and an
@@ -623,6 +806,17 @@ pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
                 format!("VIEW: {} to {}", note_name(low), note_name(high)),
                 "drag to scroll through all 128 notes; the wheel over the screen scrolls too",
             ))
+        }
+        Control::Viewer(viewer) => {
+            let detail = match viewer {
+                Viewer::Transect => "each object's path over time: heard in pencil, sung in ink, the targets in blue",
+                Viewer::Ladders => {
+                    "each live object's harmonics over the last second: inked where it claimed them, pencilled where it didn't"
+                }
+                Viewer::Scope => "the spectrum on the pitch axis: what came in (pencil) and what the map sang (ink), before MIX",
+            };
+            let shown = if state.viewer == viewer { " (showing)" } else { "" };
+            Some(HoverInfo::help(control, format!("VIEWER: {}{shown}", viewer.label()), detail))
         }
     }
 }

@@ -29,6 +29,50 @@ pub const VIEW_SPAN: f32 = 60.0;
 pub const VIEW_DEFAULT: f32 = 36.0;
 pub const VIEW_MAX: f32 = 127.0 - VIEW_SPAN;
 
+/// What the screen shows (Sam, 2026-10-10: "let's do ladders and scope as
+/// the viewers"). All three share the ruler, the pitch axis and its scroll.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Viewer {
+    /// Each object's path over time: heard, sung, and the targets.
+    #[default]
+    Transect,
+    /// Each live object's harmonics, and which of them it claimed.
+    Ladders,
+    /// The spectrum in and out, on the pitch axis.
+    Scope,
+}
+
+impl Viewer {
+    /// In key order, right to left from the screen's top-right edge.
+    pub const ALL: [Viewer; 3] = [Viewer::Transect, Viewer::Ladders, Viewer::Scope];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Viewer::Transect => "TRANSECT",
+            Viewer::Ladders => "LADDERS",
+            Viewer::Scope => "SCOPE",
+        }
+    }
+
+    pub fn index(self) -> usize {
+        self as usize
+    }
+}
+
+/// A viewer key: on the top bezel, stacked left from the screen's
+/// top-right edge (OpenCepstrum's idiom), 64x16 (DESIGN's key cell at
+/// 128x32), 4 px apart.
+pub const VIEWER_KEY: (f32, f32) = (64.0, 16.0);
+pub fn viewer_key(viewer: Viewer) -> Rect {
+    let first = Rect::new(
+        SCREEN.x + SCREEN.w - VIEWER_KEY.0,
+        MONITOR.y + (SCREEN.y - MONITOR.y - VIEWER_KEY.1) * 0.5,
+        VIEWER_KEY.0,
+        VIEWER_KEY.1,
+    );
+    panelkit::widgets::key_rect(first, -(VIEWER_KEY.0 + 4.0), viewer.index())
+}
+
 /// The infotext line between the monitor and the plates (OpenCepstrum's
 /// idiom, panelkit's `hover`): what the pointer is over, its value, and
 /// what it does.
@@ -71,6 +115,8 @@ pub enum Control {
     Key(u32),
     /// The pitch view's scroll bar.
     ScrollBar,
+    /// A viewer key on the top bezel.
+    Viewer(Viewer),
 }
 
 /// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
@@ -125,7 +171,9 @@ impl Widget {
     pub fn id(&self) -> usize {
         match self.control {
             Control::Param(id) => id,
-            Control::Key(_) | Control::ScrollBar => unreachable!("only parameters are widgets"),
+            Control::Key(_) | Control::ScrollBar | Control::Viewer(_) => {
+                unreachable!("only parameters are widgets")
+            }
         }
     }
 
@@ -217,6 +265,9 @@ pub fn widget(control: Control) -> Option<&'static Widget> {
 pub fn target_at(view: f32, x: f32, y: f32) -> Option<Control> {
     if scroll_bar_hit().contains(x, y) {
         return Some(Control::ScrollBar);
+    }
+    if let Some(index) = panelkit::widgets::key_at(Viewer::ALL.map(viewer_key), x, y) {
+        return Some(Control::Viewer(Viewer::ALL[index]));
     }
     WIDGETS
         .iter()
@@ -325,6 +376,19 @@ mod tests {
         assert_eq!(target_at(VIEW_DEFAULT, SCROLL_BAR.x + 2.0, SCROLL_BAR.y + 100.0), Some(Control::ScrollBar));
         // Clear of the plot and the note names.
         assert!(scroll_bar_hit().x >= PLOT.x + PLOT.w + 26.0);
+    }
+
+    #[test]
+    fn the_viewer_keys_stack_left_on_the_top_bezel() {
+        let keys = Viewer::ALL.map(viewer_key);
+        assert_eq!(keys[0].x + keys[0].w, SCREEN.x + SCREEN.w);
+        for pair in keys.windows(2) {
+            assert!(pair[1].x + pair[1].w < pair[0].x);
+        }
+        for (key, viewer) in keys.iter().zip(Viewer::ALL) {
+            assert!(key.y >= MONITOR.y && key.y + key.h <= SCREEN.y);
+            assert_eq!(target_at(VIEW_DEFAULT, key.x + 4.0, key.y + 4.0), Some(Control::Viewer(viewer)));
+        }
     }
 
     // The scroll bar stays on the screen; the infotext sits between the

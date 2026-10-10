@@ -72,12 +72,18 @@ messages, and behavior belongs in the README; neither is kept here.
          - A bare typed number for a `%` parameter used to read as
            0..1 ("75" set 100%); terrible-cepstra ruled it a bug and
            fixed it in pluginkit 6752fb6 (0.6.2): "75" is 75%.
-       - [ ] Display-mode keys stacked left from the screen's top-right
-         edge: panelkit's key row (extraction E, in progress) plus
-         DESIGN's key bake (after the template's seat-on-surface and key
-         fixes, p183/p184). Candidate viewers are in
-         docs/design/04-panel-ideas.md. The key sheet must be packed
-         straight alpha (Keys draws with paint::ART; panelkit 1cc10e0).
+       - Display-mode keys stacked left from the screen's top-right edge
+         (0.7.0, catalogue/v14*): Sam picked the viewers ("let's do
+         ladders and scope as the viewers"): TRANSECT, LADDERS and SCOPE.
+         The engine reports a 288-bin scope spectrum per frame (in and
+         wet out, a third of a semitone per bin); HOUSE byte-identical.
+         - [ ] The keys' baked art: DESIGN has the row queued (TRANSECT
+           1f388c, LADDERS cc341a, SCOPE 2a7f62; wide, inactive and active;
+           aiming for a 128x32 cell) behind the p183 key fixes. Until it
+           lands, `Board::viewer_keys` draws panelkit `text_button`
+           stand-ins at `layout::viewer_key`. On delivery, pack the sheet
+           straight alpha (Keys draws with paint::ART; panelkit 1cc10e0)
+           and draw it through `widgets::Keys`.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

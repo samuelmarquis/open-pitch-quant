@@ -2,10 +2,11 @@
 //! offline harness draw the same [`Board`] from the same [`PanelState`].
 //!
 //! The board is the family idiom: a monitor whose screen carries the
-//! display (the belief transect: what the tracker believes, where the law
-//! sends it, what it actually sings), and a rack of solid plates beneath
-//! with fixed controls, one per parameter. A backlit LCD module on the
-//! last plate carries the chord and the session's small talk.
+//! display, in three viewers picked by keys on its top bezel (the belief
+//! transect: what the tracker believes, where the law sends it, what it
+//! actually sings; the ladders: each object's claimed harmonics; the
+//! scope: the spectrum in and out), and a rack of solid plates beneath
+//! with fixed controls, one per parameter.
 //!
 //! The mount, per frame (about 30 Hz):
 //! 1. `state.params = shared.snapshot().0`;
@@ -73,6 +74,8 @@ pub struct PanelState {
     /// The transect's floor (MIDI note at the bottom of the plot); the
     /// wheel over the screen moves it.
     pub view: f32,
+    /// What the screen shows: the viewer keys on the top bezel pick it.
+    pub viewer: layout::Viewer,
     /// The newest analysis frames, oldest first.
     pub history: VecDeque<VizFrame>,
     /// Sample rate and hop of the running engine (for time captions).
@@ -117,6 +120,7 @@ impl PanelState {
             params,
             keys: Keys::default(),
             view: layout::VIEW_DEFAULT,
+            viewer: layout::Viewer::default(),
             history: VecDeque::with_capacity(HISTORY),
             engine_info: (48_000.0, opq_engine::HOP as u32),
             pointer: None,

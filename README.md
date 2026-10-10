@@ -21,11 +21,27 @@ stem separation, ~93 ms latency, live.
   `wrac/PROVENANCE.txt`).
 - **`rt/panel`** — the editor board, in the family idiom (open-panelkit,
   wgpu; no webview, no toolkit), 1100×768, resizable. A monitor carries
-  the **belief transect**, ink on a paper-white screen: each pitch
-  object's source pitch (pencil), the pitch it is sung at (black ink;
-  sepia where Threshold spared it, vermilion while newborn), the targets
-  as blue lanes (fainter for Repeat octaves), the map ceiling, and onsets.
-  A scroll bar on the screen's right, always shown, moves the view through
+  three viewers, ink on a paper-white screen, picked by the keys on its
+  top bezel (right to left). All three share the key ruler, the pitch
+  axis, the targets as blue lanes (fainter for Repeat octaves) and the
+  map ceiling:
+  - **TRANSECT** (the default): each pitch object's source pitch
+    (pencil), the pitch it is sung at (black ink; sepia where Threshold
+    spared it, vermilion while newborn), and onsets, over the last ten
+    seconds.
+  - **LADDERS**: one column per live object, low to high, showing its
+    harmonics over the last second. A rung is inked where the object
+    claimed that harmonic's spectrum and pencilled where it didn't. At
+    the column's right are its target (blue) and its sung pitch. At its
+    foot are the heard note with its cents, the target note, and how
+    many harmonics it holds.
+  - **SCOPE**: the spectrum laid on the pitch axis, level running right
+    (−96 dB to a full-scale sine). What came in is a pencil wash; what
+    the map sang (the wet signal, before MIX) is an ink wash over it.
+    Faint ink ticks hold the sung peaks of the last second.
+
+  The viewer is the editor's own choice, not saved with the project. A
+  scroll bar on the screen's right, always shown, moves the view through
   all 128 notes. Under the monitor, the infotext line names what the
   pointer is over and its value, then types in what it does. Beneath,
   three baked plates, one control per parameter (Bypass is the host's):
@@ -98,6 +114,13 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.0** — the screen has three viewers, picked by keys on the
+  monitor's top bezel (catalogue/v14, v14-ladders, v14-scope): TRANSECT
+  (as before), LADDERS (each object's harmonics, and which of them it
+  claimed) and SCOPE (the spectrum in and out on the pitch axis). The
+  engine now reports a scope spectrum with each analysis frame; the sound
+  is unchanged (HOUSE byte-identical). The keys are flat stand-ins until
+  their baked art arrives.
 - **0.6.2** — a percentage typed without its % sign means percent: "75"
   is 75%, in MIX's entry and in the host's own parameter text entry
   (pluginkit's fix). Before, a bare 75 clamped to 100%.
