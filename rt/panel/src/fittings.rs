@@ -8,12 +8,17 @@
 //! - Toggles and the algorithm selector act on the press: one click, one
 //!   gesture, the other position.
 //! - The wheel over a knob moves it 2% of its travel a notch (a step for a
-//!   stepped one); over a switch, it throws it toward the wheel.
+//!   stepped one); over a switch, it throws it toward the wheel. A burst of
+//!   notches is one host gesture (panelkit's `WheelHold`): it ends once the
+//!   wheel rests (`tick`, from the mount's timer) or other input comes.
 //! - Escape during a drag puts the value back where the drag began.
-//! - MIX's value can be typed (the family's entry): right-click it, or press
-//!   Enter while over it; Enter commits, Escape cancels, a press anywhere
-//!   else commits. Which keys the editor takes from the host is panelkit's
-//!   policy (`wants_key`).
+//! - Double-click resets, right-click edits (the family's law, Sam
+//!   2026-10-10): on a value control (a knob, Voices, MIX) a double-click
+//!   sets its default, and a right-click opens a menu holding "Edit
+//!   value...", the only way into typed entry. Typing happens in place
+//!   (MIX's own text, a knob's caption): Enter commits, Escape cancels, a
+//!   press anywhere else commits. Which keys the editor takes from the host
+//!   is panelkit's policy (`wants_key`).
 //! - With the Keys source, the ruler is PITCHMAP's Lower Keyboard: a click
 //!   toggles a key as a target, Option/Alt-click its Bypass, and a drag
 //!   paints the same state over the keys it crosses; in Repeat scope an
@@ -27,11 +32,13 @@
 //!
 //! Every value is echoed into `state.params` (and `state.keys`) before it is
 //! returned.
-use crate::layout::{self, Control, Kind};
-use crate::{fine, Edit, Modifiers, PanelState, TextEdit};
+use crate::layout::{self, Control, Kind, MENU_ITEMS};
+use crate::{fine, Edit, Menu, Modifiers, PanelState, TextEdit};
 use opq_engine::params::{KeyState, SPECS};
 use panelkit::entry::EntryKey;
+use panelkit::strip::{self, MenuKey};
 use panelkit::{interaction, keys, widgets};
+use std::time::Instant;
 
 /// Vertical travel across a knob's whole range, logical px (OpenCepstrum's).
 const DIAL_PX: f32 = 180.0;
@@ -84,6 +91,8 @@ fn paint(state: &mut PanelState, key_state: KeyState, note: u32, on: bool) -> Ed
 #[derive(Default)]
 pub struct Fittings {
     capture: Option<Capture>,
+    /// A wheel gesture held open across a burst of notches: its parameter.
+    wheel: Option<(usize, interaction::WheelHold)>,
 }
 
 fn normalized(id: usize, value: f32) -> f32 {
@@ -108,10 +117,19 @@ fn open_entry(state: &mut PanelState, id: usize) {
     state.text_edit = Some(TextEdit::new(id, SPECS[id].format(state.params.get(id))));
 }
 
-/// The text value (MIX) under the pointer, if one is.
-fn hovered_text(state: &PanelState) -> Option<usize> {
-    let widget = state.hover_control.and_then(layout::widget)?;
-    (widget.kind == Kind::Text).then(|| widget.id())
+/// A press inside the value being typed (where it is drawn).
+fn in_entry(state: &PanelState, x: f32, y: f32) -> bool {
+    state.text_edit.as_ref().is_some_and(|edit| {
+        layout::widget(Control::Param(edit.id)).is_some_and(|w| w.entry_rect().contains(x, y))
+    })
+}
+
+/// A value control's menu item `index` chosen for parameter `id`.
+fn choose(state: &mut PanelState, id: usize, index: usize) {
+    match MENU_ITEMS[index] {
+        "Edit value..." => open_entry(state, id),
+        other => unreachable!("menu item {other}"),
+    }
 }
 
 /// A switch's other position (the selector's too: two positions).
@@ -134,20 +152,33 @@ impl Fittings {
 
     pub fn hover_with_modifiers(&mut self, state: &mut PanelState, x: f32, y: f32, _mods: Modifiers) {
         state.pointer = (x >= 0.0 && y >= 0.0).then_some((x, y));
+        // An open menu highlights the item under the pointer.
+        if let Some(menu) = state.menu.as_mut() {
+            if let Some(index) = layout::menu_item_at(menu.at, x, y) {
+                menu.index = index;
+            }
+        }
         if self.capture.is_none() {
             state.hover_control = layout::target_at(state.view, x, y);
         }
     }
 
     pub fn down(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers, clicks: u32) -> Vec<Edit> {
+        let mut edits = self.end_wheel();
+        // An open menu takes the press: an item chooses, anywhere else
+        // closes it and does nothing more.
+        if let Some(menu) = state.menu.take() {
+            if let Some(index) = layout::menu_item_at(menu.at, x, y) {
+                choose(state, menu.id, index);
+            }
+            return edits;
+        }
         // A value being typed: a press in its box keeps typing; anywhere
         // else commits it (or drops it, when it doesn't parse) and goes on.
-        if state.text_edit.as_ref().is_some_and(|edit| {
-            layout::widget(Control::Param(edit.id)).is_some_and(|w| w.rect().contains(x, y))
-        }) {
-            return Vec::new();
+        if in_entry(state, x, y) {
+            return edits;
         }
-        let mut edits = self.down_outside_entry(state, x, y);
+        edits.extend(self.down_outside_entry(state, x, y));
         edits.extend(self.focus_lost(state));
         let Some(control) = layout::target_at(state.view, x, y) else {
             return edits;
@@ -262,23 +293,52 @@ impl Fittings {
     }
 
     /// The gesture ends where it is (release outside, focus lost); a value
-    /// being typed is dropped.
+    /// being typed and an open menu are dropped.
     pub fn cancel(&mut self, state: &mut PanelState) -> Vec<Edit> {
         state.text_edit = None;
-        self.up(state)
+        state.menu = None;
+        let mut edits = self.end_wheel();
+        edits.extend(self.up(state));
+        edits
     }
 
     pub fn focus_lost(&mut self, state: &mut PanelState) -> Vec<Edit> {
-        self.up(state)
+        let mut edits = self.end_wheel();
+        edits.extend(self.up(state));
+        edits
     }
 
-    /// A right-click: on a text value (MIX), start typing it.
+    /// The mount's timer, each frame: a wheel gesture that has rested ends.
+    pub fn tick(&mut self, _state: &mut PanelState, now: Instant) -> Vec<Edit> {
+        let Some((id, hold)) = self.wheel.as_mut() else { return Vec::new() };
+        if !hold.expired(now) {
+            return Vec::new();
+        }
+        let id = *id;
+        self.wheel = None;
+        vec![Edit::End(id)]
+    }
+
+    /// Other input came before the wheel rested: its gesture ends now.
+    fn end_wheel(&mut self) -> Vec<Edit> {
+        let Some((id, mut hold)) = self.wheel.take() else { return Vec::new() };
+        if hold.release() {
+            vec![Edit::End(id)]
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// A right-click: on a value control, its menu ("Edit value...");
+    /// anywhere else, an open menu closes.
     pub fn context(&mut self, state: &mut PanelState, x: f32, y: f32) -> Vec<Edit> {
-        let mut edits = self.down_outside_entry(state, x, y);
+        let mut edits = self.end_wheel();
+        edits.extend(self.down_outside_entry(state, x, y));
+        state.menu = None;
         if let Some(widget) = layout::target_at(state.view, x, y).and_then(layout::widget) {
-            if widget.kind == Kind::Text {
+            if widget.is_value() {
                 edits.extend(self.up(state));
-                open_entry(state, widget.id());
+                state.menu = Some(Menu { id: widget.id(), at: (x, y), index: 0 });
             }
         }
         edits
@@ -287,20 +347,19 @@ impl Fittings {
     /// What is open, for panelkit's key policy (and Win32's wait for a
     /// typed character).
     pub fn keys_open(&self, state: &PanelState) -> keys::Open {
-        keys::Open { entry: state.text_edit.is_some(), list: false, cancellable: self.capture.is_some() }
+        keys::Open { entry: state.text_edit.is_some(), list: state.menu.is_some(), cancellable: self.capture.is_some() }
     }
 
-    /// Whether the editor takes `key` from the host: panelkit's rules, plus
-    /// Enter over a text value (to start typing it).
+    /// Whether the editor takes `key` from the host: panelkit's rules
+    /// (nothing of ours beyond them: typed entry opens only from the menu).
     pub fn wants_key(&self, state: &PanelState, key: &str, mods: Modifiers) -> bool {
-        keys::wants(key, mods, &self.keys_open(state), || key == "Enter" && hovered_text(state).is_some())
+        keys::wants(key, mods, &self.keys_open(state), || false)
     }
 
     /// A press outside a value being typed commits it (or drops it when it
     /// doesn't parse); inside, nothing.
     fn down_outside_entry(&mut self, state: &mut PanelState, x: f32, y: f32) -> Vec<Edit> {
-        let Some(edit) = &state.text_edit else { return Vec::new() };
-        if layout::widget(Control::Param(edit.id)).is_some_and(|w| w.rect().contains(x, y)) {
+        if state.text_edit.is_none() || in_entry(state, x, y) {
             return Vec::new();
         }
         let edits = self.commit_entry(state);
@@ -338,7 +397,7 @@ impl Fittings {
         content: f32,
         mods: Modifiers,
     ) -> Vec<Edit> {
-        if delta == 0.0 && content == 0.0 {
+        if (delta == 0.0 && content == 0.0) || state.menu.is_some() {
             return Vec::new();
         }
         // During a drag the wheel moves the dragged knob.
@@ -381,19 +440,50 @@ impl Fittings {
         if value == now {
             return Vec::new();
         }
+        state.params.set(id, value);
         if let Some(Capture::Dial { normalized: n, .. }) = self.capture.as_mut() {
             *n = normalized(id, value);
-            state.params.set(id, value);
             return vec![Edit::Value(id, value)];
         }
-        gesture(state, id, value)
+        // A burst of notches is one gesture: begun on its first, held open
+        // (a notch on another control ends it and begins that one's).
+        let mut edits = Vec::new();
+        if self.wheel.as_ref().is_none_or(|&(held, _)| held != id) {
+            edits.extend(self.end_wheel());
+            edits.push(Edit::Begin(id));
+        }
+        self.wheel.get_or_insert((id, interaction::WheelHold::default())).1.touch(state.now);
+        edits.push(Edit::Value(id, value));
+        edits
     }
 
-    /// Escape during a knob drag puts it back where the drag began.
-    /// A key the editor took (`wants_key`): the value being typed takes its
-    /// editing keys (Enter commits, Escape cancels); Enter over a text
-    /// value starts typing it; Escape during a drag undoes it.
+    /// A key the editor took (`wants_key`); any key ends a wheel gesture.
+    /// An open menu takes the family's menu keys (panelkit's `menu_key`:
+    /// arrows, Enter chooses, Escape closes); the value being typed takes
+    /// its editing keys (Enter commits, Escape cancels); Escape during a
+    /// knob drag puts it back where the drag began.
     pub fn key(&mut self, state: &mut PanelState, key: &str, mods: Modifiers) -> Vec<Edit> {
+        let mut edits = self.end_wheel();
+        edits.extend(self.key_taken(state, key, mods));
+        edits
+    }
+
+    fn key_taken(&mut self, state: &mut PanelState, key: &str, mods: Modifiers) -> Vec<Edit> {
+        if let Some(menu) = state.menu.as_mut() {
+            if key == "Escape" {
+                state.menu = None;
+                return Vec::new();
+            }
+            let label = |i: usize| MENU_ITEMS[i].to_owned();
+            if let MenuKey::Chose(index) =
+                strip::menu_key(&mut menu.index, MENU_ITEMS.len(), 1, key, mods.shift, mods.command, label)
+            {
+                let id = menu.id;
+                state.menu = None;
+                choose(state, id, index);
+            }
+            return Vec::new();
+        }
         if let Some(edit) = state.text_edit.as_mut() {
             if key == "Escape" {
                 state.text_edit = None;
@@ -403,12 +493,6 @@ impl Fittings {
                 EntryKey::Edited => Vec::new(),
                 EntryKey::Commit | EntryKey::Next { .. } => self.commit_entry(state),
             };
-        }
-        if key == "Enter" {
-            if let Some(id) = hovered_text(state) {
-                open_entry(state, id);
-            }
-            return Vec::new();
         }
         if key != "Escape" {
             return Vec::new();
@@ -571,16 +655,29 @@ mod tests {
         edits
     }
 
+    /// Right-click, then the menu's "Edit value...": typed entry opens.
+    fn edit_value(f: &mut Fittings, s: &mut PanelState, id: usize) {
+        let (x, y) = at(id);
+        assert!(f.context(s, x, y).is_empty());
+        let menu = s.menu.expect("a value control's menu");
+        assert_eq!((menu.id, layout::MENU_ITEMS[0]), (id, "Edit value..."));
+        assert!(s.text_edit.is_none(), "the menu, not the entry, opens first");
+        let item = layout::menu_item(menu.at, 0);
+        assert!(f.down(s, item.x + 4.0, item.y + 4.0, Modifiers::default(), 1).is_empty());
+        assert!(s.menu.is_none() && s.text_edit.as_ref().is_some_and(|e| e.id == id));
+    }
+
     #[test]
-    fn mix_is_typed_in_place_after_a_right_click_or_enter() {
+    fn mix_is_typed_in_place_from_its_menu() {
         let mut s = PanelState::default();
         let mut f = Fittings::default();
         let (x, y) = at(p::MIX);
-        // Nothing open: the host keeps its keys, Enter included.
+        // Nothing open: the host keeps its keys, Enter included, even over
+        // MIX (typed entry opens only from the menu).
+        f.hover(&mut s, x, y);
         assert!(!f.wants_key(&s, "5", Modifiers::default()));
         assert!(!f.wants_key(&s, "Enter", Modifiers::default()));
-        assert!(f.context(&mut s, x, y).is_empty());
-        assert!(s.text_edit.is_some());
+        edit_value(&mut f, &mut s, p::MIX);
         // Space is the host's even while typing.
         assert!(!f.wants_key(&s, " ", Modifiers::default()));
         // A bare number is a percentage, as the value reads (pluginkit
@@ -590,11 +687,8 @@ mod tests {
         let commit = f.key(&mut s, "Enter", Modifiers::default());
         assert_eq!(commit, vec![Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.5), Edit::End(p::MIX)]);
         assert!(s.text_edit.is_none());
-        // Enter over MIX opens it too; nonsense stays open, marked; Escape
-        // drops it with no edit.
-        f.hover(&mut s, x, y);
-        assert!(f.wants_key(&s, "Enter", Modifiers::default()));
-        f.key(&mut s, "Enter", Modifiers::default());
+        // Nonsense stays open, marked; Escape drops it with no edit.
+        edit_value(&mut f, &mut s, p::MIX);
         typed(&mut f, &mut s, "loud");
         assert!(f.key(&mut s, "Enter", Modifiers::default()).is_empty());
         assert!(s.text_edit.as_ref().is_some_and(|e| e.error));
@@ -602,12 +696,68 @@ mod tests {
         assert!(s.text_edit.is_none());
         assert_eq!(s.params.get(p::MIX), 0.5);
         // A press elsewhere commits what was typed, and acts.
-        f.context(&mut s, x, y);
+        edit_value(&mut f, &mut s, p::MIX);
         typed(&mut f, &mut s, "25%"); // the % sign is fine too
         let (fx, fy) = at(p::FEEL);
         let edits = f.down(&mut s, fx, fy, Modifiers::default(), 1);
         assert_eq!(&edits[..3], &[Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.25), Edit::End(p::MIX)]);
         assert_eq!(edits[3], Edit::Begin(p::FEEL));
+    }
+
+    #[test]
+    fn every_value_control_has_the_menu_and_switches_have_none() {
+        for w in &layout::WIDGETS {
+            let mut s = PanelState::default();
+            let mut f = Fittings::default();
+            let (x, y) = w.at;
+            f.context(&mut s, x, y);
+            assert_eq!(s.menu.is_some(), w.is_value(), "{}", w.caption);
+            if w.is_value() {
+                // A double-click resets it; it never opens typed entry.
+                s.menu = None;
+                s.params.set(w.id(), SPECS[w.id()].max);
+                let edits = f.down(&mut s, x, y, Modifiers::default(), 2);
+                assert!(edits.contains(&Edit::Value(w.id(), SPECS[w.id()].default)), "{}", w.caption);
+                assert!(s.text_edit.is_none(), "{}", w.caption);
+            }
+        }
+        // The keyboard works the menu: Enter chooses, Escape closes.
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = at(p::FEEL);
+        f.context(&mut s, x, y);
+        assert!(f.wants_key(&s, "Enter", Modifiers::default()) && !f.wants_key(&s, " ", Modifiers::default()));
+        f.key(&mut s, "Enter", Modifiers::default());
+        assert!(s.menu.is_none() && s.text_edit.as_ref().is_some_and(|e| e.id == p::FEEL));
+        typed(&mut f, &mut s, "40");
+        let commit = f.key(&mut s, "Enter", Modifiers::default());
+        let [Edit::Begin(p::FEEL), Edit::Value(p::FEEL, v), Edit::End(p::FEEL)] = commit[..] else { panic!("{commit:?}") };
+        assert!((v - 0.4).abs() < 1e-6, "{v}");
+        f.context(&mut s, x, y);
+        f.key(&mut s, "Escape", Modifiers::default());
+        assert!(s.menu.is_none() && s.text_edit.is_none());
+    }
+
+    #[test]
+    fn a_wheel_burst_is_one_gesture_until_the_wheel_rests() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let t = s.now;
+        let (x, y) = at(p::FEEL);
+        let first = f.scroll(&mut s, x, y, 1.0, 1.0, Modifiers::default());
+        assert!(matches!(first[..], [Edit::Begin(p::FEEL), Edit::Value(p::FEEL, _)]), "{first:?}");
+        let second = f.scroll(&mut s, x, y, 1.0, 1.0, Modifiers::default());
+        assert!(matches!(second[..], [Edit::Value(p::FEEL, _)]), "{second:?}");
+        assert!(f.tick(&mut s, t + interaction::WheelHold::IDLE / 2).is_empty());
+        assert_eq!(f.tick(&mut s, t + interaction::WheelHold::IDLE * 2), vec![Edit::End(p::FEEL)]);
+        // Another control's notch ends the open gesture and begins its own;
+        // a press ends it too.
+        f.scroll(&mut s, x, y, 1.0, 1.0, Modifiers::default());
+        let (gx, gy) = at(p::GLIDE);
+        let moved = f.scroll(&mut s, gx, gy, 1.0, 1.0, Modifiers::default());
+        assert!(matches!(moved[..], [Edit::End(p::FEEL), Edit::Begin(p::GLIDE), Edit::Value(p::GLIDE, _)]), "{moved:?}");
+        let press = f.down(&mut s, x, y, Modifiers::default(), 1);
+        assert_eq!(&press[..2], &[Edit::End(p::GLIDE), Edit::Begin(p::FEEL)]);
     }
 
     #[test]

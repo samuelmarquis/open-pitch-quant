@@ -370,8 +370,13 @@ fn tick(view: &OpqView) {
         view.cancel();
         return;
     }
-    // Refreshing can close gestures (a restore): deliver outside the render borrow.
-    view.dispatch(|_| Vec::new());
+    // Refreshing can close gestures (a restore), and a wheel gesture that has
+    // rested ends (panelkit's WheelHold, at the refreshed clock): deliver
+    // outside the render borrow.
+    view.dispatch(|st| {
+        let now = st.panel.now;
+        st.fittings.tick(&mut st.panel, now)
+    });
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
         let Ok(mut state) = view.ivars().state.try_borrow_mut() else { return Ok(()) };
         if state.dead {

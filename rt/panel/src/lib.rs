@@ -66,6 +66,15 @@ pub fn fine(mods: Modifiers) -> f32 {
     }
 }
 
+/// A value control's right-click menu (layout::MENU_ITEMS): whose it is,
+/// where it opened, and the highlighted item.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Menu {
+    pub id: usize,
+    pub at: (f32, f32),
+    pub index: usize,
+}
+
 /// Everything the board draws, and the editor-local view state.
 pub struct PanelState {
     pub params: Params,
@@ -84,8 +93,11 @@ pub struct PanelState {
     /// The control under the pointer, and the one pressed.
     pub hover_control: Option<layout::Control>,
     pub pressed_control: Option<layout::Control>,
-    /// A value being typed in place of its text (MIX), if any.
+    /// A value being typed (from a value control's "Edit value..."), if
+    /// any.
     pub text_edit: Option<TextEdit>,
+    /// A value control's right-click menu, if open.
+    pub menu: Option<Menu>,
     /// Session tallies the LCD reports: objects born, onsets seen.
     pub born: u64,
     pub onsets: u64,
@@ -127,6 +139,7 @@ impl PanelState {
             hover_control: None,
             pressed_control: None,
             text_edit: None,
+            menu: None,
             born: 0,
             onsets: 0,
             last_id: -1,

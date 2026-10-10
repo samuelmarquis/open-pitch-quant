@@ -53,10 +53,12 @@ stem separation, ~93 ms latency, live.
   version. A knob's caption shows its value while it is in use, and
   briefly whenever the value moves (automation, the host's panel). Knobs
   and MIX drag vertically (Command, or Ctrl on Windows, for fine;
-  double-click resets; the wheel works); switches throw on a click. MIX
-  can also be typed: right-click it, or press Enter over it, then type a
-  value ("75" or "75%") and press Enter; Escape cancels. Every other key, Space included, stays the
-  host's.
+  double-click resets to the default). The wheel works too, and a burst
+  of notches is one undo step in the host. Switches throw on a click. To
+  type a value, right-click a knob or MIX and choose **Edit value...**,
+  type it in place ("75" or "75%"), and press Enter; Escape cancels.
+  While the editor isn't typing or in its menu, every other key, Space
+  included, stays the host's.
 
   **Map Source** (the SOURCE switch on LAW, beside SCOPE): under **MIDI**
   the targets are the notes held on the MIDI side chain (PITCHMAP's MIDI
@@ -114,6 +116,12 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.7** — under the family's rule (double-click resets, right-click
+  edits), every knob and MIX has a right-click menu with **Edit
+  value...**, which opens typed entry in place. Knobs can be typed now,
+  not only MIX, and Enter over MIX no longer opens it. A burst of wheel
+  notches is now one host gesture (one undo step) instead of one per
+  notch (catalogue/v17-menu, v17-typing).
 - **0.7.6** — on macOS, the editor opens in every format a host loads.
   Live with both the AU and the VST3 used to show a blank editor for the
   second. Every resize the editor proposes to a host is now one it

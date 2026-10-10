@@ -104,6 +104,30 @@ pub const SELECTOR_DRAW: f32 = 88.0;
 /// round it (bake.py STEPPED: 144 px at 2x).
 pub const STEPPED: f32 = 72.0;
 
+/// A knob's typed value, over its caption.
+const ENTRY_W: f32 = 84.0;
+
+/// A value control's right-click menu (the family's law): its items, each
+/// row's size, opening at the pointer (below it, or above where the board
+/// ends).
+pub const MENU_ITEMS: [&str; 1] = ["Edit value..."];
+pub const MENU_ROW: (f32, f32) = (120.0, 20.0);
+pub fn menu_item(at: (f32, f32), index: usize) -> Rect {
+    let anchor = Rect::new(at.0, at.1, 0.0, 0.0);
+    let board = Rect::new(0.0, 0.0, WIDTH as f32, HEIGHT as f32);
+    let (count, (w, h)) = (MENU_ITEMS.len(), MENU_ROW);
+    if at.1 + 2.0 + count as f32 * h <= board.h {
+        panelkit::strip::menu_item_below(anchor, count, index, h, 2.0, w, board)
+    } else {
+        panelkit::strip::menu_item(anchor, count, index, h, 2.0, w, board)
+    }
+}
+
+/// The menu item under the pointer, for a menu opened at `at`.
+pub fn menu_item_at(at: (f32, f32), x: f32, y: f32) -> Option<usize> {
+    (0..MENU_ITEMS.len()).find(|&i| menu_item(at, i).contains(x, y))
+}
+
 /// Row centres in the rack: knobs on the first, switches on the second.
 const ROW_1: f32 = 494.0 + 66.0;
 const ROW_2: f32 = 494.0 + 178.0;
@@ -187,6 +211,22 @@ impl Widget {
             Kind::Text => (MIX_TEXT.w, MIX_TEXT.h),
         };
         Rect::new(self.at.0 - w * 0.5, self.at.1 - h * 0.5, w, h)
+    }
+
+    /// A value control: double-click resets it, and its right-click menu
+    /// holds "Edit value..." (the family's law, Sam 2026-10-10). Switches
+    /// and the selector are positions, thrown on a click.
+    pub fn is_value(&self) -> bool {
+        matches!(self.kind, Kind::Knob(_) | Kind::Stepped | Kind::Text)
+    }
+
+    /// Where its value is typed: MIX in its own place, a knob over its
+    /// caption.
+    pub fn entry_rect(&self) -> Rect {
+        match self.kind {
+            Kind::Text => MIX_TEXT,
+            _ => Rect::new(self.at.0 - ENTRY_W * 0.5, self.caption_y() - 1.0, ENTRY_W, 17.0),
+        }
     }
 
     /// The caption's top: under the mechanism (a text control has none).

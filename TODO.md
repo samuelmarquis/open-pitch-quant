@@ -187,6 +187,12 @@ messages, and behavior belongs in the README; neither is kept here.
   session's. bake.py's
   Blender steps refuse to run unless OPQ_BLENDER_FARM=1 (farm hosts only);
   `--only stepped --renders DIR` composites the farm's renders locally.
+- **Double-click resets, right-click edits (Sam, 2026-10-10, family law,
+  template 1e73c9d):** on every value control a double-click sets its
+  default, and typed entry opens only from the right-click menu's "Edit
+  value...". In OPQ the value controls are the six continuous knobs,
+  Voices and MIX (0.7.7). The bat switches and the selector are
+  positions thrown on a click, so they have no menu.
 - **The CLI writes the family's Int24 (Sam via terrible-cepstra,
   2026-10-10):** "move to the standard system and forget the old
   hashes". The HOUSE fence was re-recorded in 0.7.2 from audiokit Int24

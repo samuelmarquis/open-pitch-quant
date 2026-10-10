@@ -205,7 +205,20 @@ impl Board {
             self.widget(state, widget);
         }
         self.bottom_row(state);
+        self.menu(state);
         self.submit()
+    }
+
+    /// A value control's right-click menu, over everything: the family's
+    /// flat rows (panelkit's text button), the highlighted one lit.
+    fn menu(&mut self, state: &PanelState) {
+        let Some(menu) = state.menu else { return };
+        for (index, label) in layout::MENU_ITEMS.iter().enumerate() {
+            let r = layout::menu_item(menu.at, index);
+            self.solid(Rect::new(r.x - 1.0, r.y - 1.0, r.w + 2.0, r.h + 2.0), [0.0, 0.0, 0.0, 0.9]);
+            let lit = index == menu.index;
+            widgets::text_button(&mut self.canvas, r, label, lit, lit, MINT, INK);
+        }
     }
 
     // ---- the screen ------------------------------------------------------
@@ -672,7 +685,7 @@ impl Board {
                 let accent = value_ink(widget.plate);
                 // Being typed: the family's entry in its place.
                 if let Some(edit) = state.text_edit.as_ref().filter(|edit| edit.id == id) {
-                    edit.draw(&mut self.canvas, r, accent, VALUE);
+                    edit.draw(&mut self.canvas, widget.entry_rect(), accent, VALUE);
                     return;
                 }
                 let text = format!("{}  {}", widget.caption, SPECS[id].format(value));
@@ -684,9 +697,16 @@ impl Board {
     }
 
     /// A knob's caption, giving way to its value while the knob is in use
-    /// (the family's guide).
+    /// (the family's guide), or to the value being typed (its menu's "Edit
+    /// value...").
     fn guided_caption(&mut self, state: &PanelState, widget: &Widget, ink: [f32; 4], hovered: bool) {
         let id = widget.id();
+        if let Some(edit) = state.text_edit.as_ref().filter(|edit| edit.id == id) {
+            let r = widget.entry_rect();
+            self.solid(r, [0.0, 0.0, 0.0, 0.55]);
+            edit.draw(&mut self.canvas, r, value_ink(widget.plate), CAPTION);
+            return;
+        }
         let (cx, y) = (widget.at.0, widget.caption_y());
         let shown = state.guide(id);
         if shown < 1.0 {

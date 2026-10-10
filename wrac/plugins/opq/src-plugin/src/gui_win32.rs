@@ -297,8 +297,13 @@ fn tick(hwnd: HWND) {
         cancel(hwnd);
         return;
     }
-    // Refreshing can close gestures (a restore): deliver outside the render borrow.
-    dispatch(hwnd, |_| Vec::new());
+    // Refreshing can close gestures (a restore), and a wheel gesture that has
+    // rested ends (panelkit's WheelHold, at the refreshed clock): deliver
+    // outside the render borrow.
+    dispatch(hwnd, |st| {
+        let now = st.panel.now;
+        st.fittings.tick(&mut st.panel, now)
+    });
     let Some(cell) = state_of(hwnd) else { return };
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<(), String> {
         let Ok(mut state) = cell.try_borrow_mut() else { return Ok(()) };

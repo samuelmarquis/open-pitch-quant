@@ -3,8 +3,8 @@
 //! voices (one with vibrato, one gliding a fourth) under a held chord.
 //!
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
-//! Scenarios: house, oracle, keys, empty, drag, typing, ladders, scope
-//! (default: all).
+//! Scenarios: house, oracle, keys, empty, drag, typing, menu, ladders,
+//! scope (default: all).
 use opq_engine::params::{self as p, KeyState, Keys, Params};
 use opq_engine::Engine;
 use opq_panel::layout;
@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const SR: f64 = 48_000.0;
-const SCENARIOS: [&str; 8] = ["house", "oracle", "keys", "empty", "drag", "typing", "ladders", "scope"];
+const SCENARIOS: [&str; 9] = ["house", "oracle", "keys", "empty", "drag", "typing", "menu", "ladders", "scope"];
 
 fn midi_hz(note: f64) -> f64 {
     440.0 * ((note - 69.0) / 12.0).exp2()
@@ -133,15 +133,27 @@ fn scenario(name: &str) -> PanelState {
             f.drag(&mut state, x, y - 60.0, Modifiers::default());
         }
         "typing" => {
-            // MIX right-clicked and half typed: the family's entry in place.
+            // GLIDE's "Edit value..." chosen and half typed: the family's
+            // entry over its caption.
             feed(&mut state, &chord, 11.0);
             let mut f = Fittings::default();
-            let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::MIX).unwrap().at;
+            let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::GLIDE).unwrap().at;
             f.hover(&mut state, x, y);
             f.context(&mut state, x, y);
-            for key in ["7", "5"] {
+            f.key(&mut state, "Enter", Modifiers::default());
+            for key in ["2", "5", "0"] {
                 f.key(&mut state, key, Modifiers::default());
             }
+        }
+        "menu" => {
+            // FEEL right-clicked: its menu open, the pointer on its item.
+            feed(&mut state, &chord, 11.0);
+            let mut f = Fittings::default();
+            let (x, y) = layout::WIDGETS.iter().find(|w| w.id() == p::FEEL).unwrap().at;
+            f.hover(&mut state, x, y);
+            f.context(&mut state, x, y);
+            let item = layout::menu_item((x, y), 0);
+            f.hover(&mut state, item.x + 20.0, item.y + 8.0);
         }
         "ladders" | "scope" => {
             // The house material, its viewer picked by its key, the
