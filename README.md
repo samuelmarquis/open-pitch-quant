@@ -91,6 +91,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.4.6** — no change to the sound (every HOUSE render is
+  byte-identical). The STFT framing, FFTs and overlap-add come from the
+  family's shared frame, `audiokit::stft`, and the audio thread no
+  longer allocates memory at all; a test now checks that.
 - **0.4.5** — no change to the sound (every HOUSE render is
   byte-identical). The pitch analysis (instantaneous frequency, peaks and
   regions, the multi-F0 that carves pitch objects) now comes from the

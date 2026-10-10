@@ -65,14 +65,14 @@ messages, and behavior belongs in the README; neither is kept here.
      multi-F0, now allocation-free per hop (asserted with pluginkit's
      counting allocator); HOUSE byte-identical. Track continuity stays
      in the engine.
-     - [ ] The rest of the engine still allocates per frame in places
-       (`tracks.retain`/`push` within capacity is fine; check the
-       viz accumulators' `resize` and the dual-window path). An
-       assert_no_alloc test around `process_block` would settle it.
-     - [ ] A shared STFT frame (framing, analysis/synthesis window pair,
-       OLA divisor, per-hop callback) is wanted by OpenEQ and
-       OpenSpectrum too; the three products' requirements are in
-       `../open-audiokit/README.md` (Wanted). Sam: "far from pressing".
+     - The shared STFT frame (0.4.6, done; Sam: "If you want to hit
+       the shared STFT stage for your sisters then that's fine by me"):
+       `audiokit::stft` (92a61a7), built to OpenEQ's, OpenSpectrum's and
+       our requirements; the engine runs on it, HOUSE byte-identical.
+       `tests/realtime_alloc.rs` now asserts that `process_block` never
+       allocates (every FFT used to: realfft's `process` allocates its
+       scratch per call). OpenEQ and OpenSpectrum adopt it when they
+       choose.
 
 - [x] **Live: edits made with Live's own device controls while the device
   is off never reach the saved state** (closed 2026-10-10: on 0.4.1,

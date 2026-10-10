@@ -36,7 +36,10 @@ mode). Latency is exactly one FFT window: 4096 samples.
 
 - **STFT**: N = 4096, hop = 1024, Hann analysis and synthesis windows
   (hann² COLA with the 1/1.5 normalizer). At 44.1 kHz that's a ~93 ms
-  window and 23 ms frames — PITCHMAP's documented numbers.
+  window and 23 ms frames — PITCHMAP's documented numbers. The framing,
+  FFTs and overlap-add are the family's `audiokit::stft::Stft`; the
+  engine's hop callback (`run_frame`) reads every channel's spectrum and
+  leaves its resynthesis spectra in place. The wet latency is exactly N.
 - **Instantaneous frequency** per bin via phase differences between frames
   (the Bernsee/phase-vocoder estimator): each bin k gets `f_true[k]`, its
   *actual* frequency, not the bin center. All pitch math downstream uses

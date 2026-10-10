@@ -20,8 +20,9 @@
 pub mod params;
 
 use audiokit::pitch::{self, midi_freq, princarg};
+use audiokit::stft::{Hop, Stft};
 use realfft::num_complex::Complex64;
-use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
+use realfft::{RealFftPlanner, RealToComplex};
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -279,14 +280,13 @@ pub struct Engine {
     n_fft: usize,
     hop: usize,
     bins: usize,
-    win: Vec<f64>,
-    fft: Arc<dyn RealToComplex<f64>>,
-    ifft: Arc<dyn ComplexToReal<f64>>,
-    // streaming state (per channel where applicable)
-    in_buf: Vec<Vec<f64>>,
-    fill: usize,
-    ola: Vec<Vec<f64>>,
-    out_fifo: Vec<VecDeque<f64>>,
+    /// The streaming frame (audiokit): framing, Hann analysis and
+    /// synthesis, overlap-add. Home between blocks; taken out while a
+    /// block runs so its hop callback can borrow the engine.
+    stft: Option<Stft<f64>>,
+    /// One sample per channel in and out of the frame.
+    sample_in: Vec<f64>,
+    sample_out: Vec<f64>,
     dry_fifo: Vec<VecDeque<f64>>,
     // per-channel spectra
     spec: Vec<Vec<Complex64>>,
@@ -312,14 +312,12 @@ pub struct Engine {
     note_recov: [f64; 128],
     tracks: Vec<Track>,
     // scratch
-    fft_in: Vec<f64>,
     fft_s: Arc<dyn RealToComplex<f64>>,
     fft_s_in: Vec<f64>,
+    fft_s_scratch: Vec<Complex64>,
     spec_s: Vec<Complex64>,
     mag_s: Vec<f64>,
     win_s: Vec<f64>,
-    spec_scratch: Vec<Complex64>,
-    yt: Vec<f64>,
     env: Vec<f64>,
     env_tmp: Vec<f64>,
     grid: Vec<f64>,
@@ -355,10 +353,9 @@ impl Engine {
         let channels = channels.max(1);
         let bins = n_fft / 2 + 1;
         let mut planner = RealFftPlanner::<f64>::new();
-        let fft = planner.plan_fft_forward(n_fft);
-        let ifft = planner.plan_fft_inverse(n_fft);
         let n_s = n_fft / 4; // short (amplitude) window
         let fft_s = planner.plan_fft_forward(n_s);
+        let fft_s_scratch = fft_s.make_scratch_vec();
         let win_s: Vec<f64> = (0..n_s)
             .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (n_s as f64 - 1.0)).cos())
             .collect();
@@ -366,19 +363,18 @@ impl Engine {
             .map(|n| 0.5 - 0.5 * (TWO_PI * n as f64 / (n_fft as f64 - 1.0)).cos())
             .collect();
         let zc = || vec![Complex64::new(0.0, 0.0); bins];
+        // Hann/Hann at 75% overlap: hann² sums to 1.5. The wet latency is
+        // exactly n_fft (PITCHMAP's 4096), which host PDC relies on.
+        let stft = Stft::new(&mut planner, channels, win.clone(), win, hop, 1.5, n_fft);
         let mut e = Self {
             sr,
             channels,
             n_fft,
             hop,
             bins,
-            win,
-            fft,
-            ifft,
-            in_buf: vec![vec![0.0; n_fft]; channels],
-            fill: 0,
-            ola: vec![vec![0.0; n_fft]; channels],
-            out_fifo: vec![VecDeque::with_capacity(2 * n_fft); channels],
+            stft: Some(stft),
+            sample_in: vec![0.0; channels],
+            sample_out: vec![0.0; channels],
             dry_fifo: vec![VecDeque::with_capacity(2 * n_fft); channels],
             spec: vec![zc(); channels],
             phi: vec![vec![0.0; bins]; channels],
@@ -397,14 +393,12 @@ impl Engine {
             note_ft: [0.0; 128],
             note_recov: [0.0; 128],
             tracks: Vec::with_capacity(TRACKS),
-            fft_in: vec![0.0; n_fft],
             fft_s,
             fft_s_in: vec![0.0; n_fft / 4],
+            fft_s_scratch,
             spec_s: vec![Complex64::new(0.0, 0.0); n_fft / 8 + 1],
             mag_s: vec![0.0; n_fft / 8 + 1],
             win_s,
-            spec_scratch: zc(),
-            yt: vec![0.0; n_fft],
             env: vec![0.0; bins],
             env_tmp: vec![0.0; bins],
             grid: Vec::with_capacity(128),
@@ -431,23 +425,17 @@ impl Engine {
     }
 
     pub fn reset(&mut self) {
+        // The frame primes its wet path to exactly n_fft of latency; the
+        // dry path matches it.
+        if let Some(stft) = &mut self.stft {
+            stft.reset();
+        }
         for c in 0..self.channels {
-            self.in_buf[c].iter_mut().for_each(|v| *v = 0.0);
-            self.ola[c].iter_mut().for_each(|v| *v = 0.0);
-            self.out_fifo[c].clear();
             self.dry_fifo[c].clear();
-            // prime wet with HOP (not n_fft): an emitted OLA chunk is
-            // complete N-HOP samples after its content ends, so total
-            // latency is exactly n_fft. (Priming N made true latency
-            // 2N-hop and broke host PDC alignment by 64 ms.)
-            for _ in 0..self.hop {
-                self.out_fifo[c].push_back(0.0);
-            }
             for _ in 0..self.n_fft {
                 self.dry_fifo[c].push_back(0.0);
             }
         }
-        self.fill = 0;
         self.prev_phi.iter_mut().for_each(|v| *v = 0.0);
         self.prev_mag_sum = -1.0;
         self.first_frame = true;
@@ -523,26 +511,25 @@ impl Engine {
     ) {
         let ch = self.channels.min(io.len());
         let len = if ch > 0 { io[0].len() } else { return };
+        let mut stft = self.stft.take().expect("the frame is home between blocks");
+        let mut input = std::mem::take(&mut self.sample_in);
+        let mut output = std::mem::take(&mut self.sample_out);
         for i in 0..len {
             for c in 0..ch {
                 let x = io[c][i] as f64;
                 self.dry_fifo[c].push_back(x);
-                self.in_buf[c][self.n_fft - self.hop + self.fill] = x;
+                input[c] = x;
             }
-            self.fill += 1;
-            if self.fill == self.hop {
-                self.run_frame(held, p);
-                self.fill = 0;
-                for c in 0..ch {
-                    self.in_buf[c].copy_within(self.hop.., 0);
-                }
-            }
+            stft.process_sample(&input, &mut output, |hop| self.run_frame(hop, held, p));
             for c in 0..ch {
-                let wet = self.out_fifo[c].pop_front().unwrap_or(0.0);
+                let wet = output[c];
                 let dry = self.dry_fifo[c].pop_front().unwrap_or(0.0);
                 io[c][i] = (p.mix * wet + (1.0 - p.mix) * dry) as f32;
             }
         }
+        self.stft = Some(stft);
+        self.sample_in = input;
+        self.sample_out = output;
     }
 
     fn build_grid(&mut self, held: &[bool; 128], mode: Mode) {
@@ -595,20 +582,17 @@ impl Engine {
         best
     }
 
-    fn run_frame(&mut self, held: &[bool; 128], p: &EngineParams) {
+    /// One hop: the frame has analyzed every channel; decide, map, and
+    /// leave each channel's resynthesis spectrum in the hop.
+    fn run_frame(&mut self, hop: &mut Hop<'_, f64>, held: &[bool; 128], p: &EngineParams) {
         let t = self.frame_idx;
         self.frame_idx += 1;
         let bin_hz = self.sr / self.n_fft as f64;
         let nch = self.channels;
 
-        // per-channel FFT
+        // per-channel spectra (the frame's Hann-windowed FFTs)
         for c in 0..nch {
-            for n in 0..self.n_fft {
-                self.fft_in[n] = self.in_buf[c][n] * self.win[n];
-            }
-            self.fft
-                .process(&mut self.fft_in, &mut self.spec[c])
-                .expect("fft");
+            self.spec[c].copy_from_slice(hop.spectrum(c));
             for k in 0..self.bins {
                 self.magc[c][k] = self.spec[c][k].norm();
                 self.phi[c][k] = self.spec[c][k].arg();
@@ -624,12 +608,12 @@ impl Engine {
             for n in 0..n_s {
                 let mut acc = 0.0;
                 for c in 0..nch {
-                    acc += self.in_buf[c][c0 + n];
+                    acc += hop.frame(c)[c0 + n];
                 }
                 self.fft_s_in[n] = acc / nch as f64 * self.win_s[n];
             }
             self.fft_s
-                .process(&mut self.fft_s_in, &mut self.spec_s)
+                .process_with_scratch(&mut self.fft_s_in, &mut self.spec_s, &mut self.fft_s_scratch)
                 .expect("fft_s");
             for k in 0..self.spec_s.len() {
                 self.mag_s[k] = self.spec_s[k].norm();
@@ -733,25 +717,10 @@ impl Engine {
         self.prev_mag_store.copy_from_slice(&self.mag);
         self.prev_mag_sum = mag_sum;
 
-        // synthesize, window, overlap-add, emit — per channel
-        let inv_n = 1.0 / self.n_fft as f64;
+        // hand each channel's synthesis spectrum back: the frame inverts,
+        // windows, overlap-adds and divides by the hann² sum (1.5)
         for c in 0..nch {
-            self.spec_scratch.copy_from_slice(&self.ysyn[c]);
-            self.spec_scratch[0].im = 0.0;
-            self.spec_scratch[self.bins - 1].im = 0.0;
-            self.ifft
-                .process(&mut self.spec_scratch, &mut self.yt)
-                .expect("ifft");
-            for n in 0..self.n_fft {
-                self.ola[c][n] += self.yt[n] * inv_n * self.win[n];
-            }
-            for n in 0..self.hop {
-                self.out_fifo[c].push_back(self.ola[c][n] / 1.5); // hann^2 COLA
-            }
-            self.ola[c].copy_within(self.hop.., 0);
-            for n in self.n_fft - self.hop..self.n_fft {
-                self.ola[c][n] = 0.0;
-            }
+            hop.spectrum_mut(c).copy_from_slice(&self.ysyn[c]);
         }
     }
 
