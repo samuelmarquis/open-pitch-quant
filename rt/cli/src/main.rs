@@ -342,14 +342,10 @@ fn main() {
         }
     }
     let g = if peak > 0.99 { 0.99 / peak } else { 1.0 };
-    // 24-bit out through audiokit. The integers keep this CLI's own
-    // quantizer (scale by 2^23 - 1, truncate), not Int24's (2^23, round):
-    // the HOUSE fence hashes these files, and each integer over 2^23 is
-    // exact in f32, so Int24 writes it back unchanged. Moving to Int24's
-    // scaling is up to 1 LSB and means re-baselining the fence.
-    let quantize = |x: f32| (x * g * 8_388_607.0) as i32 as f32 / 8_388_608.0;
+    // 24-bit out through audiokit, the family's standard Int24 (scaled by
+    // 2^23, rounded, clamped).
     let out: Vec<Vec<f32>> = (0..out_ch)
-        .map(|c| chans[c.min(ch - 1)][blocksize..blocksize + n_frames].iter().map(|&x| quantize(x)).collect())
+        .map(|c| chans[c.min(ch - 1)][blocksize..blocksize + n_frames].iter().map(|&x| x * g).collect())
         .collect();
     audiokit::sample::write_wav(std::path::Path::new(out_path), &out, sample_rate, audiokit::sample::WavEncoding::Int24)
         .unwrap_or_else(|e| die(&e.to_string()));

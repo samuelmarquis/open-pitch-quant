@@ -174,6 +174,12 @@ messages, and behavior belongs in the README; neither is kept here.
   design-lab session and its farm, one process per machine. bake.py's
   Blender steps refuse to run unless OPQ_BLENDER_FARM=1 (farm hosts only);
   `--only stepped --renders DIR` composites the farm's renders locally.
+- **The CLI writes the family's Int24 (Sam via terrible-cepstra,
+  2026-10-10):** "move to the standard system and forget the old
+  hashes". The HOUSE fence was re-recorded in 0.7.2 from audiokit Int24
+  renders. Before re-recording, every sample was checked against the
+  old renders: same shapes and rates, at most 2 LSB moved, and 2 only
+  above half scale. That is exactly the quantizer change.
 - **Reference data stays out of git (Sam, 2026-10-09):** refpacks and
   PITCHMAP renders are gitignored, to keep the repo small.
 - **The current sound survives (Sam, 2026-07-20):** HOUSE is a

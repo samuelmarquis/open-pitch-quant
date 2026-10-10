@@ -110,7 +110,10 @@ def main():
         return
 
     MANIFEST.write_text(json.dumps(
-        {"engine_commit": commit, "frozen": "2026-07-21",
+        {"engine_commit": commit,
+         # First frozen 2026-07-21; re-recorded 2026-10-10 on Sam's ruling,
+         # when opq's 24-bit output moved to audiokit's Int24 (up to 1 LSB).
+         "frozen": "2026-10-10",
          "law": "algorithm=house must reproduce these bytes forever",
          "renders": entries}, indent=1) + "\n")
     print(f"froze {len(entries)} renders @ {commit[:8]} -> "

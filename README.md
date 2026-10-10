@@ -114,6 +114,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.2** — the offline CLI's 24-bit WAVs use the family's standard
+  rounding (audiokit's Int24: scaled by 2^23 and rounded, where it used
+  to truncate at 2^23 − 1). Its renders move by at most 2 LSB, and the
+  HOUSE regression fence is re-recorded from them. The plugin is
+  unchanged.
 - **0.7.1** — the offline CLI (`opq`) reads AIFF and FLAC as well as
   WAV, through the family's sample loader (audiokit). Its 24-bit WAV
   output is byte-identical to before. The plugin is unchanged.
