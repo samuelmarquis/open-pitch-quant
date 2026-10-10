@@ -87,6 +87,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.4.1** — a knob drag's release anchor is measured with panelkit's
+  `Grabbed::press` (against where the knob is drawn); no visible change.
 - **0.4.0** — PITCHMAP without MIDI: a 21st parameter, **Map Source**
   (MIDI / Keys), and the screen's key ruler as a Lower Keyboard with
   per-key target, exclude and bypass (see `rt/panel` above). The wheel

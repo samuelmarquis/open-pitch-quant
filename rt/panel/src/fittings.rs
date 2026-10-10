@@ -150,13 +150,14 @@ impl Fittings {
             }
             Kind::Knob(_) => {
                 let start = state.params.get(id);
-                let (cx, cy) = widget.at;
+                // Measured against where the knob is drawn (panelkit's rule).
+                let anchor = interaction::Grabbed::press(Knob(control), (x, y), &*state);
                 self.capture = Some(Capture::Dial {
                     id,
                     start,
                     normalized: normalized(id, start),
                     last_y: y,
-                    anchor: interaction::Grabbed::new(Knob(control), (x, y), (cx, cy)),
+                    anchor,
                 });
                 edits.push(Edit::Begin(id));
             }
