@@ -78,7 +78,16 @@ messages, and behavior belongs in the README; neither is kept here.
   WIN's rerun of F5/F6 (and save-while-still-off) and an automation
   smoothness check.
 
+- [ ] When panelkit's generic offset anchor lands (interaction), replace
+  fittings.rs's own `ReleaseAnchor` with it; same behaviour.
+
 ## Rulings
+
+- **Family input rulings (Sam via terrible-cepstra, 2026-10-09):** the
+  wheel is "fingers up = value up" regardless of natural scrolling
+  (panelkit's `mount::scroll_notches` returns that; our fittings take a
+  positive notch as more); after a relative drag the cursor returns where
+  it was grabbed (our anchor: the knob's centre plus the press offset).
 
 - **Compatibility (Sam, 2026-10-09):** "we do not care about backwards
   compatibility anywhere — break things freely to keep everyone on a
