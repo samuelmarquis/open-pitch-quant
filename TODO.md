@@ -85,13 +85,13 @@ messages, and behavior belongs in the README; neither is kept here.
            drawn through panelkit `widgets::Keys`. The housing was
            rebaked at template bd863d6 (e1ea7a3's rack light: no band)
            and imported by `bake.py --only housing --renders DIR`.
-           - [ ] One rebake after DESIGN's p189 (keys and housing
-             together, since through-mounted keys cut holes in the
-             housing). On p183/p184 Sam asked for slightly larger
-             legends and keys through-mounted in the bezel. He also
-             called our row "too tall, too far to the right", and p189
-             says whether that's our `layout::viewer_key` rects or the
-             template. The rebake also brings sRGB hex and seated z.
+           - The post-p189 rebake (0.7.5, catalogue/v16*; Sam: "189 B,
+             ship it", template 3c07a68): through-mounted keys (0.5 mm
+             escutcheon, 1.4 mm proud), z seat, sRGB hex, a shared
+             --cap-height 5.75, the active key pressed (--travel 0.65).
+             Our rects were right ("too far to the right" came from
+             DESIGN's scratch layout). The housing needed no rebake:
+             each key's cut lies inside its own cell.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

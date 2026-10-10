@@ -114,6 +114,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.5** — the viewer keys are set into the bezel (through-mounted,
+  with a thin escutcheon), their legends one shared size, their LEDs in
+  true colour, and the lit key pressed in (catalogue/v16, v16-ladders,
+  v16-scope).
 - **0.7.4** — Glide can be typed in microseconds ("120000 μs", "µs" or
   "us"), under the family's rule that typing accepts every spelling. Host-
   typed text now reaches the plugin as UTF-8 over VST3 (open-wrac).

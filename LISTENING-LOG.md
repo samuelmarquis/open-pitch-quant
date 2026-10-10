@@ -558,5 +558,7 @@ the ceiling, so Keys editing and scrolling work in every viewer.
   DESIGN: "why are we waiting on bakes? The render farm exists now to
   get around this. Go, go, go!"), and the housing rebaked without the
   rack light's band. One rebake follows p189.
+- 0.7.5 (`catalogue/v16*`): the post-p189 keys (Sam on DESIGN's p189:
+  "189 B, ship it"), through-mounted, one legend size, sRGB LEDs.
 
 **Verdict:** *(pending)*

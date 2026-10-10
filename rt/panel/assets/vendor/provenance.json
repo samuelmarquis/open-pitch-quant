@@ -506,6 +506,10 @@
        "56",
        "--height",
        "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
        "--state",
        "inactive"
       ],
@@ -516,7 +520,7 @@
        64,
        16
       ],
-      "z": 0.06
+      "z": "seat"
      },
      {
       "component": "button-bezel",
@@ -540,6 +544,10 @@
        "56",
        "--height",
        "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
        "--state",
        "inactive"
       ],
@@ -550,7 +558,7 @@
        64,
        16
       ],
-      "z": 0.06
+      "z": "seat"
      },
      {
       "component": "button-bezel",
@@ -574,6 +582,10 @@
        "56",
        "--height",
        "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
        "--state",
        "inactive"
       ],
@@ -584,7 +596,7 @@
        64,
        16
       ],
-      "z": 0.06
+      "z": "seat"
      }
     ],
     "frame": [
@@ -610,12 +622,12 @@
     "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=scope:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/scope-inactive.png",
     "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=scope:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/scope-active.png"
    ],
-   "sha256": "a90cc80e34da4ad151d0e6d282091c0b79eb3f58bf525fd4894b67e97f1833d6",
-   "template": "bd863d6"
+   "sha256": "8d30c049ed79c75f68c955ab4962fa23ee5ce4ff73799da96c033bcf3666ed61",
+   "template": "3c07a68"
   }
  },
  "sources": {
   "open-cepstrum": "5b5d34906924870f023dbd0d29d041cde7e143e4",
-  "open-plugin-template": "bd863d65a6581ffab558741401daf40fe67466cf"
+  "open-plugin-template": "3c07a687dcf4a9a649b33ac2c62449f94f7f5c99"
  }
 }
