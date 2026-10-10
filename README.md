@@ -40,7 +40,7 @@ stem separation, ~93 ms latency, live.
   (Command, or Ctrl on Windows, for fine; double-click resets; the wheel
   works); switches throw on a click.
 
-  **Map Source** (the SOURCE knob on LAW, beside SCOPE): under **MIDI**
+  **Map Source** (the SOURCE switch on LAW, beside SCOPE): under **MIDI**
   the targets are the notes held on the MIDI side chain (PITCHMAP's MIDI
   MAP). Under **KEYS** they are set on the screen's key ruler, PITCHMAP's
   Lower Keyboard without MIDI: click a key to make it a target or exclude
@@ -96,6 +96,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.5.1** — Map Source is a switch (MIDI/KEYS) beside SCOPE, not a
+  knob: a two-position control is a switch.
 - **0.5.0** — the panel's first round of Sam's notes (catalogue/v11):
   - The screen is ink on paper: a paper-white field with dark markings.
     It has an always-shown scroll bar, and the wheel follows natural

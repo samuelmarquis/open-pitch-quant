@@ -142,8 +142,10 @@ convention existed.
 - Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f).
 - Panel: the family-idiom rebuild (0.3.0, catalogue/v07), with Sam's
   first nit round in progress: 0.5.0 (catalogue/v11) has the paper screen,
-  infotext and SOURCE knob. Waiting on DESIGN's option plates (housing,
-  stepped knob, FINISH face, viewer keys) and on panelkit `strip` (MIX in
+  infotext and SOURCE control (a switch since 0.5.1). Sam picked
+  DESIGN's beige-plastic housing, boss-ivory + knob-ring for Voices and
+  catalin-jade FINISH; waiting on their recipes, the viewer keys, and
+  panelkit `strip` (MIX in
   the bottom row); see LISTENING-LOG "Panel round 1" and TODO. The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

@@ -502,4 +502,18 @@ control--it should be displayed as such". Tonality Gate stays
 continuous. The stepped style is for Voices and Source only; DESIGN has
 been told.
 
+**DESIGN's option plates (2026-10-10), Sam verbatim:**
+- p179 (housing): "beige plastic is best, but let them know that the
+  panel buttons are hovering *way* above the actual surface of the bezel
+  (and if this is a problem on other panels it should be fixed there
+  too)"
+- p180 (stepped knob): "uhg, none of these. Maybe boss-ivory with the
+  knob-ring, but it looks ridiculous for the two-point controls (just
+  use a switch for those!)"
+- p181 (FINISH face): "let's go catalin jade"
+
+**Action:** SOURCE became a MIDI/KEYS bat switch (0.5.1). The picks and
+the hovering-key bug went to DESIGN with a request for recipes. Voices
+gets boss-ivory with knob-ring.
+
 **Verdict:** *(pending)*

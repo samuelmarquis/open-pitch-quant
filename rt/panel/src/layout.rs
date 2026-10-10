@@ -72,8 +72,8 @@ pub enum Control {
 }
 
 /// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
-/// is for continuous controls; the stepped controls (Voices, Map Source)
-/// borrow it until their own stepped style is baked.
+/// is for continuous controls; Voices, the one stepped knob, borrows it
+/// until its own stepped style is baked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Skin {
     Hifi,
@@ -172,7 +172,8 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
         w(p::ALGORITHM, Selector, (LAW.x + 70.0, ROW_1 + 22.0), "ALGORITHM", Law),
         w(p::FEEL, Knob(Hifi), (LAW.x + 186.0, ROW_1), "FEEL", Law),
         w(p::GLIDE, Knob(Hifi), (LAW.x + 258.0, ROW_1), "GLIDE", Law),
-        w(p::SOURCE, Knob(Hifi), (LAW.x + 40.0, ROW_2), "SOURCE", Law),
+        // A two-position control is a switch (Sam, 2026-10-10).
+        w(p::SOURCE, Toggle("MIDI", "KEYS"), (LAW.x + 40.0, ROW_2 + 4.0), "SOURCE", Law),
         w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 112.0, ROW_2 + 4.0), "SCOPE", Law),
         w(p::THRESHOLD, Knob(Hifi), (LAW.x + 186.0, ROW_2), "THRESHOLD", Law),
         w(p::ROUNDING, Toggle("SMART", "NEAREST"), (LAW.x + 258.0, ROW_2), "ROUNDING", Law),

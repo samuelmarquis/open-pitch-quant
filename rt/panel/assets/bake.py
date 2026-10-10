@@ -209,6 +209,9 @@ def main():
              "sprites": resample_sprites, "copies": copy_files}
     for step in args.only:
         steps[step](record)
+    # A vendored file that is gone (dropped from the board) leaves no record.
+    for name in [name for name in record if not (VENDOR / name).exists()]:
+        del record[name]
     for name, entry in record.items():
         path = VENDOR / name
         if path.exists():

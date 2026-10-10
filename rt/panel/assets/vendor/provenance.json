@@ -43,12 +43,6 @@
    "sha256": "28a920c8043574965b6702aef6435c447ba9858b45cf83d7c44a5eecffcb96fd",
    "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-davies-black.png"
   },
-  "knobs/knob-handwheel.png": {
-   "bake": [],
-   "kind": "knob atlas (cepstrum-knob-preview/1)",
-   "sha256": "13abd8fcb51657cabac14d9e0e0b8f713dbc8ace7d1d0485b9352bea5813a07d",
-   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-handwheel.png"
-  },
   "knobs/knob-heady.png": {
    "bake": [],
    "kind": "knob atlas (cepstrum-knob-preview/1)",
@@ -74,15 +68,6 @@
    "kind": "knob atlas (cepstrum-knob-preview/1)",
    "sha256": "aae14f8028938b51b263a2bf42d9aa59b39a4345f10f301bf9296647272f6fe0",
    "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-leather-oxblood.png"
-  },
-  "knobs/knob-witchhat-black.png": {
-   "bake": [
-    "--preset",
-    "black"
-   ],
-   "kind": "knob atlas (cepstrum-knob-preview/1)",
-   "sha256": "89cbdd3fff0cc17ea6dc5cfccd97d9e8c69c8df5e10704b98602f0a039373f00",
-   "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-witchhat-black.png"
   },
   "knobs/knob-wood-ebony.png": {
    "bake": [
@@ -136,28 +121,6 @@
     80
    ],
    "source": "open-plugin-template/components/led-indicator/renders/led_green_b15.png"
-  },
-  "led-red-off.png": {
-   "crop": null,
-   "kind": "component render, resampled",
-   "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "1eb7e233316de31a4c155706d0cc176d571dbc8649afc3ba7d2ccf7b01be5b68",
-   "size": [
-    80,
-    80
-   ],
-   "source": "open-plugin-template/components/led-indicator/renders/led_red_b00.png"
-  },
-  "led-red-on.png": {
-   "crop": null,
-   "kind": "component render, resampled",
-   "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "b2489fc4e3f93cbc6f1dd56f03a629a733a0ff89ea2e5b17fdd80b03e37e8eff",
-   "size": [
-    80,
-    80
-   ],
-   "source": "open-plugin-template/components/led-indicator/renders/led_red_b15.png"
   },
   "monitor-housing.png": {
    "kind": "copied",
@@ -407,6 +370,6 @@
  },
  "sources": {
   "open-cepstrum": "4a36918876ed479fee14a69c43dbf98c77a7d261",
-  "open-plugin-template": "a846f26dd3caa3cff4e851b455623f442d707621"
+  "open-plugin-template": "38ee1dfbe92d67bdb65e5c640a0b04655410df8e"
  }
 }

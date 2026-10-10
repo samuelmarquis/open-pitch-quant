@@ -443,13 +443,12 @@ mod tests {
     }
 
     #[test]
-    fn map_source_is_a_stepped_knob() {
+    fn map_source_is_a_switch() {
         let mut s = PanelState::default();
         let mut f = Fittings::default();
         let (x, y) = at(p::SOURCE);
-        f.down(&mut s, x, y, Modifiers::default(), 1);
-        let drag = f.drag(&mut s, x, y - 120.0, Modifiers::default());
-        assert_eq!(drag, vec![Edit::Value(p::SOURCE, 1.0)]);
+        let edits = f.down(&mut s, x, y, Modifiers::default(), 1);
+        assert_eq!(edits, vec![Edit::Begin(p::SOURCE), Edit::Value(p::SOURCE, 1.0), Edit::End(p::SOURCE)]);
         assert!(s.keys_source());
         f.up(&mut s);
     }
