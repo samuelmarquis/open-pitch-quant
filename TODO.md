@@ -55,12 +55,10 @@ messages, and behavior belongs in the README; neither is kept here.
        lock, resize, close while playing). sam-pc passed on 0.4.1
        (E1–E7, 2026-10-10); Ctrl-drag fine and cursor hiding couldn't be
        observed by the tester.
-  5. [ ] The WRAC template's own docs. `wrac/README.md` now describes
-     this workspace and points at `../open-wrac`, with the lineage in
-     `wrac/PROVENANCE.txt`. Still to remove: `wrac/README_JA.md` and
-     `wrac/docs/`, which describe the template's demo plugin. Claude's
-     `git rm` was refused by the session's permissions; it waits for
-     Sam.
+  5. The WRAC template's own docs (done, 2026-10-10): `wrac/README.md`
+     describes this workspace and points at `../open-wrac`, with the
+     lineage in `wrac/PROVENANCE.txt`; Sam removed `README_JA.md` and
+     `wrac/docs/`.
   6. The pitch analysis in `open-audiokit` (0.4.5, done; Sam: "I'd
      support separating pitch tracking out now"): `audiokit::pitch` holds
      the instantaneous frequency, peaks and regions, and the greedy

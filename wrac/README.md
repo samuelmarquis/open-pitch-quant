@@ -14,8 +14,5 @@ cargo xtask install  -p opq_plugin_wrac --release   # CLAP, VST3, AU
 cargo xtask validate -p opq_plugin_wrac --release   # clap-validator, VST3 validator, auval
 ```
 
-Release builds only: a debug engine underruns in a host.
-
-`README_JA.md` and `docs/` are the upstream WRAC template's own docs. They
-describe its WebView demo plugin, not this one, and are kept only until
-they're removed; for setup and readiness checks read `../open-wrac`.
+Release builds only: a debug engine underruns in a host. For setup and
+the readiness checks, read `../open-wrac`.
