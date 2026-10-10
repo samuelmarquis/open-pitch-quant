@@ -13,20 +13,21 @@
 //!   edits reach the host and taken after.
 //! - The view refuses keyboard focus except while the pointer edits it, so
 //!   DAW shortcuts stay with the host.
-use crate::gui_shared::{Scene, ViewState, apply};
+//! - The view's class is panelkit's, registered per loaded image
+//!   (`mount::panel_view`): a host loading two of our formats (Live with
+//!   the AU and the VST3) gets a working editor from each.
+use crate::gui_shared::{Scene, ViewState, apply, fitted_size};
 use crate::state::SharedState;
 use block2::RcBlock;
+use objc2::MainThreadMarker;
 use objc2::rc::Retained;
-use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send, sel};
-use objc2_app_kit::{NSCursor, NSEvent, NSEventModifierFlags, NSView, NSWindowDidResignKeyNotification};
+use objc2_app_kit::{NSEvent, NSEventModifierFlags, NSView};
 use objc2_core_foundation::{CGPoint, CGRect, CGSize};
-use objc2_foundation::{
-    NSNotification, NSNotificationCenter, NSObjectProtocol, NSRunLoop, NSRunLoopCommonModes, NSTimer,
-};
+use objc2_foundation::{NSRunLoop, NSRunLoopCommonModes, NSTimer};
 use opq_panel::{Edit, HEIGHT, Modifiers, WIDTH};
 use panelkit::interaction::GestureDelivery;
 use panelkit::keys;
-use panelkit::mount::{self, MainCell, PointerLock, ViewWindowHandle};
+use panelkit::mount::{self, MainCell, MousePhase as Mouse, PanelView, PointerLock, ViewWindowHandle};
 use std::cell::RefCell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::ptr::NonNull;
@@ -46,97 +47,84 @@ pub(crate) struct PanelGui {
 }
 
 struct Runtime {
-    view: Retained<OpqView>,
+    view: Retained<NSView>,
     timer: Retained<NSTimer>,
     stopped: Arc<AtomicBool>,
 }
 
+/// The editor view's Rust state, held by panelkit's view class.
 struct Ivars {
     state: Rc<RefCell<ViewState>>,
     delivery: Rc<GestureDelivery>,
     pointer: PointerLock,
 }
 
-#[derive(Clone, Copy)]
-enum Mouse {
-    Down,
-    Drag,
-    Up,
-}
-
-define_class!(
-    #[unsafe(super(NSView))]
-    #[thread_kind = MainThreadOnly]
-    #[name = "OpenPitchQuantPanelView"]
-    #[ivars = Ivars]
-    struct OpqView;
-    unsafe impl NSObjectProtocol for OpqView {}
-    impl OpqView {
-        #[unsafe(method(isFlipped))]
-        fn is_flipped(&self) -> bool { true }
-        #[unsafe(method(acceptsFirstMouse:))]
-        fn accepts_first_mouse(&self, _event: Option<&NSEvent>) -> bool { true }
-        #[unsafe(method(acceptsFirstResponder))]
-        fn accepts_first_responder(&self) -> bool { true }
-        #[unsafe(method(resignFirstResponder))]
-        fn resign_first_responder(&self) -> bool {
-            self.cancel();
-            unsafe { msg_send![super(self), resignFirstResponder] }
-        }
-        #[unsafe(method(keyDown:))]
-        fn key_down(&self, event: &NSEvent) { self.key(event); }
-        #[unsafe(method(mouseMoved:))]
-        fn mouse_moved(&self, event: &NSEvent) { self.track(event); }
-        #[unsafe(method(mouseEntered:))]
-        fn mouse_entered(&self, event: &NSEvent) { self.track(event); }
-        #[unsafe(method(mouseExited:))]
-        fn mouse_exited(&self, _event: &NSEvent) { self.pointer_exited(); }
-        #[unsafe(method(mouseDown:))]
-        fn mouse_down(&self, event: &NSEvent) { self.mouse(event, Mouse::Down); }
-        #[unsafe(method(mouseDragged:))]
-        fn mouse_dragged(&self, event: &NSEvent) { self.mouse(event, Mouse::Drag); }
-        #[unsafe(method(mouseUp:))]
-        fn mouse_up(&self, event: &NSEvent) { self.mouse(event, Mouse::Up); }
-        #[unsafe(method(rightMouseDown:))]
-        fn right_mouse_down(&self, event: &NSEvent) { self.context(event); }
-        #[unsafe(method(scrollWheel:))]
-        fn scroll_wheel(&self, event: &NSEvent) { self.scroll(event); }
-        #[unsafe(method(windowDidResignKey:))]
-        fn window_did_resign_key(&self, _notification: &NSNotification) { self.cancel(); }
-        #[unsafe(method(resetCursorRects))]
-        fn reset_cursor_rects(&self) {
-            if !self.isHiddenOrHasHiddenAncestor() {
-                self.addCursorRect_cursor(self.visibleRect(), &NSCursor::arrowCursor());
-            }
-        }
-        #[unsafe(method(viewWillMoveToWindow:))]
-        fn will_move_to_window(&self, window: Option<&objc2_app_kit::NSWindow>) {
-            self.cancel();
-            let center = NSNotificationCenter::defaultCenter();
-            unsafe {
-                center.removeObserver_name_object(self, Some(NSWindowDidResignKeyNotification), None);
-                if let Some(window) = window {
-                    center.addObserver_selector_name_object(
-                        self,
-                        sel!(windowDidResignKey:),
-                        Some(NSWindowDidResignKeyNotification),
-                        Some(window),
-                    );
-                }
-                let _: () = msg_send![super(self), viewWillMoveToWindow: window];
-            }
+/// What the class forwards (it answers flipped, first mouse and responder,
+/// the cursor and its window's resign-key itself).
+impl PanelView for Ivars {
+    fn mouse(&self, view: &NSView, event: &NSEvent, phase: Mouse) {
+        OpqView::of(view).mouse(event, phase);
+    }
+    fn right_mouse_down(&self, view: &NSView, event: &NSEvent) {
+        OpqView::of(view).context(event);
+    }
+    fn moved(&self, view: &NSView, event: &NSEvent) {
+        OpqView::of(view).track(event);
+    }
+    fn exited(&self, view: &NSView, _event: &NSEvent) {
+        OpqView::of(view).pointer_exited();
+    }
+    fn scroll(&self, view: &NSView, event: &NSEvent) {
+        OpqView::of(view).scroll(event);
+    }
+    fn key_down(&self, view: &NSView, event: &NSEvent) -> bool {
+        OpqView::of(view).key(event)
+    }
+    /// A modifier pressed or let go over a key of the ruler: the infotext
+    /// follows (Option is bypass).
+    fn flags_changed(&self, _view: &NSView, event: &NSEvent) {
+        if let Ok(mut state) = self.state.try_borrow_mut() {
+            let st = &mut *state;
+            let (x, y) = st.pointer;
+            st.fittings.hover_with_modifiers(&mut st.panel, x, y, modifiers(event));
         }
     }
-);
+    fn cancel(&self, view: &NSView) {
+        OpqView::of(view).cancel();
+    }
+}
+
+/// The editor view as this mount sees it: panelkit's per-image view class
+/// (`mount::panel_view`) holding [`Ivars`].
+#[repr(transparent)]
+struct OpqView(NSView);
+
+impl std::ops::Deref for OpqView {
+    type Target = NSView;
+    fn deref(&self) -> &NSView {
+        &self.0
+    }
+}
 
 impl OpqView {
-    fn new(mtm: MainThreadMarker, state: Rc<RefCell<ViewState>>) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(Ivars { state, delivery: Rc::new(GestureDelivery::default()), pointer: PointerLock::new() });
+    /// A new editor view of panelkit's class for this image.
+    fn create(mtm: MainThreadMarker, state: Rc<RefCell<ViewState>>) -> Retained<NSView> {
         let frame = CGRect {
             origin: CGPoint { x: 0.0, y: 0.0 },
             size: CGSize { width: WIDTH as f64, height: HEIGHT as f64 },
         };
-        unsafe { msg_send![super(this), initWithFrame: frame] }
+        let ivars = Ivars { state, delivery: Rc::new(GestureDelivery::default()), pointer: PointerLock::new() };
+        mount::panel_view(mtm, "OpenPitchQuant", frame, Box::new(ivars))
+    }
+
+    /// A view panelkit made for this mount.
+    fn of(view: &NSView) -> &OpqView {
+        // SAFETY: `OpqView` is `repr(transparent)` over NSView.
+        unsafe { &*(std::ptr::from_ref(view).cast::<OpqView>()) }
+    }
+
+    fn ivars(&self) -> &Ivars {
+        mount::panel_handler::<Ivars>(&self.0).expect("the editor view outlives its use")
     }
 
     /// Runs an input handler and delivers its edits outside the state borrow.
@@ -275,7 +263,10 @@ impl OpqView {
         });
     }
 
-    fn key(&self, event: &NSEvent) {
+    /// A key: true if the panel took it. The panel takes only the keys it
+    /// uses (panelkit's policy); the class passes the rest up the responder
+    /// chain to the host's own shortcuts and transport.
+    fn key(&self, event: &NSEvent) -> bool {
         let mods = modifiers(event);
         // Command-A reads "a": the characters before Command.
         let characters = if mods.command { event.charactersIgnoringModifiers() } else { event.characters() };
@@ -284,18 +275,13 @@ impl OpqView {
         if key == "Escape" && self.ivars().delivery.is_active() {
             self.ivars().delivery.request_rollback();
             self.cancel();
-            return;
+            return true;
         }
-        // The panel takes only the keys it uses (panelkit's policy); the
-        // rest reach the host's own shortcuts and transport.
         let wanted = self.ivars().state.try_borrow().is_ok_and(|st| st.fittings.wants_key(&st.panel, key, mods));
-        if !wanted {
-            unsafe {
-                let _: () = msg_send![super(self), keyDown: event];
-            }
-            return;
+        if wanted {
+            self.dispatch(|st| st.fittings.key(&mut st.panel, key, mods));
         }
-        self.dispatch(|st| st.fittings.key(&mut st.panel, key, mods));
+        wanted
     }
 
     /// A right-click: a text value starts typing.
@@ -432,7 +418,7 @@ impl PanelGui {
 
     pub(crate) fn cancel_gestures(&self) {
         if let Ok(view) = self.view() {
-            view.cancel();
+            OpqView::of(&view).cancel();
         }
     }
 
@@ -452,15 +438,16 @@ impl PanelGui {
                 return;
             }
             runtime.timer.invalidate();
-            runtime.view.release_focus();
-            if let Ok(mut state) = runtime.view.ivars().state.try_borrow_mut() {
+            let view = OpqView::of(&runtime.view);
+            view.release_focus();
+            if let Ok(mut state) = view.ivars().state.try_borrow_mut() {
                 state.scene = None;
             }
             runtime.view.removeFromSuperview();
         }
     }
 
-    fn view(&self) -> PluginResult<Retained<OpqView>> {
+    fn view(&self) -> PluginResult<Retained<NSView>> {
         let _mtm = MainThreadMarker::new().ok_or(PluginError::InvalidState)?;
         self.runtime().as_ref().map(|MainCell(rt)| rt.view.clone()).ok_or(PluginError::InvalidState)
     }
@@ -509,8 +496,7 @@ impl PluginGuiExtension for PanelGui {
         })
     }
     fn adjust_size(&self, size: GuiSize) -> PluginResult<GuiSize> {
-        let scale = (size.width as f64 / WIDTH as f64).min(size.height as f64 / HEIGHT as f64).clamp(0.7, 2.0);
-        Ok(GuiSize { width: (WIDTH as f64 * scale).round() as u32, height: (HEIGHT as f64 * scale).round() as u32 })
+        Ok(fitted_size(size))
     }
     fn set_size(&self, size: GuiSize) -> PluginResult<()> {
         let _mtm = MainThreadMarker::new().ok_or(PluginError::InvalidState)?;
@@ -519,7 +505,7 @@ impl PluginGuiExtension for PanelGui {
             return Err(PluginError::InvalidState);
         }
         if let Ok(view) = self.view() {
-            view.cancel();
+            OpqView::of(&view).cancel();
             view.setFrameSize(CGSize { width: size.width as f64, height: size.height as f64 });
         }
         *self.size.lock().unwrap_or_else(|e| e.into_inner()) = size;
@@ -534,7 +520,7 @@ impl PluginGuiExtension for PanelGui {
         // The host guarantees the parent outlives this attachment.
         let parent = unsafe { &*(ns_view.get() as *const NSView) };
         let state = Rc::new(RefCell::new(ViewState::new(self.shared.clone(), self.notifier.clone())));
-        let view = OpqView::new(mtm, state);
+        let view = OpqView::create(mtm, state);
         let size = self.get_size()?;
         view.setFrameSize(CGSize { width: size.width as f64, height: size.height as f64 });
         view.setWantsLayer(true);
@@ -545,9 +531,9 @@ impl PluginGuiExtension for PanelGui {
         let tick_view = view.clone();
         let block = RcBlock::new(move |timer: NonNull<NSTimer>| {
             if !tick_stopped.load(Ordering::Acquire) {
-                tick(&tick_view);
+                tick(OpqView::of(&tick_view));
             } else {
-                tick_view.cancel();
+                OpqView::of(&tick_view).cancel();
                 unsafe { timer.as_ref().invalidate() };
             }
         });
@@ -562,7 +548,7 @@ impl PluginGuiExtension for PanelGui {
     }
     fn hide(&self) -> PluginResult<()> {
         let view = self.view()?;
-        view.release_focus();
+        OpqView::of(&view).release_focus();
         view.setHidden(true);
         Ok(())
     }

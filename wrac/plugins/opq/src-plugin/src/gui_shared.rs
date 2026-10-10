@@ -10,7 +10,32 @@ use panelkit::gpu::Present;
 use panelkit::mount::ViewWindowHandle;
 use std::sync::Arc;
 use std::time::Instant;
-use wrac_clap_adapter::HostParamsEditNotifier;
+use wrac_clap_adapter::{GuiSize, HostParamsEditNotifier};
+
+/// The editor's largest scale, both mounts.
+pub(crate) const MAX_SCALE: f64 = 2.0;
+
+/// The board's aspect at the scale `size` allows (0.7 to `MAX_SCALE`).
+/// Rounding each side of one scale can land on a size that fits back a
+/// pixel smaller (1102x769 fits to 1101x769), and then `set_size` refused
+/// the size `adjust_size` had just proposed (open-comp's GUI host found it
+/// in every family editor). So the fit repeats until it holds: what
+/// `adjust_size` proposes, `set_size` accepts. OpenCepstrum's fitted_size.
+pub(crate) fn fitted_size(size: GuiSize) -> GuiSize {
+    let fit = |size: GuiSize| {
+        let scale = (size.width as f64 / WIDTH as f64).min(size.height as f64 / HEIGHT as f64).clamp(0.7, MAX_SCALE);
+        GuiSize { width: (WIDTH as f64 * scale).round() as u32, height: (HEIGHT as f64 * scale).round() as u32 }
+    };
+    let mut fitted = fit(size);
+    for _ in 0..4 {
+        let again = fit(fitted);
+        if (again.width, again.height) == (fitted.width, fitted.height) {
+            break;
+        }
+        fitted = again;
+    }
+    fitted
+}
 
 /// Commit a whole editor operation, then tell the host, so a reentrant host
 /// callback reads the new values.
@@ -126,5 +151,23 @@ impl Scene {
             log::debug!("OpenPitchQuant frame dropped: {error}");
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A host proposes its rect a pixel larger than the size it set (as
+    /// clap-wrapper does); every size the fit proposes, it accepts.
+    #[test]
+    fn a_fitted_size_fits_to_itself() {
+        for width in 700..2400 {
+            for height in [width * HEIGHT / WIDTH, width * HEIGHT / WIDTH + 1, 2000] {
+                let proposed = fitted_size(GuiSize { width, height });
+                let again = fitted_size(proposed);
+                assert_eq!((again.width, again.height), (proposed.width, proposed.height), "{width}x{height}");
+            }
+        }
     }
 }

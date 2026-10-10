@@ -18,7 +18,10 @@
 //!
 //! The initial size follows fractional desktop DPI. Rendering ceils to 1x/2x
 //! and the present blit downsamples fractional sizes.
-use crate::gui_shared::{Scene, ViewState, apply};
+// The editor's size follows the content scale fractionally (a 150% desktop
+// gets a 150% window) up to MAX_SCALE, while the Board keeps its own 1x/2x
+// densities.
+use crate::gui_shared::{MAX_SCALE, Scene, ViewState, apply, fitted_size};
 use crate::state::SharedState;
 use opq_panel::{Edit, HEIGHT, Modifiers, WIDTH};
 use panelkit::interaction::GestureDelivery;
@@ -60,9 +63,6 @@ const WM_MOUSELEAVE: u32 = 0x02A3;
 
 const TICK_MS: u32 = 33; // ~30 Hz, the Cocoa timer's beat
 const TIMER_ID: usize = 1;
-/// The editor's size follows the content scale fractionally (a 150% desktop
-/// gets a 150% window), while the Board keeps its own 1x/2x densities.
-const MAX_SCALE: f64 = 2.0;
 
 pub(crate) struct PanelGui {
     shared: Arc<SharedState>,
@@ -724,8 +724,7 @@ impl PluginGuiExtension for PanelGui {
         })
     }
     fn adjust_size(&self, size: GuiSize) -> PluginResult<GuiSize> {
-        let scale = (size.width as f64 / WIDTH as f64).min(size.height as f64 / HEIGHT as f64).clamp(0.7, MAX_SCALE);
-        Ok(GuiSize { width: (WIDTH as f64 * scale).round() as u32, height: (HEIGHT as f64 * scale).round() as u32 })
+        Ok(fitted_size(size))
     }
     fn set_size(&self, size: GuiSize) -> PluginResult<()> {
         let want = self.adjust_size(size)?;

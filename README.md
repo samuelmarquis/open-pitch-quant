@@ -114,6 +114,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.6** — on macOS, the editor opens in every format a host loads.
+  Live with both the AU and the VST3 used to show a blank editor for the
+  second. Every resize the editor proposes to a host is now one it
+  accepts; a reattached editor used to refuse its own size.
 - **0.7.5** — the viewer keys are set into the bezel (through-mounted,
   with a thin escutcheon), their legends one shared size, their LEDs in
   true colour, and the lit key pressed in (catalogue/v16, v16-ladders,
