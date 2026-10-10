@@ -270,8 +270,10 @@ def bake_stepped(record, renders=None):
             }
 
 
-def bake_housing(record):
-    no_local_blender()
+def bake_housing(record, renders=None):
+    """With `renders` (the farm's monitor-housing.png, housing.json and
+    receipts.txt), only takes the farm's housing in, checking its layout is
+    this one and its receipt names the file; no Blender."""
     x, y, w, h = HOUSING_RECT
     pad = HOUSING_PAD
     frame = [x - pad, y - pad, w + 2 * pad, h + 2 * pad]
@@ -281,6 +283,29 @@ def bake_housing(record):
         "elements": [{"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
                       "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS}],
     }
+    if renders:
+        farm = Path(renders)
+        out = farm / "monitor-housing.png"
+        lines = (farm / "receipts.txt").read_text().splitlines()
+        receipt = [r for r in lines if r.startswith("rack ") and r.endswith(out.name)]
+        template = [r.split()[1] for r in lines if r.startswith("template ")]
+        if not out.exists() or not receipt:
+            sys.exit("housing: the farm's housing or its receipt is missing")
+        if json.loads((farm / "housing.json").read_text()) != layout:
+            sys.exit("housing: the farm baked a different layout from this one")
+        shutil.copyfile(out, VENDOR / out.name)
+        record[out.name] = {
+            "kind": "monitor housing, composer bake (rack.py), on DESIGN's farm",
+            "generator": "open-plugin-template/components/_studio/rack.py",
+            "template": template[-1] if template else None,
+            "layout": layout,
+            "args": ["LAYOUT.json", "OUT.png", "--density", "2"],
+            "drawn_at": frame,
+            "receipt": receipt[-1:],
+        }
+        print("housing (farm)", flush=True)
+        return
+    no_local_blender()
     with tempfile.TemporaryDirectory() as temp:
         layout_path = Path(temp) / "housing.json"
         layout_path.write_text(json.dumps(layout, indent=1))
@@ -300,6 +325,55 @@ def bake_housing(record):
             "receipt": [line for line in run.stdout.splitlines() if line.startswith("rack")][-1:],
         }
         print("housing", flush=True)
+
+
+# The viewer keys (layout.rs Viewer::ALL order, rightmost first): button-bezel
+# keys baked on DESIGN's farm through rack.py with the housing as their
+# matte, one 128x32 cell per state (each key's 64x16 rect at 2x).
+VIEWER_KEYS = ["transect", "ladders", "scope"]
+VIEWER_KEY_STATES = ["inactive", "active"]
+VIEWER_KEY_CELL = (128, 32)
+
+
+def pack_viewer_keys(record, renders=None):
+    """Packs the farm's keys/<key>-<state>.png into one straight-alpha row:
+    each key's inactive then active cell (panelkit widgets::Keys, 2 states).
+    Farm renders only: a key bake is Blender's."""
+    from PIL import Image
+
+    if not renders:
+        sys.exit("keys: pass --renders (the farm's directory); keys are baked on the farm")
+    farm = Path(renders)
+    lines = (farm / "receipts.txt").read_text().splitlines()
+    template = [r.split()[2] for r in lines if r.startswith("keys: template ")]
+    w, h = VIEWER_KEY_CELL
+    atlas = Image.new("RGBA", (w * len(VIEWER_KEYS) * len(VIEWER_KEY_STATES), h))
+    receipts = []
+    for k, key in enumerate(VIEWER_KEYS):
+        for s, state in enumerate(VIEWER_KEY_STATES):
+            name = f"{key}-{state}.png"
+            receipt = [r for r in lines if r.startswith("rack ") and r.endswith(f"keys/{name}")]
+            path = farm / "keys" / name
+            if not path.exists() or not receipt:
+                sys.exit(f"keys: the farm's {name} or its receipt is missing")
+            with Image.open(path) as cell:
+                if cell.size != VIEWER_KEY_CELL or cell.mode != "RGBA":
+                    sys.exit(f"keys: {name} is {cell.size} {cell.mode}, not {VIEWER_KEY_CELL} RGBA")
+                atlas.paste(cell, ((k * len(VIEWER_KEY_STATES) + s) * w, 0))
+            receipts += receipt
+    out = VENDOR / "viewer-keys.png"
+    atlas.save(out)
+    record[out.name] = {
+        "kind": "viewer key row, button-bezel composer bakes (rack.py) on DESIGN's farm, housing as matte",
+        "generator": "open-plugin-template/components/_studio/rack.py",
+        "template": template[-1] if template else None,
+        "layout": json.loads((farm / "keys.json").read_text()),
+        "cells": [f"{key} {state}" for key in VIEWER_KEYS for state in VIEWER_KEY_STATES],
+        "cell": list(VIEWER_KEY_CELL),
+        "packing": "PIL paste, straight alpha (panelkit Keys draws with paint::ART)",
+        "receipts": receipts,
+    }
+    print("viewer keys (farm)", flush=True)
 
 
 def vendor_knobs(record):
@@ -346,8 +420,9 @@ def copy_files(record):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=["plates", "components", "stepped", "housing",
-                                                      "knobs", "sprites", "copies"])
-    parser.add_argument("--renders", help="the farm's renders (plates, stepped knob): take them in, no Blender")
+                                                      "keys", "knobs", "sprites", "copies"])
+    parser.add_argument("--renders",
+                        help="the farm's renders (plates, stepped knob, housing): take them in, no Blender")
     args = parser.parse_args()
     VENDOR.mkdir(exist_ok=True)
     manifest_path = VENDOR / "provenance.json"
@@ -356,7 +431,9 @@ def main():
     steps = {"plates": lambda record: bake_plates(record, args.renders),
              "components": render_components,
              "stepped": lambda record: bake_stepped(record, args.renders),
-             "housing": bake_housing, "knobs": vendor_knobs, "sprites": resample_sprites,
+             "housing": lambda record: bake_housing(record, args.renders),
+             "keys": lambda record: pack_viewer_keys(record, args.renders),
+             "knobs": vendor_knobs, "sprites": resample_sprites,
              "copies": copy_files}
     for step in args.only:
         steps[step](record)
@@ -367,10 +444,13 @@ def main():
         path = VENDOR / name
         if path.exists():
             entry["sha256"] = digest(path)
-    manifest["sources"] = {
-        "open-plugin-template": git_head(TEMPLATE),
-        "open-cepstrum": git_head(CEPSTRUM),
-    }
+    # A source's commit is the one this run drew from: only a step that took
+    # files from it moves it (a housing import leaves cep's knobs dated).
+    sources = manifest.setdefault("sources", {})
+    if {"plates", "components", "stepped", "housing", "keys", "sprites"} & set(args.only):
+        sources["open-plugin-template"] = git_head(TEMPLATE)
+    if {"knobs", "copies"} & set(args.only):
+        sources["open-cepstrum"] = git_head(CEPSTRUM)
     manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
 
 

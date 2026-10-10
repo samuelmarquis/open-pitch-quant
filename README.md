@@ -114,6 +114,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.3** — the viewer keys are baked keys on the bezel, with the
+  shown viewer's LED lit (catalogue/v15, v15-ladders, v15-scope). The
+  monitor housing is rebaked under the template's corrected rack light,
+  which removes a band that crossed its bezel.
 - **0.7.2** — the offline CLI's 24-bit WAVs use the family's standard
   rounding (audiokit's Int24: scaled by 2^23 and rounded, where it used
   to truncate at 2^23 − 1). Its renders move by at most 2 LSB, and the

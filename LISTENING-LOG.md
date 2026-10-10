@@ -554,5 +554,9 @@ the ceiling, so Keys editing and scrolling work in every viewer.
     semitone each, u8 at 0.5 dB) with each frame; HOUSE byte-identical.
 - The keys are panelkit `text_button` stand-ins. DESIGN has the baked
   row queued behind the p183 key fixes.
+- 0.7.3 (`catalogue/v15*`): the baked keys, on pre-p183 canon (Sam to
+  DESIGN: "why are we waiting on bakes? The render farm exists now to
+  get around this. Go, go, go!"), and the housing rebaked without the
+  rack light's band. One rebake follows p189.
 
 **Verdict:** *(pending)*

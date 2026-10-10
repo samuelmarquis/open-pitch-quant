@@ -105,6 +105,8 @@ struct Textures {
     voices: usize,
     selector: [usize; 2],
     toggle: [usize; 2],
+    /// The viewer keys' row: each key up, then lit.
+    viewer_keys: usize,
 }
 
 pub struct Board {
@@ -164,6 +166,7 @@ impl Board {
             voices: up(pack::KNOB_VOICES)?,
             selector: [up(pack::SELECTOR_HOUSE)?, up(pack::SELECTOR_ORACLE)?],
             toggle: [up(pack::TOGGLE_DOWN)?, up(pack::TOGGLE_UP)?],
+            viewer_keys: up(pack::VIEWER_KEYS)?,
         };
         Ok(Self { canvas, t })
     }
@@ -513,18 +516,16 @@ impl Board {
     }
 
     /// The viewer keys on the top bezel, stacked left from the screen's
-    /// top-right edge. Stand-ins (panelkit's text button) until DESIGN's
-    /// baked key row lands.
+    /// top-right edge: DESIGN's baked row (panelkit's Keys), the shown
+    /// viewer's key lit.
     fn viewer_keys(&mut self, state: &PanelState) {
+        let keys = widgets::Keys {
+            sheet: widgets::Sheet { columns: 2 * Viewer::ALL.len() as u32, cell: (128.0, 32.0) },
+            states: 2,
+        };
         for viewer in Viewer::ALL {
-            let rect = layout::viewer_key(viewer);
-            let accent = match viewer {
-                Viewer::Transect => [0.25, 0.42, 1.0, 1.0],
-                Viewer::Ladders => [1.0, 0.25, 0.12, 1.0],
-                Viewer::Scope => [0.20, 0.80, 0.50, 1.0],
-            };
-            let hovered = state.hover_control == Some(Control::Viewer(viewer));
-            widgets::text_button(&mut self.canvas, rect, viewer.label(), state.viewer == viewer, hovered, accent, INK);
+            let lit = u32::from(state.viewer == viewer);
+            keys.draw(&mut self.canvas, self.t.viewer_keys, layout::viewer_key(viewer), viewer.index() as u32, lit);
         }
     }
 

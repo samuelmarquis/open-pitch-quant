@@ -26,6 +26,9 @@ panelkit::pack! {
     SELECTOR_ORACLE = "assets/vendor/selector-oracle.png";
     TOGGLE_UP = "assets/vendor/toggle-up.png";
     TOGGLE_DOWN = "assets/vendor/toggle-down.png";
+    /// The viewer keys, one straight-alpha row in layout::Viewer::ALL order,
+    /// each key's inactive then active 128x32 cell (bake.py VIEWER_KEYS).
+    VIEWER_KEYS = "assets/vendor/viewer-keys.png";
 }
 
 /// The knob atlases in layout::Skin order.

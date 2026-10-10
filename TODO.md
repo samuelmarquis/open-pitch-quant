@@ -77,20 +77,21 @@ messages, and behavior belongs in the README; neither is kept here.
          ladders and scope as the viewers"): TRANSECT, LADDERS and SCOPE.
          The engine reports a 288-bin scope spectrum per frame (in and
          wet out, a third of a semitone per bin); HOUSE byte-identical.
-         - [ ] The keys' baked art: DESIGN has the row queued (TRANSECT
-           1f388c, LADDERS cc341a, SCOPE 2a7f62; wide, inactive and active;
-           aiming for a 128x32 cell) behind one more template round. On
-           p183/p184 Sam asked for slightly larger legends and keys
-           through-mounted in the bezel. He also called our row on the
-           beige bezel "too tall, too far to the right". DESIGN's p189
-           will say whether that's our `layout::viewer_key` rects (with
-           corrected rects) or the template. Template e1ea7a3 (the rack
-           light follows the lit rect) removes a band across our
-           housing, so rebake the housing on the farm with the keys.
-           Until the keys land, `Board::viewer_keys` draws panelkit `text_button`
-           stand-ins at `layout::viewer_key`. On delivery, pack the sheet
-           straight alpha (Keys draws with paint::ART; panelkit 1cc10e0)
-           and draw it through `widgets::Keys`.
+         - The keys' baked art (0.7.3, catalogue/v15*): DESIGN's farm
+           baked the row on current canon (Sam: "why are we waiting on
+           bakes? ... Go, go, go!"), button-bezel through rack.py with the
+           housing as matte. It was packed by `bake.py --only keys
+           --renders DIR` into `viewer-keys.png` (straight alpha) and is
+           drawn through panelkit `widgets::Keys`. The housing was
+           rebaked at template bd863d6 (e1ea7a3's rack light: no band)
+           and imported by `bake.py --only housing --renders DIR`.
+           - [ ] One rebake after DESIGN's p189 (keys and housing
+             together, since through-mounted keys cut holes in the
+             housing). On p183/p184 Sam asked for slightly larger
+             legends and keys through-mounted in the bezel. He also
+             called our row "too tall, too far to the right", and p189
+             says whether that's our `layout::viewer_key` rects or the
+             template. The rebake also brings sRGB hex and seated z.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
