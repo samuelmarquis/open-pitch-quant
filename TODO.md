@@ -52,16 +52,22 @@ messages, and behavior belongs in the README; neither is kept here.
        transect; a residual-band strip (res_bands); the LCD's crawl as
        the old mutter; the parked organs (monitor stations, session
        plates).
-     - [ ] Live check of the new editor on sam-pc and the Mac (open,
-       drag, pointer lock, resize, close while playing).
+     - [ ] Live check of the new editor on the Mac (open, drag, pointer
+       lock, resize, close while playing). sam-pc passed on 0.4.1
+       (E1–E7, 2026-10-10); Ctrl-drag fine and cursor hiding couldn't be
+       observed by the tester.
   5. [ ] `wrac/README.md`, `README_JA.md` and `wrac/docs/` are the
      WRAC template's own docs (they still describe `wrac-gain`);
      drop them or point at `../open-wrac`.
   6. [ ] A generic pitch tracker, if one falls out of the engine, moves
      into `open-audiokit`.
 
-- [ ] **Live: edits made with Live's own device controls while the device
-  is off never reach the saved state** (sam-pc, 0.2.1 check F: Live's
+- [x] **Live: edits made with Live's own device controls while the device
+  is off never reach the saved state** (closed 2026-10-10: on 0.4.1,
+  sam-pc passed F5, F6 (i) and F6 (ii), saving while still off, and A1:
+  an automated Mix lane over 8 bars ran with no backward or repeated
+  steps. Live's Device On is its own switch, not our Bypass parameter;
+  that's expected.) (sam-pc, 0.2.1 check F: Live's
   parameter list new, our saved document old). Every plugin-side path is
   tested and saves (audio.rs tests). terrible-cepstra's hypothesis: a
   family-wide wrapper gap, as open-wrac's clap-wrapper never overrides
@@ -89,8 +95,8 @@ messages, and behavior belongs in the README; neither is kept here.
     nearest for excluded pitches), Regular mode's note-ons latch-toggling
     the keys, Global Threshold, shift-click sine reference, Key Transform
     (root + scale presets), snapshots.
-  - [ ] Live check of Keys on sam-pc: edit keys, save, reopen; the set
-    shows unsaved after a key edit (mark_dirty).
+  - Live check of Keys on sam-pc (0.4.1, K1–K4 passed 2026-10-10). K4's
+    bottom label "D4294967295" (octave −1 unsigned) is fixed in 0.4.2.
 - panelkit's `Grabbed` anchor (0.4.0, done) replaces fittings.rs's own.
 
 ## Rulings

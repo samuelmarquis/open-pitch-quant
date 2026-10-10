@@ -66,6 +66,14 @@ const LCD_LOOK: LcdLook = LcdLook {
 
 const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+/// A MIDI note's name, octave signed (note 0 is C-1).
+fn note_name(note: u32) -> String {
+    format!("{}{}", NOTE_NAMES[(note % 12) as usize], (note / 12) as i32 - 1)
+}
+
+/// The bypass modifier, named as the platform's keyboard names it.
+const BYPASS_CLICK: &str = if cfg!(target_os = "macos") { "Option-click" } else { "Alt-click" };
+
 /// Texture slots, in upload order after the canvas's white texture and
 /// the font.
 struct Textures {
@@ -283,7 +291,7 @@ impl Board {
                     continue;
                 }
                 named.push(y);
-                let name = format!("{}{}", NOTE_NAMES[(note % 12) as usize], note / 12 - 1);
+                let name = note_name(note);
                 self.text(PLOT.x + PLOT.w + 6.0, y - 7.0, &name, VALUE, opacity(MINT, strength), false);
             }
         }
@@ -566,7 +574,7 @@ impl Board {
         } else {
             (0..128u32)
                 .filter(|n| grid >> n & 1 == 1)
-                .map(|n| format!("{}{}", NOTE_NAMES[(n % 12) as usize], n / 12 - 1))
+                .map(note_name)
                 .collect()
         };
         let chord = match (keys, held.is_empty()) {
@@ -627,10 +635,10 @@ impl Board {
         self.solid(STRIP, BLACK);
         let y = STRIP.y + 3.0;
         if let Some(layout::Control::Key(note)) = state.hover_control {
-            let name = format!("{}{}", NOTE_NAMES[(note % 12) as usize], note as i32 / 12 - 1);
+            let name = note_name(note);
             let (head, line) = if !state.keys_source() {
                 (format!("{name}  {}", if state.held() >> note & 1 == 1 { "held" } else { "not held" }),
-                 "the notes held on the MIDI side chain; switch MAP SOURCE to KEYS to set them here")
+                 "the notes held on the MIDI side chain; switch MAP SOURCE to KEYS to set them here".to_owned())
             } else {
                 let status = if state.keys.get(KeyState::Bypass, note) {
                     "bypassed: passes unbent"
@@ -639,16 +647,13 @@ impl Board {
                 } else {
                     "excluded: pulled to its neighbours"
                 };
+                let scope = if state.repeat_scope() { "Repeat: every octave" } else { "Custom: this key only" };
                 (format!("{name}  {status}"),
-                 if state.repeat_scope() {
-                     "click: target or exclude, Option-click: bypass; drag to paint (Repeat: every octave)"
-                 } else {
-                     "click: target or exclude, Option-click: bypass; drag to paint (Custom: this key only)"
-                 })
+                 format!("click: target or exclude, {BYPASS_CLICK}: bypass; drag to paint ({scope})"))
             };
             self.text(STRIP.x + 4.0, y, &head, VALUE, MINT, false);
             let x = STRIP.x + 4.0 + self.text_width(&head, VALUE) + 14.0;
-            self.text(x, y, line, VALUE, INK, false);
+            self.text(x, y, &line, VALUE, INK, false);
             return;
         }
         let Some(widget) = state.hover_control.and_then(layout::widget) else {
@@ -754,5 +759,20 @@ fn help(id: usize) -> &'static str {
         p::PURIFY => "fade the residue, the noise and the carry toward pure stamps",
         p::SOURCE => "MIDI: the notes held on the side chain are the targets   /   KEYS: the keys lit on the screen's ruler are",
         _ => "",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::note_name;
+
+    #[test]
+    fn note_names_sign_their_octave() {
+        assert_eq!(note_name(0), "C-1");
+        assert_eq!(note_name(2), "D-1");
+        assert_eq!(note_name(11), "B-1");
+        assert_eq!(note_name(12), "C0");
+        assert_eq!(note_name(60), "C4");
+        assert_eq!(note_name(127), "G9");
     }
 }

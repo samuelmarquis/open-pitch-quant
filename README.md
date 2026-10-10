@@ -87,6 +87,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.4.2** — the lowest octave's notes are named C-1…B-1 (they read as
+  a huge unsigned number at the bottom of the ruler), and the strip names
+  the bypass modifier as Windows does (Alt-click) there. Checked on
+  Windows in Live 12: the editor, Live's own controls with the device on
+  or off (including saving while off), automation and the Keys source.
 - **0.4.1** — a knob drag's release anchor is measured with panelkit's
   `Grabbed::press` (against where the knob is drawn); no visible change.
 - **0.4.0** — PITCHMAP without MIDI: a 21st parameter, **Map Source**

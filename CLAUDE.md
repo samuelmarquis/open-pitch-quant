@@ -133,7 +133,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.4.0 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.4.2 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -141,5 +141,5 @@ convention existed.
   `nix develop` (cmake).
 - Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f).
 - Panel: the family-idiom rebuild's first pass (0.3.0, catalogue/v07);
-  next are Sam's nit rounds. Open: the Live device-off edit loss
-  (TODO.md), likely open-wrac's.
+  next are Sam's nit rounds. The Live device-off edit loss is fixed
+  (open-wrac P27) and checked on sam-pc with 0.4.1.
