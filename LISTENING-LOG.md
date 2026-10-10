@@ -497,4 +497,9 @@ what reads wrong?
   peakiness ratio that only *read* as whole numbers, so it now shows one
   decimal and keeps a continuous black knob.
 
+**Ruling (2026-10-10), verbatim:** "If it truly is a continuous
+control--it should be displayed as such". Tonality Gate stays
+continuous. The stepped style is for Voices and Source only; DESIGN has
+been told.
+
 **Verdict:** *(pending)*
