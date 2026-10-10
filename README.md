@@ -73,7 +73,9 @@ cd rt && cargo build --release
 cargo xtask install -p opq_plugin_wrac --release   # --release matters: debug DSP underruns
 ```
 
-The plugin build expects `../open-wrac` checked out beside this repo.
+The build expects the family's kits checked out beside this repo:
+`../open-wrac`, `../open-pluginkit`, `../open-panelkit` and
+`../open-audiokit`.
 macOS needs only Command Line Tools (open-wrac's build is patched to not
 require full Xcode; the optional standalone-app target is the one
 exception — it wants `ibtool`).
@@ -89,6 +91,12 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.4.5** — no change to the sound (every HOUSE render is
+  byte-identical). The pitch analysis (instantaneous frequency, peaks and
+  regions, the multi-F0 that carves pitch objects) now comes from the
+  family's audio kit, `../open-audiokit` (`audiokit::pitch`), and no
+  longer allocates memory on the audio thread. The plug-in build needs
+  that checkout beside this repo.
 - **0.4.4** — on Windows the editor prefers a Vulkan adapter (DirectX 12
   as the fallback), so it no longer opens blank for about 20 seconds.
   This replaces 0.4.3's fix, whose linked-in shader compiler broke the

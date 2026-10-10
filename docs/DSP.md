@@ -59,7 +59,13 @@ every region has one dominant partial. Regions are the atomic unit of
 synthesis: whatever we decide about a peak, we do to its whole region, so
 a partial's skirt travels with its mainlobe.
 
-## 3. Multi-F0: carving pitch objects (`harmonic_objects`)
+## 3. Multi-F0: carving pitch objects (`audiokit::pitch::MultiF0`)
+
+Sections 1's instantaneous frequency, 2 and 3 live in the family's
+audio kit, `../open-audiokit/src/pitch.rs` (`instantaneous_frequency`,
+`Peaks`, `MultiF0`), moved there unchanged in arithmetic (the HOUSE fence
+renders byte-identical). Tracking across frames (section 4 onward) stays
+in the engine.
 
 A Klapuri-flavored **greedy iterative estimator**, up to `voices` times:
 

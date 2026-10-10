@@ -61,8 +61,20 @@ messages, and behavior belongs in the README; neither is kept here.
      `wrac/docs/`, which describe the template's demo plugin. Claude's
      `git rm` was refused by the session's permissions; it waits for
      Sam.
-  6. [ ] A generic pitch tracker, if one falls out of the engine, moves
-     into `open-audiokit`.
+  6. The pitch analysis in `open-audiokit` (0.4.5, done; Sam: "I'd
+     support separating pitch tracking out now"): `audiokit::pitch` holds
+     the instantaneous frequency, peaks and regions, and the greedy
+     multi-F0, now allocation-free per hop (asserted with pluginkit's
+     counting allocator); HOUSE byte-identical. Track continuity stays
+     in the engine.
+     - [ ] The rest of the engine still allocates per frame in places
+       (`tracks.retain`/`push` within capacity is fine; check the
+       viz accumulators' `resize` and the dual-window path). An
+       assert_no_alloc test around `process_block` would settle it.
+     - [ ] A shared STFT frame (framing, analysis/synthesis window pair,
+       OLA divisor, per-hop callback) is wanted by OpenEQ and
+       OpenSpectrum too; the three products' requirements are in
+       `../open-audiokit/README.md` (Wanted). Sam: "far from pressing".
 
 - [x] **Live: edits made with Live's own device controls while the device
   is off never reach the saved state** (closed 2026-10-10: on 0.4.1,

@@ -8,3 +8,5 @@ description = "Real-time polyphonic pitch-mapping engine (open PITCHMAP explorat
 [dependencies]
 realfft = "3"
 pluginkit = { path = "../../../open-pluginkit" }
+# The multi-F0 analysis (audiokit::pitch), moved there from this engine.
+audiokit = { path = "../../../open-audiokit" }

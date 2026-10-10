@@ -39,6 +39,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "audiokit"
+version = "0.1.0"
+dependencies = [
+ "rustfft",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -710,6 +717,7 @@ dependencies = [
 name = "opq-engine"
 version = "0.1.0"
 dependencies = [
+ "audiokit",
  "pluginkit",
  "realfft",
 ]
