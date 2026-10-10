@@ -17,7 +17,8 @@ stem separation, ~93 ms latency, live.
   (`--viz-dump`).
 - **`wrac/`** — the plugin: CLAP + VST3 + AU (`aumf`, so hosts route MIDI
   to it), built on NovoNotes' WRAC template (MIT) through the family's
-  shared shell, the sibling checkout `../open-wrac`.
+  shared shell, the sibling checkout `../open-wrac` (lineage in
+  `wrac/PROVENANCE.txt`).
 - **`rt/panel`** — the editor board, in the family idiom (open-panelkit,
   wgpu; no webview, no toolkit), 1100×768, resizable. A monitor carries
   the **belief transect**: each pitch object's source pitch (dim), the
@@ -30,7 +31,8 @@ stem separation, ~93 ms latency, live.
   Transitions) and OUTPUT (Mix, Bypass, lamps for chord / onset / voices
   full, and a backlit LCD with the algorithm, the held pitch classes, the
   chord and a crawling tally of the session). Knobs drag vertically
-  (Command for fine, double-click resets, the wheel works); switches throw
+  (Command, or Ctrl on Windows, for fine; double-click resets; the wheel
+  works); switches throw
   on a click. The strip along the bottom names what the pointer is over,
   its value, and what it does.
 

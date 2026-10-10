@@ -16,9 +16,9 @@ messages, and behavior belongs in the README; neither is kept here.
      with ALGORITHM (18) and PURIFY (19); `wrac_shell::HostParams` is
      the host's view, pluginkit's `ParamSync` carries edits to audio,
      and state is `save_document`/`load_document` at version 2.
-     - [ ] Sam: a Live 12 check of 0.2.0 (both new parameters automate,
-       a saved set reopens with them, the panel still drives the other
-       18).
+     - Live 12 check of the new parameters: covered by sam-pc's 0.4.1
+       run (E7: Algorithm and Purify move from Live's panel and from
+       automation; F5/F6: they save and reopen).
      - Not built, by Sam's word (2026-10-09: the panel is redone from
        scratch in the family idiom soon): the old board's SEL-2200
        selector, the NO BIJECTION plate re-lettered per algorithm
@@ -48,17 +48,19 @@ messages, and behavior belongs in the README; neither is kept here.
      - [ ] Sam's fuller notes on v07/v08, then more nit rounds. Still
        known: plate titles are drawn text, not the panel-board's backlit
        cut titles (title-bake/1).
-     - [ ] Ideas parked for later rounds: harmonic ladders (hmask) on the
-       transect; a residual-band strip (res_bands); the LCD's crawl as
-       the old mutter; the parked organs (monitor stations, session
-       plates).
+     - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
+       (25 of them, with effort marks; Claude's first picks are basins,
+       residual octaves, harmonic ladders and LCD alarms).
      - [ ] Live check of the new editor on the Mac (open, drag, pointer
        lock, resize, close while playing). sam-pc passed on 0.4.1
        (E1–E7, 2026-10-10); Ctrl-drag fine and cursor hiding couldn't be
        observed by the tester.
-  5. [ ] `wrac/README.md`, `README_JA.md` and `wrac/docs/` are the
-     WRAC template's own docs (they still describe `wrac-gain`);
-     drop them or point at `../open-wrac`.
+  5. [ ] The WRAC template's own docs. `wrac/README.md` now describes
+     this workspace and points at `../open-wrac`, with the lineage in
+     `wrac/PROVENANCE.txt`. Still to remove: `wrac/README_JA.md` and
+     `wrac/docs/`, which describe the template's demo plugin. Claude's
+     `git rm` was refused by the session's permissions; it waits for
+     Sam.
   6. [ ] A generic pitch tracker, if one falls out of the engine, moves
      into `open-audiokit`.
 

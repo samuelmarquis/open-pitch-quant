@@ -1,0 +1,13 @@
+This workspace began as NovoNotes' WRAC plugin template (MIT; see LICENSE):
+https://github.com/novonotes/wrac-plugin-template
+
+The WRAC framework (wrac_* crates) and clap_wrapper_builder (clap-wrapper and the
+CLAP, VST3 and AudioUnit SDKs) are not vendored here. They come from the family's
+one copy, the sibling checkout ../open-wrac; its PROVENANCE.md and PATCHES.md carry
+the lineage and every local change, and its docs replace the template's setup,
+AAX and production-readiness notes. README_JA.md and docs/ here are those stale
+template docs (they describe its demo plugin), pending removal.
+
+OpenPitchQuant's product source (plugins/opq, xtask) is implemented against
+opq-engine and opq-panel (../rt). The Cocoa and Win32 mounts were adapted from
+open-eq's.
