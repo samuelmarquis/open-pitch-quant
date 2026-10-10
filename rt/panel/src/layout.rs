@@ -11,8 +11,10 @@ use panelkit::canvas::Rect;
 pub const WIDTH: u32 = 1100;
 pub const HEIGHT: u32 = 768;
 
-/// The monitor housing (OpenCepstrum's bake, nine-sliced) and its screen.
+/// The monitor housing and its screen. The housing's bake (bake.py
+/// HOUSING_RECT) is drawn whole at HOUSING, the monitor padded 8 px.
 pub const MONITOR: Rect = Rect::new(16.0, 10.0, 1068.0, 458.0);
+pub const HOUSING: Rect = Rect::new(8.0, 2.0, 1084.0, 474.0);
 pub const SCREEN: Rect = Rect::new(40.0, 34.0, 1020.0, 410.0);
 /// The transect's plot inside the screen: the key ruler to its left, note
 /// names to its right, then the scroll bar.
@@ -72,8 +74,7 @@ pub enum Control {
 }
 
 /// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
-/// is for continuous controls; Voices, the one stepped knob, borrows it
-/// until its own stepped style is baked.
+/// is for continuous controls.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Skin {
     Hifi,
@@ -161,6 +162,7 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
     use Skin::*;
     [
         // CAPTURE: what the tracker may hold and hear.
+        // Black until DESIGN's farm renders the boss-ivory stepped knob.
         w(p::VOICES, Knob(Hifi), (c(0.0), ROW_1), "VOICES", Capture),
         w(p::GATE, Knob(Hifi), (c(1.0), ROW_1), "TONALITY", Capture),
         w(p::FMAX, Knob(Hifi), (c(2.0), ROW_1), "CEILING", Capture),

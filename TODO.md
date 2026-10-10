@@ -54,14 +54,17 @@ messages, and behavior belongs in the README; neither is kept here.
        switch" for two-point controls); no Bypass control; no witchhat or
        handwheel (their files deleted in 0.5.1); anodized-blue CAPTURE; no
        display header; Tonality Gate read as continuous.
-       - [ ] The lighter monitor housing (our own bake): Sam picked
-         DESIGN p179's beige plastic. Waiting on the recipe; DESIGN also
-         has to fix keys hovering above the bezel's surface.
+       - The lighter monitor housing (0.5.2, done): DESIGN's beige-plastic
+         screen-monitor through the composer (rack.py), our own bake,
+         drawn whole.
        - [ ] Voices' stepped knob: Sam on p180: "Maybe boss-ivory with
-         the knob-ring". Waiting on the recipe; until then Voices borrows
-         the black knob.
-       - [ ] FINISH's new face: Sam picked catalin jade (p181). Waiting on
-         the `--face` recipe.
+         the knob-ring". The recipe is in bake.py STEPPED; the 24 renders
+         are with DESIGN's farm. When they come back, run `bake.py --only
+         stepped --renders DIR` and restore the stepped drawing (a
+         `Kind::Stepped` drawing one cell per step, removed in 0.5.2
+         until the art exists). Until then Voices borrows the black knob.
+       - FINISH's new face (0.5.2, done): catalin-jade-polished, light
+         captions.
        - [ ] Display modes as viewer keys stacked left from the screen's
          top-right edge: DESIGN's key-row recipe. Candidate viewers are
          in docs/design/04-panel-ideas.md.
@@ -153,6 +156,11 @@ messages, and behavior belongs in the README; neither is kept here.
   clean common ground." A plugin stays backward compatible only once it
   has had a public release *and* reached 1.0. OpenPitchQuant (public
   v0.1.0, pre-1.0) may break saved projects.
+- **No local Blender (Sam via DESIGN, 2026-10-10):** after a bake thrashed
+  the workstation, every Blender render goes through the template's
+  design-lab session and its farm, one process per machine. bake.py's
+  Blender steps refuse to run unless OPQ_BLENDER_FARM=1 (farm hosts only);
+  `--only stepped --renders DIR` composites the farm's renders locally.
 - **Reference data stays out of git (Sam, 2026-10-09):** refpacks and
   PITCHMAP renders are gitignored, to keep the repo small.
 - **The current sound survives (Sam, 2026-07-20):** HOUSE is a

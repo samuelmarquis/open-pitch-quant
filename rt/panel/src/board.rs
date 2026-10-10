@@ -14,7 +14,7 @@
 //! (pencil), the pitch it was sung at (ink), and the targets (blue ink).
 //! Sepia is spent only on refusal: an object Threshold spared, a bypassed
 //! key, and the map ceiling.
-use crate::layout::{self, Control, Kind, Plate, Widget, BOTTOM, INFO, LCD, MONITOR, PLOT, RULER, SCREEN, WIDGETS};
+use crate::layout::{self, Control, Kind, Plate, Widget, BOTTOM, INFO, LCD, PLOT, RULER, SCREEN, WIDGETS};
 use crate::{pack, PanelState, HISTORY};
 use opq_engine::params::{self as p, KeyState, SPECS};
 use opq_engine::VizFrame;
@@ -59,9 +59,6 @@ const SEPIA: [f32; 4] = [0.341, 0.0844, 0.007, 1.0];
 /// Vermilion: an object being born, an onset (sRGB 204 52 26).
 const VERMILION: [f32; 4] = [0.604, 0.034, 0.010, 1.0];
 
-/// The housing bake's bezel: 24 logical px (48 at its 2x), its inner
-/// corner's rounding inside 36.
-const BEZEL_SLICE: f32 = 36.0;
 /// OpenCepstrum's knob shadow and fill.
 const KNOB_SHADOW: [(f32, f32, f32, f32); 4] = [
     (0.6, 1.0, 1.0, 0.22),
@@ -135,23 +132,22 @@ fn lcd_font(size: usize) -> &'static pixel_font::PixelFont {
     }
 }
 
-/// A plate's ink: captions are engraved light on the anodized blue and the
-/// steel, dark on the brass and the finish face.
+/// A plate's ink: captions are engraved light on the anodized blue, the
+/// catalin jade and the steel, dark on the brass.
 fn plate_ink(plate: Plate) -> [f32; 4] {
     match plate {
         Plate::Capture | Plate::Module => [0.86, 0.88, 0.90, 1.0],
         Plate::Law => [0.02, 0.012, 0.004, 1.0],
-        Plate::Finish => [0.0, 0.012, 0.012, 1.0],
+        Plate::Finish => [0.88, 0.90, 0.80, 1.0],
     }
 }
 
 /// A plate's value ink: the true value, in the plate's accent.
 fn value_ink(plate: Plate) -> [f32; 4] {
     match plate {
-        Plate::Capture => [0.98, 0.80, 0.30, 1.0],
+        Plate::Capture | Plate::Finish => [0.98, 0.80, 0.30, 1.0],
         Plate::Module => MINT,
         Plate::Law => [0.16, 0.012, 0.004, 1.0],
-        Plate::Finish => [0.0, 0.018, 0.09, 1.0],
     }
 }
 
@@ -201,8 +197,10 @@ impl Board {
     pub fn render(&mut self, state: &PanelState) -> Result<(), String> {
         self.begin();
         self.solid(Rect::new(0.0, 0.0, layout::WIDTH as f32, layout::HEIGHT as f32), BLACK);
+        // The housing is baked at exactly this monitor, drawn whole.
         let bezel = self.t.bezel;
-        self.nine_slice(bezel, MONITOR, BEZEL_SLICE, BEZEL_SLICE * 2.0, WHITE, paint::ART);
+        let source = Rect::new(0.0, 0.0, self.textures[bezel].width, self.textures[bezel].height);
+        self.sprite(bezel, layout::HOUSING, source, WHITE, paint::ART, 0);
         self.solid(SCREEN, PAPER);
         self.transect(state);
         self.scroll_bar(state);
@@ -459,19 +457,7 @@ impl Board {
                 let source = sheet.cell(widgets::frame(SPECS[id].normalized(value), 101));
                 widgets::cast_shadow(self, texture, rect, source, &KNOB_SHADOW);
                 self.sprite(texture, rect, source, WHITE, paint::PREMULTIPLIED, 0);
-                // The caption, giving way to the value while the knob is in
-                // use (the family's guide).
-                let shown = state.guide(id);
-                if shown < 1.0 {
-                    let alpha = if hovered { 1.0 } else { 0.82 };
-                    let y = widget.caption_y();
-                    self.text(cx, y, widget.caption, CAPTION, opacity(ink, alpha * (1.0 - shown)), true);
-                }
-                if shown > 0.0 {
-                    let text = SPECS[id].format(value);
-                    let y = widget.caption_y();
-                    self.text(cx, y, &text, CAPTION, opacity(value_ink(widget.plate), shown), true);
-                }
+                self.guided_caption(state, widget, ink, hovered);
             }
             Kind::Toggle(down, up) => {
                 let on = value >= 0.5;
@@ -505,6 +491,22 @@ impl Board {
                 self.text(cx + 40.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
                 self.caption(widget, ink, hovered);
             }
+        }
+    }
+
+    /// A knob's caption, giving way to its value while the knob is in use
+    /// (the family's guide).
+    fn guided_caption(&mut self, state: &PanelState, widget: &Widget, ink: [f32; 4], hovered: bool) {
+        let id = widget.id();
+        let (cx, y) = (widget.at.0, widget.caption_y());
+        let shown = state.guide(id);
+        if shown < 1.0 {
+            let alpha = if hovered { 1.0 } else { 0.82 };
+            self.text(cx, y, widget.caption, CAPTION, opacity(ink, alpha * (1.0 - shown)), true);
+        }
+        if shown > 0.0 {
+            let text = SPECS[id].format(state.params.get(id));
+            self.text(cx, y, &text, CAPTION, opacity(value_ink(widget.plate), shown), true);
         }
     }
 

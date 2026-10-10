@@ -4,17 +4,19 @@ rack plates, writing everything the board embeds to assets/vendor/ with a
 provenance record (assets/vendor/provenance.json).
 
 Sources, all read-only:
-  - ../open-plugin-template/components (accepted component renders and the
-    panel-board generator), the family's design system;
-  - ../open-cepstrum/rt/panel/assets/vendor (the monitor housing bake, the
-    knob-preview atlases and Source Sans), the reference consumer's bakes.
+  - ../open-plugin-template/components (accepted component renders, the
+    panel-board, knob and screen-monitor generators and the composer,
+    _studio/rack.py), the family's design system;
+  - ../open-cepstrum/rt/panel/assets/vendor (the knob-preview atlases and
+    Source Sans), the reference consumer's bakes.
 
 Run from anywhere:
   python3 -I rt/panel/assets/bake.py            # everything
   python3 -I rt/panel/assets/bake.py --only plates
 
 Needs Blender 5.2 (BLENDER, default ~/Applications/Blender.app) for the
-plates and ffmpeg for resampling component renders to their 2x draw size.
+plates, components and housing, ffmpeg for resampling component renders to
+their 2x draw size, and PIL (the dev shell's) for the stepped knob's strip.
 Paths: TEMPLATE and CEPSTRUM override the sibling checkouts.
 """
 import argparse
@@ -45,7 +47,8 @@ PLATES = {
     # Sam, 2026-10-10: "switch the capture panel to anodized-blue".
     "plate-capture": (258, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
     "plate-law": (300, 250, ["--face", "brass", "--fasteners", "screws"]),
-    "plate-finish": (258, 250, ["--face", "verdigris", "--fasteners", "rivets"]),
+    # Sam on DESIGN's p181: "let's go catalin jade" (the polished plate key).
+    "plate-finish": (258, 250, ["--face", "catalin-jade-polished", "--fasteners", "rivets"]),
     "plate-module": (228, 250, ["--face", "worn-steel", "--fasteners", "screws"]),
 }
 PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
@@ -84,8 +87,34 @@ SPRITES = {
     "led-amber-on": ("led-indicator/renders/led_amber_b15.png", 80, 80, None),
 }
 
+# Stepped knobs: one footprint-contract render per detent, the knob over
+# its lens ring, cropped and scaled into one cell each of a strip (cell i
+# is step i). Straight alpha. name -> (steps, 2x cell px, knob, ring).
+# Voices: Sam on DESIGN's p180, "Maybe boss-ivory with the knob-ring";
+# DESIGN's recipe (2026-10-10); the ring registers pixel-for-pixel with
+# the boss at its default geometry. Amber lenses against CAPTURE's blue.
+STEPPED = {
+    "knob-voices": (12, 120,
+                    ("knob-boss/generator/knob_scene.py",
+                     ["--body", "pom-white", "--cap", "aluminium-spun", "--detents", "12",
+                      "--start-deg", "-135", "--end-deg", "-45", "--footprint", "0.5"]),
+                    ("knob-ring/generator/knob_scene.py",
+                     ["--segments", "12", "--from", "0", "--start-deg", "-135", "--end-deg", "-45",
+                      "--hue", "amber"])),
+}
+
+# The monitor housing, baked through the template's composer (rack.py) at
+# this board's monitor (layout.rs MONITOR, SCREEN), DESIGN's recipe for
+# Sam's p179 pick: "beige plastic is best". Rendered at density 2 over the
+# housing padded by HOUSING_PAD logical px; the board draws the whole
+# image at that padded rect.
+HOUSING_RECT = (16, 10, 1068, 458)
+HOUSING_PAD = 8
+HOUSING_FLAGS = ["--style", "lcd", "--bezel", "beige-plastic", "--fasteners", "none",
+                 "--aperture", "48,48,2040,820", "--margin", "0", "--corner-r", "0",
+                 "--overscan", "0", "--res", "2136x916"]
+
 COPIES = {
-    "monitor-housing.png": CEP_VENDOR / "monitor-housing.png",
     "SourceSansPro-Regular.otf": CEP_VENDOR / "SourceSansPro-Regular.otf",
     "SourceSans-LICENSE.txt": CEP_VENDOR / "SourceSans-LICENSE.txt",
 }
@@ -104,6 +133,7 @@ def git_head(repo):
 
 
 def bake_plates(record):
+    no_local_blender()
     with tempfile.TemporaryDirectory() as temp:
         for name, (w, h, flags) in PLATES.items():
             out = Path(temp) / f"{name}.png"
@@ -128,6 +158,7 @@ def bake_plates(record):
 
 
 def render_components(record):
+    no_local_blender()
     cx, cy, cw, ch = CONTRACT_CROP
     with tempfile.TemporaryDirectory() as temp:
         for name, (generator, flags, size) in COMPONENT_RENDERS.items():
@@ -154,6 +185,114 @@ def render_components(record):
                 "resample": "ffmpeg lanczos, straight alpha",
             }
             print("component", name, flush=True)
+
+
+def no_local_blender():
+    """Sam, 2026-10-10 (via DESIGN): no local Blender on the workstation;
+    every Blender render goes through the template's design-lab session and
+    its farm, one process per machine. A farm runner sets OPQ_BLENDER_FARM=1."""
+    if os.environ.get("OPQ_BLENDER_FARM") != "1":
+        sys.exit("bake.py: this step runs Blender; send it to DESIGN's farm "
+                 "(set OPQ_BLENDER_FARM=1 only on a farm host)")
+
+
+def blender_render(generator, out, flags):
+    """One component render; the file and its receipt line are the proof
+    (Blender exits 0 after a script exception)."""
+    args = [str(BLENDER), "-b", "-P", str(COMPONENTS / generator), "--", str(out), *flags]
+    # One retry: a long run of renders has seen Blender die without a word.
+    for _ in range(2):
+        run = subprocess.run(args, capture_output=True, text=True)
+        receipt = [line for line in run.stdout.splitlines() if "->" in line and str(out) in line]
+        if Path(out).exists() and receipt:
+            return args[5:], receipt[-1]
+    sys.exit(f"{generator}: render failed (exit {run.returncode})\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
+
+
+def bake_stepped(record, renders=None):
+    """With `renders` (a directory of the farm's NAME-knob-K.png and
+    NAME-ring-K.png and their receipts, receipts.txt), only composites; no
+    Blender. Without it, renders here, which only a farm host may."""
+    from PIL import Image  # the dev shell's; only this step needs it
+
+    if renders is None:
+        no_local_blender()
+    cx, cy, cw, ch = CONTRACT_CROP
+    (VENDOR / "knobs").mkdir(exist_ok=True)
+    farm_receipts = (Path(renders) / "receipts.txt").read_text().splitlines() if renders else []
+    with tempfile.TemporaryDirectory() as temp:
+        for name, (steps, cell, (knob_gen, knob_flags), (ring_gen, ring_flags)) in STEPPED.items():
+            strip = Image.new("RGBA", (cell * steps, cell))
+            receipts = []
+            for k in range(steps):
+                value = f"{k / (steps - 1):.6f}"
+                knob_flags_k = [*knob_flags, "--value", value, "--res", str(CONTRACT_RES)]
+                ring_flags_k = [*ring_flags, "--value", value, "--res", str(CONTRACT_RES)]
+                if renders:
+                    knob = Path(renders) / f"{name}-knob-{k}.png"
+                    ring = Path(renders) / f"{name}-ring-{k}.png"
+                    knob_args, ring_args = knob_flags_k, ring_flags_k
+                    knob_receipt = next((r for r in farm_receipts if knob.name in r), None)
+                    ring_receipt = next((r for r in farm_receipts if ring.name in r), None)
+                    if not (knob.exists() and ring.exists() and knob_receipt and ring_receipt):
+                        sys.exit(f"{name} step {k}: the farm's renders or receipts are missing")
+                else:
+                    knob = Path(temp) / f"{name}-knob-{k}.png"
+                    ring = Path(temp) / f"{name}-ring-{k}.png"
+                    knob_args, knob_receipt = blender_render(knob_gen, knob, knob_flags_k)
+                    ring_args, ring_receipt = blender_render(ring_gen, ring, ring_flags_k)
+                # The knob over its ring, then the contract's crop.
+                frame = Image.alpha_composite(Image.open(ring).convert("RGBA"),
+                                              Image.open(knob).convert("RGBA"))
+                frame = frame.crop((cx, cy, cx + cw, cy + ch)).resize((cell, cell), Image.LANCZOS)
+                strip.paste(frame, (k * cell, 0))
+                receipts.append([knob_receipt, ring_receipt])
+                print("stepped", name, k, flush=True)
+            target = VENDOR / "knobs" / f"{name}.png"
+            strip.save(target)
+            record[f"knobs/{target.name}"] = {
+                "kind": "stepped knob strip: knob over ring, footprint contract, one cell per step",
+                "knob": {"generator": f"open-plugin-template/components/{knob_gen}", "args": knob_args},
+                "ring": {"generator": f"open-plugin-template/components/{ring_gen}", "args": ring_args},
+                "values": "k / (steps - 1), k = 0..steps-1 (the receipts' --value)",
+                "crop": list(CONTRACT_CROP),
+                "cell": [cell, cell],
+                "steps": steps,
+                "resample": "PIL lanczos, straight alpha",
+                "receipts": receipts,
+            }
+
+
+def bake_housing(record):
+    no_local_blender()
+    x, y, w, h = HOUSING_RECT
+    pad = HOUSING_PAD
+    frame = [x - pad, y - pad, w + 2 * pad, h + 2 * pad]
+    layout = {
+        "px_per_unit": 100,
+        "frame": frame,
+        "elements": [{"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
+                      "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS}],
+    }
+    with tempfile.TemporaryDirectory() as temp:
+        layout_path = Path(temp) / "housing.json"
+        layout_path.write_text(json.dumps(layout, indent=1))
+        out = Path(temp) / "monitor-housing.png"
+        args = [str(BLENDER), "-b", "-P", str(COMPONENTS / "_studio/rack.py"), "--",
+                str(layout_path), str(out), "--density", "2"]
+        run = subprocess.run(args, capture_output=True, text=True)
+        if not out.exists():
+            sys.exit(f"housing: bake failed\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
+        shutil.copyfile(out, VENDOR / out.name)
+        record[out.name] = {
+            "kind": "monitor housing, composer bake (rack.py)",
+            "generator": "open-plugin-template/components/_studio/rack.py",
+            "layout": layout,
+            "args": args[5:6] + args[7:],
+            "drawn_at": frame,
+            "receipt": [line for line in run.stdout.splitlines() if line.startswith("rack")][-1:],
+        }
+        print("housing", flush=True)
 
 
 def vendor_knobs(record):
@@ -199,14 +338,18 @@ def copy_files(record):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", nargs="*", default=["plates", "components", "knobs", "sprites", "copies"])
+    parser.add_argument("--only", nargs="*", default=["plates", "components", "stepped", "housing",
+                                                      "knobs", "sprites", "copies"])
+    parser.add_argument("--renders", help="the farm's stepped-knob renders: composite only")
     args = parser.parse_args()
     VENDOR.mkdir(exist_ok=True)
     manifest_path = VENDOR / "provenance.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     record = manifest.setdefault("files", {})
-    steps = {"plates": bake_plates, "components": render_components, "knobs": vendor_knobs,
-             "sprites": resample_sprites, "copies": copy_files}
+    steps = {"plates": bake_plates, "components": render_components,
+             "stepped": lambda record: bake_stepped(record, args.renders),
+             "housing": bake_housing, "knobs": vendor_knobs, "sprites": resample_sprites,
+             "copies": copy_files}
     for step in args.only:
         steps[step](record)
     # A vendored file that is gone (dropped from the board) leaves no record.

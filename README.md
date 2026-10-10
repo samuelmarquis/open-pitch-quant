@@ -96,6 +96,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.5.2** — the monitor housing is beige plastic, baked for this panel
+  (no longer a stretched copy of OpenCepstrum's dark one), and FINISH's
+  face is polished catalin jade (catalogue/v12).
 - **0.5.1** — Map Source is a switch (MIDI/KEYS) beside SCOPE, not a
   knob: a two-position control is a switch.
 - **0.5.0** — the panel's first round of Sam's notes (catalogue/v11):
@@ -112,9 +115,8 @@ use this for something, open an issue.
     anodized blue.
   - Tonality Gate reads with one decimal; it is continuous.
 
-  Still to come: the lighter monitor housing, the stepped knob for Voices
-  and Source, a new FINISH face, display-mode keys, and MIX moving to the
-  bottom row.
+  Still to come: the stepped knob for Voices, display-mode keys, and MIX
+  moving to the bottom row.
 - **0.4.6** — no change to the sound (every HOUSE render is
   byte-identical). The STFT framing, FFTs and overlap-add come from the
   family's shared frame, `audiokit::stft`, and the audio thread no

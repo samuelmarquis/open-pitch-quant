@@ -4,8 +4,8 @@
 panelkit::pack! {
     FONT = "assets/vendor/SourceSansPro-Regular.otf";
     FONT_LICENSE = "assets/vendor/SourceSans-LICENSE.txt";
-    /// The monitor housing, OpenCepstrum's bake (2x, 1068x489 logical,
-    /// 24 px bezel), nine-sliced to this board's monitor.
+    /// The monitor housing, our own composer bake at this board's monitor
+    /// (2x, drawn whole at layout::HOUSING).
     BEZEL = "assets/vendor/monitor-housing.png";
     /// The rack plates, panel-board bakes at exactly their 2x size.
     PLATE_CAPTURE = "assets/vendor/plate-capture.png";
