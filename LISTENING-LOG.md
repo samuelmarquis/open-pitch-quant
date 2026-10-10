@@ -516,4 +516,15 @@ been told.
 the hovering-key bug went to DESIGN with a request for recipes. Voices
 gets boss-ivory with knob-ring.
 
+**Built:**
+- 0.5.2 (catalogue/v12): the beige-plastic housing and the catalin-jade
+  FINISH.
+- 0.6.0 (catalogue/v13): no OUTPUT plate; MIX as bottom-row text
+  (panelkit strip); three wider plates; Voices as the boss-ivory stepped
+  knob with its amber lens ring. Plates and knob were rendered on
+  DESIGN's farm (Sam's no-local-Blender order).
+- Gone with the OUTPUT plate: the backlit LCD module (algorithm, pitch
+  classes, chord, the mutter) and its three lamps. Their content could
+  return as a display mode.
+
 **Verdict:** *(pending)*

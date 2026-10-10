@@ -28,17 +28,16 @@ stem separation, ~93 ms latency, live.
   A scroll bar on the screen's right, always shown, moves the view through
   all 128 notes. Under the monitor, the infotext line names what the
   pointer is over and its value, then types in what it does. Beneath,
-  four baked plates, one control per parameter (Bypass is the host's):
-  CAPTURE (Voices, Tonality Gate, Map Ceiling, Gate Mode, Map Unowned,
-  Transients), LAW (the Algorithm selector, Feel, Glide, Map Source, MIDI
-  Scope, Threshold, Rounding), FINISH (Purify, Grit, Formant, Carry,
-  Coherence, Transitions) and OUTPUT (Mix, lamps for chord / onset /
-  voices full, and a backlit LCD with the algorithm, the held pitch
-  classes, the chord and a crawling tally of the session). A knob's
-  caption shows its value while it is in use, and briefly whenever the
-  value moves (automation, the host's panel). Knobs drag vertically
-  (Command, or Ctrl on Windows, for fine; double-click resets; the wheel
-  works); switches throw on a click.
+  three baked plates, one control per parameter (Bypass is the host's):
+  CAPTURE (Voices, a stepped knob whose amber ring counts the voices;
+  Tonality Gate, Map Ceiling, Gate Mode, Map Unowned, Transients), LAW
+  (the Algorithm selector, Feel, Glide, Map Source, MIDI Scope,
+  Threshold, Rounding) and FINISH (Purify, Grit, Formant, Carry,
+  Coherence, Transitions). **MIX** is text in the bottom row, beside the
+  version. A knob's caption shows its value while it is in use, and
+  briefly whenever the value moves (automation, the host's panel). Knobs
+  and MIX drag vertically (Command, or Ctrl on Windows, for fine;
+  double-click resets; the wheel works); switches throw on a click.
 
   **Map Source** (the SOURCE switch on LAW, beside SCOPE): under **MIDI**
   the targets are the notes held on the MIDI side chain (PITCHMAP's MIDI
@@ -96,6 +95,13 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.6.0** — the OUTPUT plate is gone (catalogue/v13):
+  - MIX is text in the bottom row, the family's (panelkit's strip).
+  - The OUTPUT plate's backlit LCD (chord, pitch classes, session tally)
+    and its three lamps went with it.
+  - The other three plates widen to fill the rack.
+  - Voices is a stepped knob: an ivory boss whose amber ring lights one
+    lens per voice.
 - **0.5.2** — the monitor housing is beige plastic, baked for this panel
   (no longer a stretched copy of OpenCepstrum's dark one), and FINISH's
   face is polished catalin jade (catalogue/v12).
@@ -115,8 +121,7 @@ use this for something, open an issue.
     anodized blue.
   - Tonality Gate reads with one decimal; it is continuous.
 
-  Still to come: the stepped knob for Voices, display-mode keys, and MIX
-  moving to the bottom row.
+  Still to come: display-mode keys, and typing a value into MIX.
 - **0.4.6** — no change to the sound (every HOUSE render is
   byte-identical). The STFT framing, FFTs and overlap-add come from the
   family's shared frame, `audiokit::stft`, and the audio thread no

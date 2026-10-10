@@ -161,11 +161,11 @@ impl Fittings {
         state.hover_control = Some(control);
         state.pressed_control = Some(control);
         match widget.kind {
-            Kind::Knob(_) if clicks >= 2 => {
+            Kind::Knob(_) | Kind::Stepped | Kind::Text if clicks >= 2 => {
                 edits.extend(gesture(state, id, SPECS[id].default));
                 state.pressed_control = None;
             }
-            Kind::Knob(_) => {
+            Kind::Knob(_) | Kind::Stepped | Kind::Text => {
                 let start = state.params.get(id);
                 // Measured against where the knob is drawn (panelkit's rule).
                 let anchor = interaction::Grabbed::press(Knob(control), (x, y), &*state);
@@ -282,8 +282,8 @@ impl Fittings {
         let spec = &SPECS[id];
         let now = state.params.get(id);
         let value = match widget.kind {
-            Kind::Knob(_) if spec.stepped => spec.clamp(now + delta.signum()),
-            Kind::Knob(_) => {
+            Kind::Knob(_) | Kind::Stepped | Kind::Text if spec.stepped => spec.clamp(now + delta.signum()),
+            Kind::Knob(_) | Kind::Stepped | Kind::Text => {
                 let n = normalized(id, now) + delta * WHEEL_STEP * mods.fine();
                 plain(id, n.clamp(0.0, 1.0))
             }

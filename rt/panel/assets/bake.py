@@ -45,11 +45,11 @@ CEP_VENDOR = CEPSTRUM / "rt/panel/assets/vendor"
 # 100 logical px and the bake is exactly 2x. Must match layout.rs.
 PLATES = {
     # Sam, 2026-10-10: "switch the capture panel to anodized-blue".
-    "plate-capture": (258, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
-    "plate-law": (300, 250, ["--face", "brass", "--fasteners", "screws"]),
+    # Three plates fill the rack (Sam: "nix the output panel").
+    "plate-capture": (336, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
+    "plate-law": (380, 250, ["--face", "brass", "--fasteners", "screws"]),
     # Sam on DESIGN's p181: "let's go catalin jade" (the polished plate key).
-    "plate-finish": (258, 250, ["--face", "catalin-jade-polished", "--fasteners", "rivets"]),
-    "plate-module": (228, 250, ["--face", "worn-steel", "--fasteners", "screws"]),
+    "plate-finish": (336, 250, ["--face", "catalin-jade-polished", "--fasteners", "rivets"]),
 }
 PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
                 "--bevel-segments", "4", "--ortho-px", "200", "--samples", "160"]
@@ -59,7 +59,7 @@ PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
 # No witchhat (Sam, 2026-10-10: "hate the witchhat knob. nix it") and no
 # handwheel (it is for a One Knob situation, which this board isn't).
 KNOBS = ["hifi-black-turned", "heady", "catalin", "leather-oxblood", "wood-ebony",
-         "chrome-heat-tint", "davies-black", "ceramic-cobalt"]
+         "chrome-heat-tint"]
 
 # Controls rendered here under the family's footprint contract (the knobs'
 # own, extended to the button family by DESIGN, template 6796dcc): render
@@ -80,21 +80,20 @@ COMPONENT_RENDERS = {
 
 # Component renders resampled to their 2x draw size: name -> (source, w, h,
 # crop).
-SPRITES = {
-    "led-green-off": ("led-indicator/renders/led_green_b00.png", 80, 80, None),
-    "led-green-on": ("led-indicator/renders/led_green_b15.png", 80, 80, None),
-    "led-amber-off": ("led-indicator/renders/led_amber_b00.png", 80, 80, None),
-    "led-amber-on": ("led-indicator/renders/led_amber_b15.png", 80, 80, None),
-}
+SPRITES = {}
 
 # Stepped knobs: one footprint-contract render per detent, the knob over
 # its lens ring, cropped and scaled into one cell each of a strip (cell i
-# is step i). Straight alpha. name -> (steps, 2x cell px, knob, ring).
+# is step i). Straight alpha. name -> (steps, 2x cell px, crop, knob,
+# ring). The ring straddles the knob beyond its footprint (alpha bounds
+# 105..535 of 640 against the footprint's 136..504), so the crop is wider
+# than the contract's: 440 px, scaled so the knob body keeps the
+# contract's scale (368 px -> 120 px cell), 144 px, 72 logical.
 # Voices: Sam on DESIGN's p180, "Maybe boss-ivory with the knob-ring";
 # DESIGN's recipe (2026-10-10); the ring registers pixel-for-pixel with
 # the boss at its default geometry. Amber lenses against CAPTURE's blue.
 STEPPED = {
-    "knob-voices": (12, 120,
+    "knob-voices": (12, 144, (100, 100, 440, 440),
                     ("knob-boss/generator/knob_scene.py",
                      ["--body", "pom-white", "--cap", "aluminium-spun", "--detents", "12",
                       "--start-deg", "-135", "--end-deg", "-45", "--footprint", "0.5"]),
@@ -132,20 +131,28 @@ def git_head(repo):
         return None
 
 
-def bake_plates(record):
-    no_local_blender()
+def bake_plates(record, renders=None):
+    """With `renders` (the farm's NAME.png and receipts.txt), only takes the
+    farm's plates in, checking each receipt names the plate; no Blender."""
+    if renders is None:
+        no_local_blender()
+    farm_receipts = (Path(renders) / "receipts.txt").read_text().splitlines() if renders else []
     with tempfile.TemporaryDirectory() as temp:
         for name, (w, h, flags) in PLATES.items():
             out = Path(temp) / f"{name}.png"
             args = [str(BLENDER), "-b", "-P",
                     str(COMPONENTS / "panel-board/generator/panel_scene.py"), "--",
                     str(out), "--w", str(w / 100), "--h", str(h / 100), *flags, *PLATE_COMMON]
-            run = subprocess.run(args, capture_output=True, text=True)
-            receipt = [line for line in run.stdout.splitlines() if line.startswith("panel-board ")]
+            if renders:
+                out = Path(renders) / f"{name}.png"
+                receipt = [r for r in farm_receipts if r.startswith("panel-board ") and r.endswith(out.name)]
+            else:
+                run = subprocess.run(args, capture_output=True, text=True)
+                receipt = [line for line in run.stdout.splitlines() if line.startswith("panel-board ")]
             # Blender exits 0 after a script exception: the file and the
             # receipt are the proof.
             if not out.exists() or not receipt:
-                sys.exit(f"{name}: bake failed\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
+                sys.exit(f"{name}: bake failed or the farm's plate/receipt is missing")
             shutil.copyfile(out, VENDOR / out.name)
             record[out.name] = {
                 "kind": "plate",
@@ -217,11 +224,11 @@ def bake_stepped(record, renders=None):
 
     if renders is None:
         no_local_blender()
-    cx, cy, cw, ch = CONTRACT_CROP
     (VENDOR / "knobs").mkdir(exist_ok=True)
     farm_receipts = (Path(renders) / "receipts.txt").read_text().splitlines() if renders else []
     with tempfile.TemporaryDirectory() as temp:
-        for name, (steps, cell, (knob_gen, knob_flags), (ring_gen, ring_flags)) in STEPPED.items():
+        for name, (steps, cell, crop, (knob_gen, knob_flags), (ring_gen, ring_flags)) in STEPPED.items():
+            cx, cy, cw, ch = crop
             strip = Image.new("RGBA", (cell * steps, cell))
             receipts = []
             for k in range(steps):
@@ -251,11 +258,11 @@ def bake_stepped(record, renders=None):
             target = VENDOR / "knobs" / f"{name}.png"
             strip.save(target)
             record[f"knobs/{target.name}"] = {
-                "kind": "stepped knob strip: knob over ring, footprint contract, one cell per step",
+                "kind": "stepped knob strip: knob over ring, one cell per step",
                 "knob": {"generator": f"open-plugin-template/components/{knob_gen}", "args": knob_args},
                 "ring": {"generator": f"open-plugin-template/components/{ring_gen}", "args": ring_args},
                 "values": "k / (steps - 1), k = 0..steps-1 (the receipts' --value)",
-                "crop": list(CONTRACT_CROP),
+                "crop": list(crop),
                 "cell": [cell, cell],
                 "steps": steps,
                 "resample": "PIL lanczos, straight alpha",
@@ -340,13 +347,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=["plates", "components", "stepped", "housing",
                                                       "knobs", "sprites", "copies"])
-    parser.add_argument("--renders", help="the farm's stepped-knob renders: composite only")
+    parser.add_argument("--renders", help="the farm's renders (plates, stepped knob): take them in, no Blender")
     args = parser.parse_args()
     VENDOR.mkdir(exist_ok=True)
     manifest_path = VENDOR / "provenance.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     record = manifest.setdefault("files", {})
-    steps = {"plates": bake_plates, "components": render_components,
+    steps = {"plates": lambda record: bake_plates(record, args.renders),
+             "components": render_components,
              "stepped": lambda record: bake_stepped(record, args.renders),
              "housing": bake_housing, "knobs": vendor_knobs, "sprites": resample_sprites,
              "copies": copy_files}

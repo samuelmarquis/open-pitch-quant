@@ -3,8 +3,7 @@
 //!
 //! The board: a monitor across the top (the transect), the infotext line
 //! under it, a rack of four plates beneath in signal order (CAPTURE, LAW,
-//! FINISH, then the module with the LCD and the output), and the bottom
-//! row.
+//! FINISH), and the bottom row (MIX and the version, panelkit's `strip`).
 use opq_engine::params as p;
 use panelkit::canvas::Rect;
 
@@ -35,20 +34,19 @@ pub const VIEW_MAX: f32 = 127.0 - VIEW_SPAN;
 /// what it does.
 pub const INFO: Rect = Rect::new(22.0, 473.0, 1056.0, 16.0);
 
-/// The rack plates. Their bakes are exactly these sizes at 2x
-/// (assets/bake.py's PLATES).
-pub const CAPTURE: Rect = Rect::new(16.0, 494.0, 258.0, 250.0);
-pub const LAW: Rect = Rect::new(282.0, 494.0, 300.0, 250.0);
-pub const FINISH: Rect = Rect::new(590.0, 494.0, 258.0, 250.0);
-pub const MODULE: Rect = Rect::new(856.0, 494.0, 228.0, 250.0);
+/// The rack plates, filling the rack in signal order (no output plate:
+/// Sam, 2026-10-10, "nix the output panel"). Their bakes are exactly these
+/// sizes at 2x (assets/bake.py's PLATES).
+pub const CAPTURE: Rect = Rect::new(16.0, 494.0, 336.0, 250.0);
+pub const LAW: Rect = Rect::new(360.0, 494.0, 380.0, 250.0);
+pub const FINISH: Rect = Rect::new(748.0, 494.0, 336.0, 250.0);
 
-/// The backlit LCD module's aperture and its pixel pitch.
-pub const LCD: Rect = Rect::new(872.0, 524.0, 196.0, 92.0);
-pub const LCD_CELL: f32 = 2.0;
-
-/// The bottom row: the product's name and version for now; MIX and the
-/// family's standard row come with panelkit's `strip`.
-pub const BOTTOM: Rect = Rect::new(16.0, 748.0, 1068.0, 18.0);
+/// The bottom row (panelkit's `strip`, the family's): right to left, the
+/// product and its version, then MIX as text.
+pub const BOTTOM: Rect = Rect::new(16.0, 750.0, 1068.0, 16.0);
+const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, 16.0, [190.0, 64.0]);
+pub const VERSION: Rect = ROW[0];
+pub const MIX_TEXT: Rect = ROW[1];
 
 /// Knob, toggle and selector draw sizes.
 pub const KNOB: f32 = 58.0;
@@ -58,7 +56,9 @@ pub const KNOB: f32 = 58.0;
 pub const TOGGLE: (f32, f32) = (44.0, 44.0);
 pub const SELECTOR: f32 = 96.0;
 pub const SELECTOR_DRAW: f32 = 88.0;
-pub const LED: f32 = 40.0;
+/// A stepped knob's drawn cell: its knob at the knobs' scale, its ring
+/// round it (bake.py STEPPED: 144 px at 2x).
+pub const STEPPED: f32 = 72.0;
 
 /// Row centres in the rack: knobs on the first, switches on the second.
 const ROW_1: f32 = 494.0 + 66.0;
@@ -83,26 +83,31 @@ pub enum Skin {
     Leather,
     Ebony,
     HeatTint,
-    Davies,
-    Cobalt,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Kind {
     Knob(Skin),
+    /// A stepped knob (Voices): DESIGN's boss over its lens ring, one baked
+    /// cell per step, drawn at STEPPED (the ring rings the knob). Drags
+    /// and wheels like a knob, in whole steps.
+    Stepped,
     /// A bat toggle: down is the first label, up the second.
     Toggle(&'static str, &'static str),
     /// The algorithm's chickenhead.
     Selector,
+    /// A value as text in the bottom row (MIX): drags, wheels, resets and
+    /// glows like the family's strip values.
+    Text,
 }
 
-/// Which plate a control sits on, for its ink.
+/// Where a control sits, for its ink: a plate, or the bottom row.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Plate {
     Capture,
     Law,
     Finish,
-    Module,
+    Bottom,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -128,30 +133,41 @@ impl Widget {
     pub fn rect(&self) -> Rect {
         let (w, h) = match self.kind {
             Kind::Knob(_) => (KNOB, KNOB),
+            Kind::Stepped => (STEPPED, STEPPED),
             Kind::Toggle(..) => (TOGGLE.0 + 18.0, TOGGLE.1 + 8.0),
             Kind::Selector => (SELECTOR, SELECTOR),
+            Kind::Text => (MIX_TEXT.w, MIX_TEXT.h),
         };
         Rect::new(self.at.0 - w * 0.5, self.at.1 - h * 0.5, w, h)
     }
 
-    /// The caption's top: under the mechanism.
+    /// The caption's top: under the mechanism (a text control has none).
     pub fn caption_y(&self) -> f32 {
         let half = match self.kind {
             Kind::Knob(_) => KNOB * 0.5,
+            Kind::Stepped => STEPPED * 0.5 - 6.0,
             Kind::Toggle(..) => TOGGLE.1 * 0.5 + 10.0,
             Kind::Selector => SELECTOR * 0.5 - 4.0,
+            Kind::Text => MIX_TEXT.h * 0.5,
         };
         self.at.1 + half + 2.0
     }
 }
 
-/// The CAPTURE plate's three columns.
+/// The CAPTURE and FINISH plates' three columns.
 const fn c(i: f32) -> f32 {
-    CAPTURE.x + 49.0 + i * 80.0
+    CAPTURE.x + 62.0 + i * 106.0
+}
+const fn f(i: f32) -> f32 {
+    FINISH.x + 62.0 + i * 106.0
 }
 
 const fn w(id: usize, kind: Kind, at: (f32, f32), caption: &'static str, plate: Plate) -> Widget {
     Widget { control: Control::Param(id), kind, at, caption, plate }
+}
+
+const fn centre(r: Rect) -> (f32, f32) {
+    (r.x + r.w * 0.5, r.y + r.h * 0.5)
 }
 
 /// Every control on the board: one per parameter, except Bypass, which
@@ -162,8 +178,9 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
     use Skin::*;
     [
         // CAPTURE: what the tracker may hold and hear.
-        // Black until DESIGN's farm renders the boss-ivory stepped knob.
-        w(p::VOICES, Knob(Hifi), (c(0.0), ROW_1), "VOICES", Capture),
+        // The stepped knob (Sam on DESIGN's p180: boss-ivory with the
+        // knob-ring).
+        w(p::VOICES, Stepped, (c(0.0), ROW_1), "VOICES", Capture),
         w(p::GATE, Knob(Hifi), (c(1.0), ROW_1), "TONALITY", Capture),
         w(p::FMAX, Knob(Hifi), (c(2.0), ROW_1), "CEILING", Capture),
         w(p::GATE_MODE, Toggle("FRESH", "BYPASS"), (c(0.0), ROW_2), "GATE MODE", Capture),
@@ -171,32 +188,25 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
         w(p::TRANSIENT, Toggle("BEND", "PASS"), (c(2.0), ROW_2), "TRANSIENTS", Capture),
         // LAW: where it goes and how it gets there. The grid's source and
         // its scope sit together on the lower row.
-        w(p::ALGORITHM, Selector, (LAW.x + 70.0, ROW_1 + 22.0), "ALGORITHM", Law),
-        w(p::FEEL, Knob(Hifi), (LAW.x + 186.0, ROW_1), "FEEL", Law),
-        w(p::GLIDE, Knob(Hifi), (LAW.x + 258.0, ROW_1), "GLIDE", Law),
+        w(p::ALGORITHM, Selector, (LAW.x + 76.0, ROW_1 + 22.0), "ALGORITHM", Law),
+        w(p::FEEL, Knob(Hifi), (LAW.x + 220.0, ROW_1), "FEEL", Law),
+        w(p::GLIDE, Knob(Hifi), (LAW.x + 312.0, ROW_1), "GLIDE", Law),
         // A two-position control is a switch (Sam, 2026-10-10).
-        w(p::SOURCE, Toggle("MIDI", "KEYS"), (LAW.x + 40.0, ROW_2 + 4.0), "SOURCE", Law),
-        w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 112.0, ROW_2 + 4.0), "SCOPE", Law),
-        w(p::THRESHOLD, Knob(Hifi), (LAW.x + 186.0, ROW_2), "THRESHOLD", Law),
-        w(p::ROUNDING, Toggle("SMART", "NEAREST"), (LAW.x + 258.0, ROW_2), "ROUNDING", Law),
+        w(p::SOURCE, Toggle("MIDI", "KEYS"), (LAW.x + 44.0, ROW_2 + 4.0), "SOURCE", Law),
+        w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 124.0, ROW_2 + 4.0), "SCOPE", Law),
+        w(p::THRESHOLD, Knob(Hifi), (LAW.x + 220.0, ROW_2), "THRESHOLD", Law),
+        w(p::ROUNDING, Toggle("SMART", "NEAREST"), (LAW.x + 312.0, ROW_2), "ROUNDING", Law),
         // FINISH: what the sung result is made of.
-        w(p::PURIFY, Knob(Heady), (FINISH.x + 49.0, ROW_1), "PURIFY", Finish),
-        w(p::GRIT, Knob(Catalin), (FINISH.x + 129.0, ROW_1), "GRIT", Finish),
-        w(p::FORMANT, Knob(Leather), (FINISH.x + 209.0, ROW_1), "FORMANT", Finish),
-        w(p::CARRY, Knob(Ebony), (FINISH.x + 49.0, ROW_2), "CARRY", Finish),
-        w(p::COHERENCE, Knob(HeatTint), (FINISH.x + 129.0, ROW_2), "COHERENCE", Finish),
-        w(p::TRANSITIONS, Toggle("MAP", "DRY"), (FINISH.x + 209.0, ROW_2), "TRANSITIONS", Finish),
-        // The module: the output, until MIX moves to the bottom row.
-        w(p::MIX, Knob(Davies), (MODULE.x + 60.0, ROW_2 + 2.0), "MIX", Module),
+        w(p::PURIFY, Knob(Heady), (f(0.0), ROW_1), "PURIFY", Finish),
+        w(p::GRIT, Knob(Catalin), (f(1.0), ROW_1), "GRIT", Finish),
+        w(p::FORMANT, Knob(Leather), (f(2.0), ROW_1), "FORMANT", Finish),
+        w(p::CARRY, Knob(Ebony), (f(0.0), ROW_2), "CARRY", Finish),
+        w(p::COHERENCE, Knob(HeatTint), (f(1.0), ROW_2), "COHERENCE", Finish),
+        w(p::TRANSITIONS, Toggle("MAP", "DRY"), (f(2.0), ROW_2), "TRANSITIONS", Finish),
+        // The bottom row: MIX as text (Sam, 2026-10-10).
+        w(p::MIX, Text, centre(MIX_TEXT), "MIX", Bottom),
     ]
 };
-
-/// The status lamps on the module, under the LCD: name and centre.
-pub const LAMPS: [(&str, (f32, f32)); 3] = [
-    ("CHORD", (MODULE.x + 40.0, 642.0)),
-    ("ONSET", (MODULE.x + 114.0, 642.0)),
-    ("FULL", (MODULE.x + 188.0, 642.0)),
-];
 
 pub fn widget(control: Control) -> Option<&'static Widget> {
     WIDGETS.iter().find(|w| w.control == control)
@@ -282,7 +292,11 @@ mod tests {
                 Plate::Capture => CAPTURE,
                 Plate::Law => LAW,
                 Plate::Finish => FINISH,
-                Plate::Module => MODULE,
+                Plate::Bottom => {
+                    let r = w.rect();
+                    assert!(r.y >= BOTTOM.y && r.x + r.w <= BOTTOM.x + BOTTOM.w, "{}", w.caption);
+                    continue;
+                }
             };
             let r = w.rect();
             assert!(r.x >= plate.x && r.x + r.w <= plate.x + plate.w, "{}", w.caption);

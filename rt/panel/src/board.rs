@@ -4,8 +4,8 @@
 //! black board carries the screen; the infotext line under it says what the
 //! pointer is over; baked plates beneath carry baked controls, each with
 //! its caption, which shows the value while the control is in use
-//! (panelkit's guide); a backlit LCD module (panelkit's lcd-module/1) shows
-//! the chord; the bottom row carries the product's name.
+//! (panelkit's guide); the bottom row (panelkit's strip) carries MIX as
+//! text and the product's name.
 //!
 //! The screen is ink on paper (Sam, 2026-10-10: "it's almost like
 //! calligraphy on paper"): a paper-white field with dark markings. Its law,
@@ -14,16 +14,15 @@
 //! (pencil), the pitch it was sung at (ink), and the targets (blue ink).
 //! Sepia is spent only on refusal: an object Threshold spared, a bypassed
 //! key, and the map ceiling.
-use crate::layout::{self, Control, Kind, Plate, Widget, BOTTOM, INFO, LCD, PLOT, RULER, SCREEN, WIDGETS};
+use crate::layout::{self, Control, Kind, Plate, Widget, INFO, PLOT, RULER, SCREEN, WIDGETS};
 use crate::{pack, PanelState, HISTORY};
 use opq_engine::params::{self as p, KeyState, SPECS};
 use opq_engine::VizFrame;
-use panelkit::canvas::{opacity, paint, pixel_font, Canvas, Rect, TextGrid, FORMAT};
+use panelkit::canvas::{opacity, paint, Canvas, Rect};
 use panelkit::gpu::Gpu;
 use panelkit::hover::HoverInfo;
-use panelkit::lcd::{Lcd, LcdLook};
 use panelkit::pack::Pack;
-use panelkit::widgets;
+use panelkit::{strip, widgets};
 use std::path::Path;
 
 const VERTEX_CAPACITY: usize = 600_000;
@@ -69,15 +68,6 @@ const KNOB_SHADOW: [(f32, f32, f32, f32); 4] = [
 const KNOB_FILL: f32 = 1.03;
 const SWITCH_SHADOW: [(f32, f32, f32, f32); 2] = [(0.8, 1.6, 1.0, 0.30), (1.8, 3.2, 1.06, 0.12)];
 
-/// The LCD's content layer and its scheme: OpenCepstrum's yellow-green STN
-/// (field B4D23C, ink 1E2A1A).
-const LCD_LAYER: u8 = 1;
-const LCD_LOOK: LcdLook = LcdLook {
-    field: [0.4564, 0.6445, 0.0452],
-    ink: [0.013, 0.0232, 0.0103],
-    cell: layout::LCD_CELL,
-};
-
 const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 /// `a` toward `b` by `t`, opaque.
@@ -97,17 +87,16 @@ const BYPASS_CLICK: &str = if cfg!(target_os = "macos") { "Option-click" } else 
 /// the font.
 struct Textures {
     bezel: usize,
-    plates: [usize; 4],
-    knobs: [usize; 8],
+    plates: [usize; 3],
+    knobs: [usize; 6],
+    /// Voices' stepped strip, one cell per step.
+    voices: usize,
     selector: [usize; 2],
     toggle: [usize; 2],
-    /// Green, amber; off and on.
-    leds: [[usize; 2]; 2],
 }
 
 pub struct Board {
     canvas: Canvas,
-    lcd: Lcd,
     t: Textures,
 }
 
@@ -124,21 +113,15 @@ impl std::ops::DerefMut for Board {
     }
 }
 
-fn lcd_font(size: usize) -> &'static pixel_font::PixelFont {
-    if size == TITLE {
-        &pixel_font::LARGE
-    } else {
-        &pixel_font::SMALL
-    }
-}
-
-/// A plate's ink: captions are engraved light on the anodized blue, the
-/// catalin jade and the steel, dark on the brass.
+/// A plate's ink: captions are engraved light on the anodized blue and the
+/// catalin jade, dark on the brass; the bottom row's text is the board's
+/// ink.
 fn plate_ink(plate: Plate) -> [f32; 4] {
     match plate {
-        Plate::Capture | Plate::Module => [0.86, 0.88, 0.90, 1.0],
+        Plate::Capture => [0.86, 0.88, 0.90, 1.0],
         Plate::Law => [0.02, 0.012, 0.004, 1.0],
         Plate::Finish => [0.88, 0.90, 0.80, 1.0],
+        Plate::Bottom => INK,
     }
 }
 
@@ -146,8 +129,8 @@ fn plate_ink(plate: Plate) -> [f32; 4] {
 fn value_ink(plate: Plate) -> [f32; 4] {
     match plate {
         Plate::Capture | Plate::Finish => [0.98, 0.80, 0.30, 1.0],
-        Plate::Module => MINT,
         Plate::Law => [0.16, 0.012, 0.004, 1.0],
+        Plate::Bottom => MINT,
     }
 }
 
@@ -158,23 +141,19 @@ impl Board {
         let mut up = |key: &str| canvas.upload_png(key, &pack.bytes(key)?, true);
         let t = Textures {
             bezel: up(pack::BEZEL)?,
-            plates: [up(pack::PLATE_CAPTURE)?, up(pack::PLATE_LAW)?, up(pack::PLATE_FINISH)?, up(pack::PLATE_MODULE)?],
+            plates: [up(pack::PLATE_CAPTURE)?, up(pack::PLATE_LAW)?, up(pack::PLATE_FINISH)?],
             knobs: {
-                let mut knobs = [0; 8];
+                let mut knobs = [0; 6];
                 for (slot, key) in knobs.iter_mut().zip(pack::KNOBS) {
                     *slot = up(key)?;
                 }
                 knobs
             },
+            voices: up(pack::KNOB_VOICES)?,
             selector: [up(pack::SELECTOR_HOUSE)?, up(pack::SELECTOR_ORACLE)?],
             toggle: [up(pack::TOGGLE_DOWN)?, up(pack::TOGGLE_UP)?],
-            leds: [
-                [up(pack::LED_GREEN_OFF)?, up(pack::LED_GREEN_ON)?],
-                [up(pack::LED_AMBER_OFF)?, up(pack::LED_AMBER_ON)?],
-            ],
         };
-        let lcd = Lcd::new(&canvas.gpu, FORMAT, canvas.size, scale as f32);
-        Ok(Self { canvas, lcd, t })
+        Ok(Self { canvas, t })
     }
 
     pub fn gpu(&self) -> &Gpu {
@@ -209,10 +188,8 @@ impl Board {
         for widget in &WIDGETS {
             self.widget(state, widget);
         }
-        self.lamps(state);
-        self.lcd_module(state);
         self.bottom_row(state);
-        self.submit(state)
+        self.submit()
     }
 
     // ---- the screen ------------------------------------------------------
@@ -427,7 +404,6 @@ impl Board {
             (layout::CAPTURE, "CAPTURE", Plate::Capture),
             (layout::LAW, "LAW", Plate::Law),
             (layout::FINISH, "FINISH", Plate::Finish),
-            (layout::MODULE, "OUTPUT", Plate::Module),
         ];
         for (index, (rect, title, plate)) in plates.into_iter().enumerate() {
             let texture = self.t.plates[index];
@@ -457,6 +433,20 @@ impl Board {
                 let source = sheet.cell(widgets::frame(SPECS[id].normalized(value), 101));
                 widgets::cast_shadow(self, texture, rect, source, &KNOB_SHADOW);
                 self.sprite(texture, rect, source, WHITE, paint::PREMULTIPLIED, 0);
+                self.guided_caption(state, widget, ink, hovered);
+            }
+            Kind::Stepped => {
+                // One baked cell per step; the ring and the knob's own
+                // shadow are in the bake.
+                let texture = self.t.voices;
+                let spec = &SPECS[id];
+                let steps = (spec.max - spec.min).round() as usize + 1;
+                let step = ((value - spec.min).round().max(0.0) as usize).min(steps - 1);
+                let s = layout::STEPPED;
+                let rect = Rect::new(cx - s * 0.5, cy - s * 0.5, s, s);
+                let cell = self.textures[texture].height;
+                let source = Rect::new(step as f32 * cell, 0.0, cell, cell);
+                self.sprite(texture, rect, source, WHITE, paint::ART, 0);
                 self.guided_caption(state, widget, ink, hovered);
             }
             Kind::Toggle(down, up) => {
@@ -491,6 +481,16 @@ impl Board {
                 self.text(cx + 40.0, top, "ORACLE", CAPTION, if oracle { lit } else { dim }, true);
                 self.caption(widget, ink, hovered);
             }
+            Kind::Text => {
+                // The family's strip value: its name and value in the
+                // accent, white over a glow while hovered or held.
+                let r = widget.rect();
+                let text = format!("{}  {}", widget.caption, SPECS[id].format(value));
+                let accent = value_ink(widget.plate);
+                let (ink, glow) = strip::affordance(opacity(accent, 0.9), accent, hovered);
+                let at = (r.center().0, strip::text_top(r));
+                strip::glow_text(&mut self.canvas, 0, at, &text, VALUE, ink, glow, true);
+            }
         }
     }
 
@@ -513,139 +513,6 @@ impl Board {
     fn caption(&mut self, widget: &Widget, ink: [f32; 4], hovered: bool) {
         let alpha = if hovered { 1.0 } else { 0.82 };
         self.text(widget.at.0, widget.caption_y(), widget.caption, CAPTION, opacity(ink, alpha), true);
-    }
-
-    fn lamps(&mut self, state: &PanelState) {
-        let latest = state.latest();
-        let voices = state.params.get(p::VOICES).round() as usize;
-        let tracking = latest.map_or(0, |f| f.n as usize);
-        let lit = [
-            state.held() != 0,
-            latest.is_some_and(|f| f.transient > 0.5),
-            tracking >= voices,
-        ];
-        let colors = [0, 1, 1];
-        let ink = plate_ink(Plate::Module);
-        for (index, (name, (x, y))) in layout::LAMPS.into_iter().enumerate() {
-            let texture = self.t.leds[colors[index]][usize::from(lit[index])];
-            let s = layout::LED;
-            let source = Rect::new(0.0, 0.0, self.textures[texture].width, self.textures[texture].height);
-            self.sprite(texture, Rect::new(x - s * 0.5, y - s * 0.5, s, s), source, WHITE, paint::ART, 0);
-            self.text(x, y + 10.0, name, VALUE, opacity(ink, 0.8), true);
-        }
-    }
-
-    // ---- the LCD module --------------------------------------------------
-
-    fn lcd_module(&mut self, state: &PanelState) {
-        // The module's housing: a black bezel round the glass.
-        let frame = Rect::new(LCD.x - 5.0, LCD.y - 5.0, LCD.w + 10.0, LCD.h + 10.0);
-        self.solid(frame, [0.008, 0.008, 0.009, 1.0]);
-        self.outline(frame, opacity(WHITE, 0.08));
-
-        // Content, by brightness: black is the backlit field, white is ink.
-        self.layer = LCD_LAYER;
-        self.grid = Some(TextGrid { origin: (LCD.x, LCD.y), cell: layout::LCD_CELL, face: lcd_font });
-        self.solid(LCD, BLACK);
-        let cell = |c: f32, r: f32| (LCD.x + c * layout::LCD_CELL, LCD.y + r * layout::LCD_CELL);
-        let algorithm = SPECS[p::ALGORITHM].format(state.params.get(p::ALGORITHM)).to_uppercase();
-        let (x, y) = cell(2.0, 2.0);
-        self.text(x, y, &algorithm, TITLE, WHITE, false);
-        let voices = state.params.get(p::VOICES).round() as usize;
-        let tracking = state.latest().map_or(0, |f| f.n as usize);
-        let vox = format!("{}/{} VOX", tracking.min(99), voices);
-        let vw = self.text_width(&vox, VALUE);
-        let (x, y) = cell(0.0, 3.0);
-        self.text(LCD.x + LCD.w - vw - 4.0, y, &vox, VALUE, WHITE, false);
-        let _ = x;
-
-        // The twelve pitch classes: a filled box where any octave is held
-        // (or, under Keys, is a target).
-        let grid = state.held();
-        let keys = state.keys_source();
-        let classes = if keys {
-            std::array::from_fn(|pc| (pc as u32..128).step_by(12).any(|n| state.keys.get(KeyState::Target, n)))
-        } else {
-            state.classes()
-        };
-        for (pc, held) in classes.iter().enumerate() {
-            let (x, y) = cell(2.0 + pc as f32 * 8.0, 12.0);
-            let r = Rect::new(x, y, 6.0 * layout::LCD_CELL, 6.0 * layout::LCD_CELL);
-            if *held {
-                self.solid(r, WHITE);
-            } else {
-                self.outline_cells(r);
-            }
-            if !NOTE_NAMES[pc].contains('#') {
-                self.text(x + 2.0, y + 7.0 * layout::LCD_CELL, NOTE_NAMES[pc], VALUE, WHITE, false);
-            }
-        }
-
-        // The chord, by name, lowest first; under Keys, the classes set and
-        // how many keys are bypassed.
-        let held: Vec<String> = if keys {
-            let names: Vec<String> =
-                (0..12).filter(|&pc| classes[pc]).map(|pc| NOTE_NAMES[pc].to_owned()).collect();
-            match names.len() {
-                12 => vec!["CHROMATIC".to_owned()],
-                _ => names,
-            }
-        } else {
-            (0..128u32)
-                .filter(|n| grid >> n & 1 == 1)
-                .map(note_name)
-                .collect()
-        };
-        let chord = match (keys, held.is_empty()) {
-            (false, true) => "NO CHORD HELD".to_owned(),
-            (true, true) => "KEYS: NO TARGETS".to_owned(),
-            (true, false) => {
-                let bypassed: Vec<&str> = (0..12usize)
-                    .filter(|&pc| (pc as u32..128).step_by(12).any(|n| state.keys.get(KeyState::Bypass, n)))
-                    .map(|pc| NOTE_NAMES[pc])
-                    .collect();
-                let tail = if bypassed.is_empty() { String::new() } else { format!(" BYP {}", bypassed.join(" ")) };
-                format!("{}{tail}", held.join(" "))
-            }
-            (false, false) => held.join(" "),
-        };
-        let (x, y) = cell(2.0, 27.0);
-        self.text(x, y, &chord, VALUE, WHITE, false);
-
-        // The mutter: true session arithmetic, crawling.
-        let mutter = format!(
-            "THE MAP IS {} + {} OF {} VOICES + {} BORN + {} ONSETS + PURIFY {} +   ",
-            if held.is_empty() { "SILENT".to_owned() } else { held.join(" ") },
-            tracking,
-            voices,
-            state.born,
-            state.onsets,
-            SPECS[p::PURIFY].format(state.params.get(p::PURIFY)),
-        );
-        let row = cell(0.0, 37.0).1;
-        let band = Rect::new(LCD.x, row - 1.0, LCD.w, 7.0 * layout::LCD_CELL);
-        self.set_clip(Some(band));
-        let width = self.text_width(&mutter, VALUE).max(1.0);
-        let offset = (state.clock() * 24.0) % width;
-        let step = layout::LCD_CELL * 4.0;
-        let offset = (offset / step).floor() * step;
-        let mut x = LCD.x + 2.0 - offset;
-        while x < LCD.x + LCD.w {
-            self.text(x, row, &mutter, VALUE, WHITE, false);
-            x += width;
-        }
-        self.set_clip(None);
-        self.grid = None;
-        self.layer = 0;
-    }
-
-    /// A one-cell outline of `r` on the LCD grid.
-    fn outline_cells(&mut self, r: Rect) {
-        let c = layout::LCD_CELL;
-        self.solid(Rect::new(r.x, r.y, r.w, c), WHITE);
-        self.solid(Rect::new(r.x, r.y + r.h - c, r.w, c), WHITE);
-        self.solid(Rect::new(r.x, r.y, c, r.h), WHITE);
-        self.solid(Rect::new(r.x + r.w - c, r.y, c, r.h), WHITE);
     }
 
     // ---- the infotext and the bottom row ---------------------------------
@@ -680,43 +547,19 @@ impl Board {
 
     /// The bottom row: the product's name and version for now. MIX and
     /// the family's standard row arrive with panelkit's `strip`.
+    /// The bottom row (panelkit's strip), right to left: the product and
+    /// its version, then MIX (drawn as its widget).
     fn bottom_row(&mut self, state: &PanelState) {
         let line = format!("{}  {}", crate::PLUGIN_NAME, state.version);
-        let w = self.text_width(&line, VALUE);
-        self.text(BOTTOM.x + BOTTOM.w - 6.0 - w, BOTTOM.y + 3.0, &line, VALUE, MUTED, false);
+        strip::right_label(&mut self.canvas, layout::VERSION, &line, VALUE, MUTED);
     }
 
     // ---- submission ------------------------------------------------------
 
-    fn submit(&mut self, state: &PanelState) -> Result<(), String> {
+    fn submit(&mut self) -> Result<(), String> {
         self.canvas.write()?;
         let gpu = &self.canvas.gpu;
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
-        let lcd_start = self.canvas.batches.iter().position(|b| b.layer == LCD_LAYER);
-        let scale = self.canvas.scale;
-        let scissor = [(LCD.x * scale) as u32, (LCD.y * scale) as u32, (LCD.w * scale) as u32, (LCD.h * scale) as u32];
-        if lcd_start.is_some() {
-            // The mutter crawls: its pixels follow at once, no smear.
-            let instant = [Rect::new(LCD.x, LCD.y + 36.0 * layout::LCD_CELL, LCD.w, 9.0 * layout::LCD_CELL)];
-            self.lcd.prepare(gpu, LCD, LCD_LOOK, &instant, state.now);
-            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("OpenPitchQuant LCD content"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: self.lcd.content(),
-                    resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            pass.set_vertex_buffer(0, self.canvas.buffer().slice(..));
-            for batch in self.canvas.batches.iter().filter(|b| b.layer == LCD_LAYER) {
-                self.canvas.draw(&mut pass, batch, batch.start, batch.end, &|_, _| {});
-            }
-            drop(pass);
-            self.lcd.advance(&mut encoder);
-        }
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("OpenPitchQuant board"),
@@ -730,14 +573,7 @@ impl Board {
                 occlusion_query_set: None,
             });
             pass.set_vertex_buffer(0, self.canvas.buffer().slice(..));
-            for (index, batch) in self.canvas.batches.iter().enumerate() {
-                if batch.layer == LCD_LAYER {
-                    // The treated screen takes the place of its first batch.
-                    if lcd_start == Some(index) {
-                        self.lcd.composite(&mut pass, scissor);
-                    }
-                    continue;
-                }
+            for batch in &self.canvas.batches {
                 self.canvas.draw(&mut pass, batch, batch.start, batch.end, &|_, _| {});
             }
         }

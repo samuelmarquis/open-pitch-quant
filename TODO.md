@@ -57,20 +57,23 @@ messages, and behavior belongs in the README; neither is kept here.
        - The lighter monitor housing (0.5.2, done): DESIGN's beige-plastic
          screen-monitor through the composer (rack.py), our own bake,
          drawn whole.
-       - [ ] Voices' stepped knob: Sam on p180: "Maybe boss-ivory with
-         the knob-ring". The recipe is in bake.py STEPPED; the 24 renders
-         are with DESIGN's farm. When they come back, run `bake.py --only
-         stepped --renders DIR` and restore the stepped drawing (a
-         `Kind::Stepped` drawing one cell per step, removed in 0.5.2
-         until the art exists). Until then Voices borrows the black knob.
+       - Voices' stepped knob (0.6.0, done): boss-ivory with the
+         knob-ring (Sam, p180), from DESIGN's farm renders composited by
+         `bake.py --only stepped --renders DIR`, with a wider crop than
+         the footprint contract so the ring shows whole.
        - FINISH's new face (0.5.2, done): catalin-jade-polished, light
          captions.
-       - [ ] Display modes as viewer keys stacked left from the screen's
-         top-right edge: DESIGN's key-row recipe. Candidate viewers are
-         in docs/design/04-panel-ideas.md.
-       - [ ] MIX as bottom-row text, the OUTPUT plate gone: on panelkit
-         `strip` (terrible-cepstra's step C; it will ping). The LCD and
-         lamps need a new home then.
+       - MIX as bottom-row text, the OUTPUT plate gone (0.6.0, done): on
+         panelkit `strip` (c2c5514); the LCD module and lamps went with
+         the plate; the three plates rebaked wider on DESIGN's farm.
+       - [ ] MIX typed entry (right-click → Edit value, the family's
+         `entry::TextEdit`): waits on terrible-cepstra's panelkit key
+         policy (after extraction E). Don't mirror cepstrum's key code.
+       - [ ] Display-mode keys stacked left from the screen's top-right
+         edge: panelkit's key row (extraction E, in progress) plus
+         DESIGN's key bake (after the template's seat-on-surface and key
+         fixes, p183/p184). Candidate viewers are in
+         docs/design/04-panel-ideas.md.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
