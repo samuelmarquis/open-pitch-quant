@@ -269,38 +269,30 @@ fn main() {
         i += 1;
     }
 
-    let mut reader = hound::WavReader::open(in_path).unwrap_or_else(|e| die(&e.to_string()));
-    let spec = reader.spec();
-    let ch = (spec.channels as usize).min(2);
-    let interleaved: Vec<f32> = match spec.sample_format {
-        hound::SampleFormat::Float => reader.samples::<f32>().map(|s| s.unwrap()).collect(),
-        hound::SampleFormat::Int => {
-            let scale = 1.0 / (1i64 << (spec.bits_per_sample - 1)) as f32;
-            reader
-                .samples::<i32>()
-                .map(|s| s.unwrap() as f32 * scale)
-                .collect()
-        }
-    };
-    let n_frames = interleaved.len() / spec.channels as usize;
-    // deinterleave (first `ch` channels), plus N_FFT zero tail to flush
-    let mut chans: Vec<Vec<f32>> = (0..ch)
-        .map(|c| {
-            let mut v: Vec<f32> = (0..n_frames)
-                .map(|f| interleaved[f * spec.channels as usize + c])
-                .collect();
+    // WAV, AIFF or FLAC (audiokit's loader; integers scale by 1/2^(bits-1)).
+    let sample = audiokit::sample::read(std::path::Path::new(in_path))
+        .unwrap_or_else(|e| die(&e.to_string()));
+    let sample_rate = sample.sample_rate as u32;
+    let ch = sample.channel_count().min(2);
+    let n_frames = sample.frames();
+    // the first `ch` channels, plus a block of zero tail to flush
+    let mut chans: Vec<Vec<f32>> = sample
+        .channels
+        .into_iter()
+        .take(ch)
+        .map(|mut v| {
             v.extend(std::iter::repeat(0.0).take(blocksize));
             v
         })
         .collect();
 
-    let mut engine = Engine::new_sized(spec.sample_rate as f64, ch, blocksize, blocksize / 4);
+    let mut engine = Engine::new_sized(sample_rate as f64, ch, blocksize, blocksize / 4);
     let mut viz_dump = viz_dump_path.map(|path| {
         (
             std::io::BufWriter::new(
                 std::fs::File::create(&path).unwrap_or_else(|e| die(&e.to_string())),
             ),
-            spec.sample_rate as f64,
+            sample_rate as f64,
             (blocksize / 4) as f64,
         )
     });
@@ -311,7 +303,7 @@ fn main() {
             Some(mp) => {
                 // segment the stream at held-set breakpoints
                 let bps = midi_breakpoints(&mp, midi_stretch);
-                let sr = spec.sample_rate as f64;
+                let sr = sample_rate as f64;
                 let total = slices[0].len();
                 let mut cursor = 0usize;
                 for (bi, &(bt, bheld)) in bps.iter().enumerate() {
@@ -343,12 +335,6 @@ fn main() {
     }
 
     let out_ch = if stereo_out && ch == 1 { 2 } else { ch };
-    let wspec = hound::WavSpec {
-        channels: out_ch as u16,
-        sample_rate: spec.sample_rate,
-        bits_per_sample: 24,
-        sample_format: hound::SampleFormat::Int,
-    };
     let mut peak = 0.0f32;
     for c in &chans {
         for &s in &c[blocksize..blocksize + n_frames] {
@@ -356,19 +342,21 @@ fn main() {
         }
     }
     let g = if peak > 0.99 { 0.99 / peak } else { 1.0 };
-    let mut writer =
-        hound::WavWriter::create(out_path, wspec).unwrap_or_else(|e| die(&e.to_string()));
-    for f in 0..n_frames {
-        for c in 0..out_ch {
-            let v = (chans[c.min(ch - 1)][blocksize + f] * g * 8_388_607.0) as i32;
-            writer.write_sample(v).unwrap();
-        }
-    }
-    writer.finalize().unwrap();
+    // 24-bit out through audiokit. The integers keep this CLI's own
+    // quantizer (scale by 2^23 - 1, truncate), not Int24's (2^23, round):
+    // the HOUSE fence hashes these files, and each integer over 2^23 is
+    // exact in f32, so Int24 writes it back unchanged. Moving to Int24's
+    // scaling is up to 1 LSB and means re-baselining the fence.
+    let quantize = |x: f32| (x * g * 8_388_607.0) as i32 as f32 / 8_388_608.0;
+    let out: Vec<Vec<f32>> = (0..out_ch)
+        .map(|c| chans[c.min(ch - 1)][blocksize..blocksize + n_frames].iter().map(|&x| quantize(x)).collect())
+        .collect();
+    audiokit::sample::write_wav(std::path::Path::new(out_path), &out, sample_rate, audiokit::sample::WavEncoding::Int24)
+        .unwrap_or_else(|e| die(&e.to_string()));
     println!(
         "wrote {out_path} ({:.2}s @ {} Hz, {}ch)",
-        n_frames as f64 / spec.sample_rate as f64,
-        spec.sample_rate,
+        n_frames as f64 / sample_rate as f64,
+        sample_rate,
         out_ch
     );
 }

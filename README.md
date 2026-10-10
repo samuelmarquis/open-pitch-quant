@@ -114,6 +114,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.1** — the offline CLI (`opq`) reads AIFF and FLAC as well as
+  WAV, through the family's sample loader (audiokit). Its 24-bit WAV
+  output is byte-identical to before. The plugin is unchanged.
 - **0.7.0** — the screen has three viewers, picked by keys on the
   monitor's top bezel (catalogue/v14, v14-ladders, v14-scope): TRANSECT
   (as before), LADDERS (each object's harmonics, and which of them it

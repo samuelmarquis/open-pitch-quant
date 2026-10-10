@@ -42,6 +42,8 @@ dependencies = [
 name = "audiokit"
 version = "0.1.0"
 dependencies = [
+ "claxon",
+ "hound",
  "realfft",
  "rustfft",
 ]
@@ -125,6 +127,12 @@ name = "cfg_aliases"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
+
+[[package]]
+name = "claxon"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bfbf56724aa9eca8afa4fcfadeb479e722935bb2a0900c2d37e0cc477af0688"
 
 [[package]]
 name = "codespan-reporting"
@@ -709,7 +717,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 name = "opq-cli"
 version = "0.1.0"
 dependencies = [
- "hound",
+ "audiokit",
  "midly",
  "opq-engine",
 ]

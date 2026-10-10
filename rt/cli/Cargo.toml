@@ -10,5 +10,6 @@ path = "src/main.rs"
 
 [dependencies]
 opq-engine = { path = "../engine" }
-hound = "3"
+# The family's sample files: WAV, AIFF and FLAC in, WAV out.
+audiokit = { path = "../../../open-audiokit", features = ["sample"] }
 midly = "0.5"
