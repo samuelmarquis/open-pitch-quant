@@ -73,7 +73,8 @@ messages, and behavior belongs in the README; neither is kept here.
          edge: panelkit's key row (extraction E, in progress) plus
          DESIGN's key bake (after the template's seat-on-surface and key
          fixes, p183/p184). Candidate viewers are in
-         docs/design/04-panel-ideas.md.
+         docs/design/04-panel-ideas.md. The key sheet must be packed
+         straight alpha (Keys draws with paint::ART; panelkit 1cc10e0).
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
