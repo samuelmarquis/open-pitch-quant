@@ -79,8 +79,15 @@ messages, and behavior belongs in the README; neither is kept here.
          wet out, a third of a semitone per bin); HOUSE byte-identical.
          - [ ] The keys' baked art: DESIGN has the row queued (TRANSECT
            1f388c, LADDERS cc341a, SCOPE 2a7f62; wide, inactive and active;
-           aiming for a 128x32 cell) behind the p183 key fixes. Until it
-           lands, `Board::viewer_keys` draws panelkit `text_button`
+           aiming for a 128x32 cell) behind one more template round. On
+           p183/p184 Sam asked for slightly larger legends and keys
+           through-mounted in the bezel. He also called our row on the
+           beige bezel "too tall, too far to the right". DESIGN's p189
+           will say whether that's our `layout::viewer_key` rects (with
+           corrected rects) or the template. Template e1ea7a3 (the rack
+           light follows the lit rect) removes a band across our
+           housing, so rebake the housing on the farm with the keys.
+           Until the keys land, `Board::viewer_keys` draws panelkit `text_button`
            stand-ins at `layout::viewer_key`. On delivery, pack the sheet
            straight alpha (Keys draws with paint::ART; panelkit 1cc10e0)
            and draw it through `widgets::Keys`.
