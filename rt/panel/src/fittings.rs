@@ -1,10 +1,12 @@
 //! Pointer and keyboard input: host-free, returning semantic edits.
 //!
 //! The family's gestures (OpenCepstrum's, as open-eq has them):
-//! - Knobs drag vertically and relative: the cursor hides, up is more, a
-//!   full range is `DIAL_PX` of travel, Command is fine, and on release the
-//!   cursor lands back on the knob. Double-click resets to the default.
-//!   Stepped knobs (Voices) move in whole steps.
+//! - Knobs drag vertically and relative: the cursor hides, up is more,
+//!   Command is fine, and on release the cursor lands back on the knob.
+//!   The drag speeds up with the hand (the family's law, panelkit's
+//!   `DragCurve::KNOB`): a full range is 700 px moved slowly and 350 px
+//!   moved fast. Double-click resets to the default. Stepped knobs
+//!   (Voices) move in whole steps over a fixed `STEPPED_PX`.
 //! - Toggles and the algorithm selector act on the press: one click, one
 //!   gesture, the other position.
 //! - The wheel over a knob moves it 2% of its travel a notch (a step for a
@@ -46,8 +48,10 @@ use panelkit::strip::{self, MenuKey};
 use panelkit::{interaction, keys, widgets};
 use std::time::Instant;
 
-/// Vertical travel across a knob's whole range, logical px (OpenCepstrum's).
-const DIAL_PX: f32 = 180.0;
+/// Vertical travel across a stepped knob's whole range, logical px: fixed,
+/// since on the knobs' speed curve a slow drag rounds to no step (the
+/// family's open question, with Sam).
+const STEPPED_PX: f32 = 180.0;
 /// One wheel notch over a knob, as a fraction of its travel.
 const WHEEL_STEP: f32 = 0.02;
 /// One wheel notch over the screen, in semitones.
@@ -76,6 +80,8 @@ enum Capture {
         start: f32,
         normalized: f32,
         last_y: f32,
+        /// The hand's smoothed speed over this drag (panelkit's).
+        speed: widgets::DragSpeed,
         anchor: interaction::Grabbed<Knob>,
     },
     /// A switch held down after its press acted.
@@ -293,6 +299,7 @@ impl Fittings {
                     start,
                     normalized: normalized(id, start),
                     last_y: y,
+                    speed: widgets::DragSpeed::default(),
                     anchor,
                 });
                 edits.push(Edit::Begin(id));
@@ -307,6 +314,13 @@ impl Fittings {
     }
 
     pub fn drag(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers) -> Vec<Edit> {
+        self.drag_at(state, x, y, mods, Instant::now())
+    }
+
+    /// A drag move at `at`: a knob's travel follows the hand's speed, so
+    /// it needs the move's own time (the mounts' moves arrive between
+    /// frames).
+    pub fn drag_at(&mut self, state: &mut PanelState, x: f32, y: f32, mods: Modifiers, at: Instant) -> Vec<Edit> {
         state.pointer = Some((x, y));
         if let Some(Capture::Thumb { grab }) = self.capture {
             state.view = layout::view_for_thumb(y - grab);
@@ -330,11 +344,13 @@ impl Fittings {
             }
             return vec![Edit::Keys(state.keys)];
         }
-        let Some(Capture::Dial { id, normalized, last_y, .. }) = self.capture.as_mut() else {
+        let Some(Capture::Dial { id, normalized, last_y, speed, .. }) = self.capture.as_mut() else {
             return Vec::new();
         };
         let id = *id;
-        *normalized = widgets::drag_value(*normalized, *last_y, y, fine(mods), DIAL_PX);
+        let stepped = layout::widget(Control::Param(id)).is_some_and(|w| w.kind == Kind::Stepped);
+        let curve = if stepped { widgets::DragCurve::linear(STEPPED_PX) } else { widgets::DragCurve::KNOB };
+        *normalized = widgets::drag_value_at(*normalized, *last_y, y, fine(mods), &curve, speed, at);
         *last_y = y;
         let value = plain(id, *normalized);
         if value == state.params.get(id) {
@@ -631,13 +647,38 @@ mod tests {
         let down = f.down(&mut s, x, y, Modifiers::default(), 1);
         assert_eq!(down, vec![Edit::Begin(p::FEEL)]);
         assert!(f.capture().is_some_and(|c| c.is_relative()));
-        let drag = f.drag(&mut s, x, y - 18.0, Modifiers::default());
+        // A drag's first move is at rest: the whole range is 700 px (the
+        // family's knob curve), so 70 px up is a tenth.
+        let start = Instant::now();
+        let drag = f.drag_at(&mut s, x, y - 70.0, Modifiers::default(), start);
         let Edit::Value(id, v) = drag[0] else { panic!("{drag:?}") };
         assert_eq!(id, p::FEEL);
         assert!((v - (before + 0.1)).abs() < 1e-4, "{v}");
         assert_eq!(s.params.get(p::FEEL), v);
+        // A fast hand covers more per pixel: 70 px more in 10 ms.
+        let later = start + std::time::Duration::from_millis(10);
+        f.drag_at(&mut s, x, y - 140.0, Modifiers::default(), later);
+        let fast = s.params.get(p::FEEL) - v;
+        assert!(fast > 0.11 && fast <= 0.2 + 1e-4, "{fast}");
         assert_eq!(f.up(&mut s), vec![Edit::End(p::FEEL)]);
         assert!(f.capture().is_none());
+    }
+
+    #[test]
+    fn the_stepped_knob_keeps_a_fixed_travel() {
+        // Voices: 12 positions over 180 px whatever the hand's speed, so a
+        // slow drag still steps.
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = at(p::VOICES);
+        let before = s.params.get(p::VOICES);
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        let start = Instant::now();
+        f.drag_at(&mut s, x, y - 20.0, Modifiers::default(), start);
+        assert_eq!(s.params.get(p::VOICES), before + 1.0);
+        f.drag_at(&mut s, x, y - 40.0, Modifiers::default(), start + std::time::Duration::from_millis(5));
+        assert_eq!(s.params.get(p::VOICES), before + 2.0);
+        f.up(&mut s);
     }
 
     #[test]

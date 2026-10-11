@@ -148,6 +148,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.4** — knob drags speed up with the hand, as across the family:
+  moved slowly a knob (and MIX) needs 700 px for its whole range, moved
+  fast 350 px. It was a fixed 180 px, so knobs now turn much more
+  finely. Voices keeps its fixed 180 px.
 - **0.8.3** — nothing changes in the plugin; a session rule was retired.
 - **0.8.2** — the infotext is rewritten in plain words, and a switch
   now explains the position it is in, so throwing it shows you the
