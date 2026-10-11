@@ -355,14 +355,17 @@ impl Board {
             }
         }
         // The map ceiling, in refusal ink: above it nothing unowned is bent.
+        // It shows while the Ceiling knob is in use and briefly whenever
+        // the value moves, then fades (the family's guide).
         let ceiling = y_of(layout::hz_note(state.params.get(p::FMAX)));
-        if ceiling > PLOT.y && ceiling < PLOT.y + PLOT.h {
+        let shown = state.guide(p::FMAX);
+        if shown > 0.0 && ceiling > PLOT.y && ceiling < PLOT.y + PLOT.h {
             let mut x = PLOT.x;
             while x < PLOT.x + PLOT.w {
-                self.solid(Rect::new(x, ceiling - 0.5, 6.0, 1.0), opacity(SEPIA, 0.8));
+                self.solid(Rect::new(x, ceiling - 0.5, 6.0, 1.0), opacity(SEPIA, 0.8 * shown));
                 x += 12.0;
             }
-            self.text(PLOT.x + PLOT.w - 50.0, ceiling - 13.0, "CEILING", VALUE, SEPIA, false);
+            self.text(PLOT.x + PLOT.w - 50.0, ceiling - 13.0, "CEILING", VALUE, opacity(SEPIA, shown), false);
         }
 
         if state.history.is_empty() {
@@ -796,9 +799,9 @@ impl Board {
             }
             None => {
                 let how = if state.keys_source() {
-                    "Keys: the keys inked on the screen's left are the targets; everything pitched is pulled onto them. The wheel scrolls the screen."
+                    "KEYS: the keys marked blue on the left are the targets, and every pitched sound is pulled to the nearest. The wheel scrolls the screen."
                 } else {
-                    "MIDI: hold a chord on the side chain; everything pitched is pulled onto it. The wheel scrolls the screen."
+                    "MIDI: hold notes on the MIDI side chain, and every pitched sound is pulled to the nearest of them. The wheel scrolls the screen."
                 };
                 self.text(INFO.x, y, how, VALUE, MUTED, false);
             }
@@ -851,23 +854,32 @@ pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
     match control {
         Control::Param(id) => {
             let spec = &SPECS[id];
-            Some(HoverInfo::parameter(control, spec.name, &spec.format(state.params.get(id)), help(id)))
+            let value = state.params.get(id);
+            // A switch is named as the plate letters it: its caption and
+            // the position it is in.
+            match layout::widget(control).map(|w| (w.caption, w.kind)) {
+                Some((caption, Kind::Toggle(down, up))) => {
+                    let position = if value >= 0.5 { up } else { down };
+                    Some(HoverInfo::help(control, format!("{caption}: {position}"), help(id, value)))
+                }
+                _ => Some(HoverInfo::parameter(control, spec.name, &spec.format(value), help(id, value))),
+            }
         }
         Control::Key(note) => {
             let name = note_name(note);
             let (head, detail) = if !state.keys_source() {
                 let held = if state.held() >> note & 1 == 1 { "held" } else { "not held" };
-                (format!("{name}: {held}"), "the notes held on the MIDI side chain; turn SOURCE to KEYS to set them here".to_owned())
+                (format!("{name}: {held}"), "under MIDI the keys only show the notes held on the side chain; turn SOURCE to KEYS to set targets here".to_owned())
             } else {
                 let status = if state.keys.get(KeyState::Bypass, note) {
-                    "bypassed, passes unbent"
+                    "bypassed: a voice on it passes untouched"
                 } else if state.keys.get(KeyState::Target, note) {
                     "a target"
                 } else {
-                    "excluded, pulled to its neighbours"
+                    "not a target: a voice on it is pulled to the nearest one"
                 };
-                let scope = if state.repeat_scope() { "Repeat: every octave" } else { "Custom: this key only" };
-                (format!("{name}: {status}"), format!("click: target or exclude, {BYPASS_CLICK}: bypass; drag to paint ({scope})"))
+                let scope = if state.repeat_scope() { "SCOPE is REPEAT: every octave changes" } else { "SCOPE is CUSTOM: only this key changes" };
+                (format!("{name}: {status}"), format!("click to make it a target or not, {BYPASS_CLICK} to bypass it, drag to paint ({scope})"))
             };
             Some(HoverInfo::help(control, head, detail))
         }
@@ -882,11 +894,11 @@ pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
         }
         Control::Viewer(viewer) => {
             let detail = match viewer {
-                Viewer::Transect => "each object's path over time: heard in pencil, sung in ink, the targets in blue",
+                Viewer::Transect => "each voice's pitch over time, newest at the left: grey is what came in, black is what it is sung at, blue lines are the targets",
                 Viewer::Ladders => {
-                    "each live object's harmonics over the last second: inked where it claimed them, pencilled where it didn't"
+                    "each voice's harmonics over the last second: black where the voice was given them, grey where it wasn't"
                 }
-                Viewer::Scope => "the spectrum on the pitch axis: what came in (pencil) and what the map sang (ink), before MIX",
+                Viewer::Scope => "the spectrum against pitch: grey is what came in, black is the mapped sound before MIX",
             };
             let shown = if state.viewer == viewer { " (showing)" } else { "" };
             Some(HoverInfo::help(control, format!("VIEWER: {}{shown}", viewer.label()), detail))
@@ -910,37 +922,90 @@ pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
     }
 }
 
-/// Hover help: what a control does, in a line.
-fn help(id: usize) -> &'static str {
+/// Hover help: what a control does, in a line of plain words. A switch
+/// explains the position it is in, so throwing it shows the other half
+/// (Sam, 2026-10-11).
+fn help(id: usize, value: f32) -> &'static str {
+    let up = value >= 0.5;
+    let either = |down: &'static str, upper: &'static str| if up { upper } else { down };
     match id {
-        p::BYPASS => "the plant stops; the sea just plays (latency-aligned, click-free)",
-        p::MIX => "sung water braided with the dry",
-        p::FEEL => "how much of each object's own wobble survives the pull onto its target",
-        p::GLIDE => "how long an object takes to walk to a new target",
-        p::GRIT => "sand worked into the coat: the stamps' phase roughened",
-        p::VOICES => "how many pitch objects the tracker may believe in at once",
-        p::UNOWNED => "spectrum no object claimed: left dry, or mapped with the rest",
-        p::GATE => "peakiness below this is weather, not pitch: left alone",
-        p::GATE_MODE => "what the gate does to what it lets through: catch it fresh or wave it past",
-        p::FMAX => "above this, unowned spectrum is never bent",
-        p::TRANSIENT => "hits pass whole, never bent",
-        p::SCOPE => "the held notes as played, or every octave of them",
-        p::ROUNDING => "nearest tooth, or remember the way you came",
-        p::COHERENCE => "how tightly the right channel follows the left",
-        p::THRESHOLD => "objects already this close to a target are spared, in cents",
-        p::FORMANT => "keep the throat, move the bones",
-        p::CARRY => "how much of the refuse rides along under the stamps",
-        p::TRANSITIONS => "what a newborn object sounds like: mapped at once, or dry until it settles",
-        p::ALGORITHM => "HOUSE: the sound this plant always had   /   ORACLE: the reference's law (map or discard)",
-        p::PURIFY => "fade the residue, the noise and the carry toward pure stamps",
-        p::SOURCE => "MIDI: the notes held on the side chain are the targets   /   KEYS: the keys inked on the screen's ruler are (SCOPE says how an edit spreads)",
+        p::BYPASS => "on: the input passes through untouched, in time with the mapped sound",
+        p::MIX => "how much of the pitch-mapped sound you hear against the untouched input",
+        p::FEEL => "how much of each voice's own vibrato and drift survives the pull to its note: 0% is locked flat, 100% keeps all of it",
+        p::GLIDE => "how long a voice takes to slide to a new note",
+        p::GRIT => "roughens the mapped sound: 0% is clean, more is breathier and noisier",
+        p::VOICES => "how many separate pitched voices are followed at once",
+        p::GATE => "anything less peaked than this counts as noise, not pitch (0 is off); GATE MODE says what happens to it",
+        p::GATE_MODE => either(
+            "noise the gate catches is moved along with everything else, and stays noise",
+            "noise the gate catches passes through untouched",
+        ),
+        p::FMAX => "sound above this frequency that belongs to no voice is never moved; the dashed line on the screen marks it",
+        p::UNOWNED => either(
+            "sound that belongs to no followed voice is left where it is",
+            "sound that belongs to no followed voice is pulled to the nearest target too",
+        ),
+        p::TRANSIENT => either(
+            "drum hits and other sharp attacks are pitch-mapped like everything else",
+            "drum hits and other sharp attacks pass through unmapped, so they stay crisp",
+        ),
+        p::ALGORITHM => either(
+            "this plugin's own sound: whatever the voices don't claim is carried along as it was",
+            "PITCHMAP's behaviour, as measured: whatever the voices don't claim is dropped unless it is mapped",
+        ),
+        p::SOURCE => either(
+            "the targets are the notes you hold on the MIDI side chain",
+            "the targets are the keys marked on the screen's left: click them, or pick a scale at its top right",
+        ),
+        p::SCOPE => either(
+            "a target counts in every octave",
+            "a target is only that exact note, in that octave",
+        ),
+        p::THRESHOLD => "a voice already within this many cents of a note is left alone (0 is off)",
+        p::ROUNDING => either(
+            "a voice between two targets stays on the one it has until it clearly leaves it",
+            "a voice always goes to whichever target is nearest at that instant",
+        ),
+        p::PURIFY => "strips away what isn't a mapped note (leftover sound, noise, attacks): 100% is the mapped notes alone",
+        p::FORMANT => "keeps the tone colour (the vowel) where it was while the pitch moves, so voices don't turn chipmunk",
+        p::CARRY => "how much of each voice's breath and attack noise rides along under its mapped note",
+        p::COHERENCE => "100% keeps the stereo image exactly; lower spreads the mapped sound wider",
+        p::TRANSITIONS => either(
+            "a voice is mapped from its very first instant",
+            "a voice's first instant (a slide in, an attack) passes unmapped, then it is mapped",
+        ),
         _ => "",
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::note_name;
+    use super::{help, hover_info, note_name};
+    use crate::layout::{Control, Kind, WIDGETS};
+    use crate::PanelState;
+    use opq_engine::params::SPECS;
+
+    #[test]
+    fn a_switch_explains_the_position_it_is_in() {
+        for w in &WIDGETS {
+            let id = w.id();
+            let (low, high) = (help(id, SPECS[id].min), help(id, SPECS[id].max));
+            assert!(!low.is_empty() && !high.is_empty(), "{}", w.caption);
+            let switch = matches!(w.kind, Kind::Toggle(..) | Kind::Selector);
+            assert_eq!(low != high, switch, "{}", w.caption);
+            // The infotext names a toggle by its caption and position.
+            if let Kind::Toggle(down, up) = w.kind {
+                for (value, position, text) in [(SPECS[id].min, down, low), (SPECS[id].max, up, high)] {
+                    let mut s = PanelState::default();
+                    s.params.set(id, value);
+                    s.hover_control = Some(Control::Param(id));
+                    let info = hover_info(&s).unwrap();
+                    assert_eq!(info.prefix, format!("{}: {position}", w.caption));
+                    assert_eq!(info.detail, text);
+                }
+            }
+        }
+    }
 
     #[test]
     fn note_names_sign_their_octave() {

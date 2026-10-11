@@ -24,7 +24,8 @@ stem separation, ~93 ms latency, live.
   three viewers, ink on a paper-white screen, picked by the keys on its
   top bezel (right to left). All three share the key ruler, the pitch
   axis, the targets as blue lanes (fainter for Repeat octaves) and the
-  map ceiling:
+  map ceiling (a dashed line that shows while the Ceiling knob is in use
+  or its value moves, then fades):
   - **TRANSECT** (the default): each pitch object's source pitch
     (pencil), the pitch it is sung at (black ink; sepia where Threshold
     spared it, vermilion while newborn), and onsets, over the last ten
@@ -147,6 +148,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.2** — the infotext is rewritten in plain words, and a switch
+  now explains the position it is in, so throwing it shows you the
+  other half. The CEILING line on the screen shows only while the
+  Ceiling knob is touched or its value moves, then fades.
 - **0.8.1** — the bottom row no longer depends on how long the version
   number is: the version line sits a touch further left, always one gap
   from MIX.

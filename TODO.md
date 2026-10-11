@@ -5,6 +5,26 @@ messages, and behavior belongs in the README; neither is kept here.
 
 ## Open
 
+- [ ] **HOUSE's Feel reaches too far (Sam, 2026-10-11), waiting on
+  Sam's ear:** "One thing that I think HOUSE should get from ORACLE;
+  FEEL for ORACLE seems to track small deviations but not large ones,
+  but FEEL on HOUSE allows deviations of a semitone or more." The
+  cause: ORACLE's deviation is from the voice's own nearest semitone,
+  so it is within 50 cents by construction; HOUSE's is from a 250 ms
+  average of the voice's pitch, with no limit. Capping HOUSE's at 50
+  cents is a five-line change (kept as a patch, not shipped), but it
+  is no edge case: 30 of the 56 frozen renders change, most across
+  nearly every sample (the difference is 2 to 18 dB under the signal),
+  because real material's tracked pitch passes 50 cents constantly.
+  That retunes HOUSE, which is frozen by Sam's doctrine, so it is his
+  call. Before/after renders: `out/feel-cap-ab/` (A is HOUSE now, B is
+  capped). Options: re-record HOUSE with the cap; a wider cap (say 100
+  cents) that only catches leaps; or leave HOUSE and fix it elsewhere.
+- **The HOUSE fence builds its own renderer (0.8.2).** `freeze_house.py`
+  used whatever `opq` binary was lying in `rt/target/release`, so a
+  check could pass without testing the change in front of it. It did
+  once, for 0.8.0; rechecked with a fresh build, 0.8.0 and 0.8.1 are
+  byte-identical to the manifest.
 - [ ] **ORACLE needs more work (Sam, 2026-10-11):** "I think 'ORACLE'
   needs a little more work; the phase sounds much smearier than HOUSE,
   and much smearier than I remember pitchmap sounding." Not started.

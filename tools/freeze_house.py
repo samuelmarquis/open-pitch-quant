@@ -87,8 +87,11 @@ def render_all():
 
 
 def main():
-    if not BIN.exists():
-        sys.exit(f"{BIN} missing — cd rt && cargo build --release -p opq-cli")
+    # Always the engine as it is now: a stale binary once let a check pass
+    # without testing the change in front of it (found 2026-10-11).
+    built = subprocess.run(["cargo", "build", "--release", "-p", "opq-cli"], cwd=ROOT / "rt")
+    if built.returncode != 0 or not BIN.exists():
+        sys.exit("freeze_house: opq did not build")
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
                             capture_output=True, text=True).stdout.strip()
     entries = render_all()
