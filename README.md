@@ -148,6 +148,7 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.3** — nothing changes in the plugin; a session rule was retired.
 - **0.8.2** — the infotext is rewritten in plain words, and a switch
   now explains the position it is in, so throwing it shows you the
   other half. The CEILING line on the screen shows only while the
