@@ -37,8 +37,8 @@ messages, and behavior belongs in the README; neither is kept here.
   1b1b1b` on each key (also Sam's p195 rule: keys take the material of
   the panel under them). Baked at template a202a23 (farm log
   20261011-010947-20412; p198's flat-shaded faces come with it),
-  imported in 0.7.15 (catalogue/v19*). Sam has not picked between p200
-  B and C (a softer legend, 4a4640); C is a one-value rebake.
+  imported in 0.7.15 (catalogue/v19*). Sam on p200, via DESIGN: "B is
+  the one I would've picked, so all good there". The keys stand.
 - [x] **The transect runs left to right (Sam, 2026-10-11):** "the
   TRANSCET display should move in the opposite direction, starting at
   the left and scrolling out to the right, so that we can see what

@@ -148,6 +148,7 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.5** — nothing changes in the plugin; the beige viewer keys are confirmed.
 - **0.8.4** — knob drags speed up with the hand, as across the family:
   moved slowly a knob (and MIX) needs 700 px for its whole range, moved
   fast 350 px. It was a fixed 180 px, so knobs now turn much more

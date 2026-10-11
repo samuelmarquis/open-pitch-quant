@@ -576,8 +576,8 @@ with the current controls)."
 
 **Reading and action:** the editor works in Live. Three things follow.
 The keys take the housing's beige with a dark legend (DESIGN's p200 B,
-0.7.15, `catalogue/v19*`); the softer legend (C) is still Sam's to
-pick. The transect is flipped so now sits against the key ruler
+0.7.15, `catalogue/v19*`); Sam on p200, via DESIGN: "B is the one I
+would've picked, so all good there". The transect is flipped so now sits against the key ruler
 (0.7.15). ORACLE's phase smear is an open engine item in TODO, not
 started. The viewers themselves drew no objection.
 
