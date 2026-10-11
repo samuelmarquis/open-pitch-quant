@@ -239,8 +239,15 @@ fn family_geometry() -> String {
         .filter(|w| w.is_value())
         .map(|w| {
             let r = w.rect();
+            // A stepped knob's check drag must cross a step on the knob
+            // curve: 1.4 steps of the 700 px a slow drag takes.
+            let spec = &p::SPECS[w.id()];
+            let drag_px = match w.kind {
+                layout::Kind::Stepped => format!(r#", "drag_px": {}"#, (700.0 / (spec.max - spec.min) * 1.4).round()),
+                _ => String::new(),
+            };
             format!(
-                r#"{{"id": {}, "name": "{}", "rect": [{}, {}, {}, {}], "drag": "vertical", "release": "grab", "wheel": true, "reset": "double-click"}}"#,
+                r#"{{"id": {}, "name": "{}", "rect": [{}, {}, {}, {}], "drag": "vertical"{drag_px}, "release": "grab", "wheel": true, "reset": "double-click"}}"#,
                 w.id(), name(w.id()), r.x, r.y, r.w, r.h
             )
         })
