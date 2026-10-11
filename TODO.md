@@ -111,7 +111,13 @@ messages, and behavior belongs in the README; neither is kept here.
      - [ ] Live check of the new editor on the Mac (open, drag, pointer
        lock, resize, close while playing). sam-pc passed on 0.4.1
        (E1–E7, 2026-10-10); Ctrl-drag fine and cursor hiding couldn't be
-       observed by the tester.
+       observed by the tester. The family's native probe (a minimal
+       VST3 host, on the headless Mini) passed 0.7.13 on 2026-10-11, 93
+       checks and 0 failures: all 12 value controls (double-click reset,
+       drag as one gesture, the cursor back at the grab, wheel), which
+       keys reach the host, and typed entry both ways (MIX from its
+       menu, Feel by hover and Enter). Still Sam's: Ableton Live itself,
+       resize, and close while playing.
   5. The WRAC template's own docs (done, 2026-10-10): `wrac/README.md`
      describes this workspace and points at `../open-wrac`, with the
      lineage in `wrac/PROVENANCE.txt`; Sam removed `README_JA.md` and
@@ -206,9 +212,10 @@ messages, and behavior belongs in the README; neither is kept here.
   one, and Bypass is host-only. (3) The strip is spaced by each item's
   collapsed look with one gap: done in 0.7.9, with the widths fenced by
   a TextMetrics test (`the_bottom_row_is_spaced_by_its_collapsed_look`,
-  which fails when the version gains a digit). OPQ has no family-probe/1
-  geometry export yet; cepstrum's `family_geometry` is the pattern if
-  the probe is to cover OPQ.
+  which fails when the version gains a digit). OPQ exports
+  family-probe/1 geometry since 0.7.14 (`panel-render --geometry`), and
+  `tools/native_probe.py` runs the family's checks through
+  open-cepstrum's signed app.
 - **Double-click resets, right-click edits (Sam, 2026-10-10, family law,
   template 1e73c9d):** on every value control a double-click sets its
   default, and typed entry opens only from the right-click menu's "Edit

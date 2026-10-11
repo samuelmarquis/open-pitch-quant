@@ -3,6 +3,7 @@
 //! voices (one with vibrato, one gliding a fourth) under a held chord.
 //!
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
+//!        panel-render --geometry   (the family probe's geometry, JSON)
 //! Scenarios: house, oracle, keys, empty, drag, typing, menu, ladders,
 //! scope (default: all).
 use opq_engine::params::{self as p, KeyState, Keys, Params};
@@ -188,8 +189,60 @@ fn scenario(name: &str) -> PanelState {
     state
 }
 
+/// The editor as the family probe's generic checks see it
+/// (`../open-wrac/tools/native-probe`, schema family-probe/1): every value
+/// control (a knob: vertical drag, wheel, double-click reset, the cursor
+/// back at the grab), and typed entry opened both ways the law gives:
+/// MIX from its right-click menu, FEEL by Enter over it.
+fn family_geometry() -> String {
+    let state = PanelState::new(Instant::now());
+    // The bottom row's bare left: a press there acts on nothing.
+    let quiet = (20.0, layout::BOTTOM.y + layout::BOTTOM.h * 0.5);
+    assert!(layout::target_at(state.view, quiet.0, quiet.1).is_none(), "the quiet point is on a control");
+    let name = |id: usize| p::SPECS[id].name;
+    let controls: Vec<String> = layout::WIDGETS
+        .iter()
+        .filter(|w| w.is_value())
+        .map(|w| {
+            let r = w.rect();
+            format!(
+                r#"{{"id": {}, "name": "{}", "rect": [{}, {}, {}, {}], "drag": "vertical", "release": "grab", "wheel": true, "reset": "double-click"}}"#,
+                w.id(), name(w.id()), r.x, r.y, r.w, r.h
+            )
+        })
+        .collect();
+    let entry = |id: usize, open: &str, text: &str| {
+        let at = layout::WIDGETS.iter().find(|w| w.id() == id).expect("a widget").at;
+        let expect = p::SPECS[id].parse(text).expect("the probe's text parses");
+        format!(
+            r#"{{"id": {id}, "name": "{}", "at": [{}, {}], "open": {open}, "type": "{text}", "expect": {expect}}}"#,
+            name(id), at.0, at.1
+        )
+    };
+    format!(
+        r#"{{"schema": "family-probe/1", "view_class": "OpenPitchQuant", "canvas": {{"w": {}, "h": {}}}, "quiet": [{}, {}],
+ "controls": [
+  {}],
+ "lists": [],
+ "entries": [
+  {},
+  {}]}}"#,
+        opq_panel::WIDTH,
+        opq_panel::HEIGHT,
+        quiet.0,
+        quiet.1,
+        controls.join(",\n  "),
+        entry(p::MIX, r#"["right-click", "enter"]"#, "50"),
+        entry(p::FEEL, r#"["hover", "enter"]"#, "40"),
+    )
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.iter().any(|a| a == "--geometry") {
+        println!("{}", family_geometry());
+        return;
+    }
     let mut out = PathBuf::from("../out/panel");
     let mut scale = 2;
     let mut names = Vec::new();

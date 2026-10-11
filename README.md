@@ -116,6 +116,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.14** — nothing changes in the plugin. The editor now reports
+  its controls to the family's native test host, which checked 0.7.13
+  on a Mac: every knob and MIX (drag, wheel, double-click reset, the
+  cursor returned), the keys left to the host, and typing a value from
+  the menu and by Enter.
 - **0.7.13** — Enter is back as the shortcut to typing a value: with
   the pointer over any knob or MIX, Enter opens its typed entry, the
   same as its menu's **Edit value...** (0.7.7 had dropped it).
