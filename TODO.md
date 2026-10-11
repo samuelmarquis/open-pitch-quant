@@ -92,6 +92,15 @@ messages, and behavior belongs in the README; neither is kept here.
              Our rects were right ("too far to the right" came from
              DESIGN's scratch layout). The housing needed no rebake:
              each key's cut lies inside its own cell.
+           - [ ] The panel key row standard (DESIGN p197, Sam; template
+             27feb8e): a key is placed by `"key": ["monitor", -1|-2|-3,
+             64]`, never a rect. The 0.7.5 bake's seated keys were not
+             drawn orthographic, so they sit 1.6–2.7 px right and 1.1 px
+             low of their rects (TRANSECT overhangs the bezel's inner
+             edge). bake.py owns the job since 0.7.11 (`--jobs DIR`
+             writes keys.json; the import refuses any other layout).
+             Sent to DESIGN for the farm; the re-bake is still to
+             import. layout.rs's rects are unchanged.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

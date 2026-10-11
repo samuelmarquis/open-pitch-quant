@@ -116,6 +116,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.11** — nothing you can see or hear yet: the viewer keys' bake
+  job moves to the family's key-row standard, ready for a re-bake that
+  will seat the keys exactly on their places (they sit about 2 px right
+  and 1 px low today).
 - **0.7.10** — the bottom row's gap is the family's 12 px (it was 16),
   and the version line is measured again for its extra digit.
 - **0.7.9** — the bottom row is spaced by what it shows (the family's

@@ -333,6 +333,39 @@ def bake_housing(record, renders=None):
 VIEWER_KEYS = ["transect", "ladders", "scope"]
 VIEWER_KEY_STATES = ["inactive", "active"]
 VIEWER_KEY_CELL = (128, 32)
+# Each key's label and LED hue, rightmost first.
+VIEWER_KEY_FACES = {"transect": ("TRANSECT", "1f388c"), "ladders": ("LADDERS", "cc341a"),
+                    "scope": ("SCOPE", "2a7f62")}
+VIEWER_KEY_W = 64
+
+
+def viewer_keys_layout():
+    """The farm's keys job (rack.py), on the family's panel key row (DESIGN
+    p197, Sam): each key named by its place on the monitor's right inner
+    edge, "key": ["monitor", -1|-2|-3, 64], never a rect. rack.py writes
+    the rects, which are layout.rs's viewer_key rects (right inner edge
+    1060, 4 px apart, y 14); the housing is the keys' matte. A bake's
+    --state flag is the farm's per cell."""
+    x, y, w, h = HOUSING_RECT
+    frame = [x - HOUSING_PAD, y - HOUSING_PAD, w + 2 * HOUSING_PAD, h + 2 * HOUSING_PAD]
+    keys = [{"id": key, "component": "button-bezel", "key": ["monitor", -(i + 1), VIEWER_KEY_W],
+             "flags": ["--variant", "wide", "--text", VIEWER_KEY_FACES[key][0], "--led-end", "left",
+                       "--hue", VIEWER_KEY_FACES[key][1], "--bloom", "off", "--font", "mono",
+                       "--font-weight", "bold", "--width", "56", "--height", "14",
+                       "--cap-height", "5.75", "--travel", "0.65", "--state", "inactive"]}
+            for i, key in enumerate(VIEWER_KEYS)]
+    monitor = {"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
+               "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS, "matte": True}
+    return {"px_per_unit": 100, "frame": frame, "lit": frame, "elements": [monitor] + keys}
+
+
+def write_jobs(out):
+    """Writes the farm's job files into `out`: keys.json,
+    which the import steps check the farm baked."""
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "keys.json").write_text(json.dumps(viewer_keys_layout(), indent=1) + "\n")
+    print(out / "keys.json", flush=True)
 
 
 def pack_viewer_keys(record, renders=None):
@@ -344,6 +377,9 @@ def pack_viewer_keys(record, renders=None):
     if not renders:
         sys.exit("keys: pass --renders (the farm's directory); keys are baked on the farm")
     farm = Path(renders)
+    layout = json.loads((farm / "keys.json").read_text())
+    if layout != viewer_keys_layout():
+        sys.exit("keys: the farm baked a different layout from this one (bake.py --jobs DIR writes it)")
     lines = (farm / "receipts.txt").read_text().splitlines()
     template = [r.split()[2] for r in lines if r.startswith("keys: template ")]
     w, h = VIEWER_KEY_CELL
@@ -367,7 +403,7 @@ def pack_viewer_keys(record, renders=None):
         "kind": "viewer key row, button-bezel composer bakes (rack.py) on DESIGN's farm, housing as matte",
         "generator": "open-plugin-template/components/_studio/rack.py",
         "template": template[-1] if template else None,
-        "layout": json.loads((farm / "keys.json").read_text()),
+        "layout": layout,
         "cells": [f"{key} {state}" for key in VIEWER_KEYS for state in VIEWER_KEY_STATES],
         "cell": list(VIEWER_KEY_CELL),
         "packing": "PIL paste, straight alpha (panelkit Keys draws with paint::ART)",
@@ -423,7 +459,12 @@ def main():
                                                       "keys", "knobs", "sprites", "copies"])
     parser.add_argument("--renders",
                         help="the farm's renders (plates, stepped knob, housing): take them in, no Blender")
+    parser.add_argument("--jobs", metavar="DIR",
+                        help="write the farm's job files (keys.json) into DIR and stop")
     args = parser.parse_args()
+    if args.jobs:
+        write_jobs(args.jobs)
+        return
     VENDOR.mkdir(exist_ok=True)
     manifest_path = VENDOR / "provenance.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
