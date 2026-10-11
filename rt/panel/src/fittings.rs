@@ -6,7 +6,8 @@
 //!   The drag speeds up with the hand (the family's law, panelkit's
 //!   `DragCurve::KNOB`): a full range is 700 px moved slowly and 350 px
 //!   moved fast. Double-click resets to the default. Stepped knobs
-//!   (Voices) move in whole steps over a fixed `STEPPED_PX`.
+//!   (Voices) are on the same curve: the drag keeps its own unrounded
+//!   position, and only the written value is rounded to a step.
 //! - Toggles and the algorithm selector act on the press: one click, one
 //!   gesture, the other position.
 //! - The wheel over a knob moves it 2% of its travel a notch (a step for a
@@ -48,10 +49,6 @@ use panelkit::strip::{self, MenuKey};
 use panelkit::{interaction, keys, widgets};
 use std::time::Instant;
 
-/// Vertical travel across a stepped knob's whole range, logical px: fixed,
-/// since on the knobs' speed curve a slow drag rounds to no step (the
-/// family's open question, with Sam).
-const STEPPED_PX: f32 = 180.0;
 /// One wheel notch over a knob, as a fraction of its travel.
 const WHEEL_STEP: f32 = 0.02;
 /// One wheel notch over the screen, in semitones.
@@ -348,9 +345,9 @@ impl Fittings {
             return Vec::new();
         };
         let id = *id;
-        let stepped = layout::widget(Control::Param(id)).is_some_and(|w| w.kind == Kind::Stepped);
-        let curve = if stepped { widgets::DragCurve::linear(STEPPED_PX) } else { widgets::DragCurve::KNOB };
-        *normalized = widgets::drag_value_at(*normalized, *last_y, y, fine(mods), &curve, speed, at);
+        // `normalized` is the drag's own position, never rounded: a stepped
+        // knob works toward its next step and lands on it (Sam's ruling).
+        *normalized = widgets::drag_value_at(*normalized, *last_y, y, fine(mods), &widgets::DragCurve::KNOB, speed, at);
         *last_y = y;
         let value = plain(id, *normalized);
         if value == state.params.get(id) {
@@ -665,19 +662,31 @@ mod tests {
     }
 
     #[test]
-    fn the_stepped_knob_keeps_a_fixed_travel() {
-        // Voices: 12 positions over 180 px whatever the hand's speed, so a
-        // slow drag still steps.
+    fn a_slow_drag_on_the_stepped_knob_works_toward_the_next_step() {
+        // Voices: 12 positions on the knobs' curve. At rest speed a step is
+        // 700/11 px, about 64: small moves add up to it, none is lost.
         let mut s = PanelState::default();
         let mut f = Fittings::default();
         let (x, y) = at(p::VOICES);
         let before = s.params.get(p::VOICES);
         f.down(&mut s, x, y, Modifiers::default(), 1);
         let start = Instant::now();
-        f.drag_at(&mut s, x, y - 20.0, Modifiers::default(), start);
-        assert_eq!(s.params.get(p::VOICES), before + 1.0);
-        f.drag_at(&mut s, x, y - 40.0, Modifiers::default(), start + std::time::Duration::from_millis(5));
-        assert_eq!(s.params.get(p::VOICES), before + 2.0);
+        let mut edits = Vec::new();
+        for i in 1..=8u64 {
+            let at = start + std::time::Duration::from_millis(400 * i);
+            edits.extend(f.drag_at(&mut s, x, y - 8.0 * i as f32, Modifiers::default(), at));
+        }
+        // 64 px, slowly: exactly one step, written once.
+        assert_eq!(edits, [Edit::Value(p::VOICES, before + 1.0)]);
+        f.up(&mut s);
+        // A flick crosses the range: 350 px fast is all of it.
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        let start = Instant::now();
+        for i in 1..=20u64 {
+            let at = start + std::time::Duration::from_millis(5 * i);
+            f.drag_at(&mut s, x, y + 20.0 * i as f32, Modifiers::default(), at);
+        }
+        assert_eq!(s.params.get(p::VOICES), SPECS[p::VOICES].min);
         f.up(&mut s);
     }
 
@@ -707,8 +716,8 @@ mod tests {
         assert!(f.up(&mut s).is_empty());
         let (x, y) = at(p::VOICES);
         f.down(&mut s, x, y, Modifiers::default(), 1);
-        // 20 px of 180 is 1.2 of Voices' 11 steps: one whole step.
-        let drag = f.drag(&mut s, x, y - 20.0, Modifiers::default());
+        // 64 px of the 700 at rest is one of Voices' 11 steps: a whole step.
+        let drag = f.drag(&mut s, x, y - 64.0, Modifiers::default());
         let Edit::Value(_, v) = drag[0] else { panic!() };
         assert_eq!(v, v.round());
         let wheel = f.scroll(&mut s, x, y, 1.0, -1.0, Modifiers::default());

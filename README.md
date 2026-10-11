@@ -148,11 +148,14 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.6** — Voices drags on the same speed curve as the other knobs:
+  a slow drag works toward the next voice count and lands on it (about
+  64 px a step), and a flick crosses the whole range.
 - **0.8.5** — nothing changes in the plugin; the beige viewer keys are confirmed.
 - **0.8.4** — knob drags speed up with the hand, as across the family:
   moved slowly a knob (and MIX) needs 700 px for its whole range, moved
   fast 350 px. It was a fixed 180 px, so knobs now turn much more
-  finely. Voices keeps its fixed 180 px.
+  finely. Voices kept its fixed 180 px until 0.8.6.
 - **0.8.3** — nothing changes in the plugin; a session rule was retired.
 - **0.8.2** — the infotext is rewritten in plain words, and a switch
   now explains the position it is in, so throwing it shows you the
