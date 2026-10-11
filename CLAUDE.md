@@ -21,8 +21,10 @@ convention existed.
 
 ## Working rules
 
-- **File edits use the Edit/Write tools, never shell scripts or python
-  heredocs**: Sam reads the diffs in chat.
+- **Sam reads the diffs in chat.** How an edit is made doesn't matter
+  (Sam, 2026-10-11: "if you show the diff in chat I don't care how the
+  edit actually happens"): an edit made by a script must have its diff
+  shown in chat.
 - **Only touch this repo and the kits.** The kits (`../open-audiokit`,
   `../open-pluginkit`, `../open-panelkit`, and `../open-wrac`, the
   plugin shell) may be edited: move reusable code into them and update
@@ -133,7 +135,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.8.0 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.8.1 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,

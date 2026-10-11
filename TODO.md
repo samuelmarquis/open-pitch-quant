@@ -280,8 +280,11 @@ messages, and behavior belongs in the README; neither is kept here.
   PointerLock). (2) No bypass button on the bottom strip: OPQ never had
   one, and Bypass is host-only. (3) The strip is spaced by each item's
   collapsed look with one gap: done in 0.7.9, with the widths fenced by
-  a TextMetrics test (`the_bottom_row_is_spaced_by_its_collapsed_look`,
-  which fails when the version gains a digit). OPQ exports
+  a TextMetrics test (`the_bottom_row_is_spaced_by_its_collapsed_look`).
+  Until 0.8.1 that test failed whenever the version changed length
+  (Sam: "That seems a little silly"); now the version's slot fits any
+  version and its text starts at the slot's left, so MIX never moves
+  with it. OPQ exports
   family-probe/1 geometry since 0.7.14 (`panel-render --geometry`), and
   `tools/native_probe.py` runs the family's checks through
   open-cepstrum's signed app.

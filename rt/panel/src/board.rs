@@ -805,13 +805,14 @@ impl Board {
         }
     }
 
-    /// The bottom row: the product's name and version for now. MIX and
-    /// the family's standard row arrive with panelkit's `strip`.
     /// The bottom row (panelkit's strip), right to left: the product and
-    /// its version, then MIX (drawn as its widget).
+    /// its version, then MIX (drawn as its widget). The version line
+    /// starts at its slot's left edge, one gap from MIX whatever its
+    /// length.
     fn bottom_row(&mut self, state: &PanelState) {
         let line = format!("{}  {}", crate::PLUGIN_NAME, state.version);
-        strip::right_label(&mut self.canvas, layout::VERSION, &line, VALUE, MUTED);
+        let r = layout::VERSION;
+        self.text(r.x, strip::text_top(r), &line, VALUE, MUTED, false);
     }
 
     // ---- submission ------------------------------------------------------

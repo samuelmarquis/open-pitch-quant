@@ -91,14 +91,15 @@ pub const FONT_SIZES: [f32; 4] = [10.0, 12.0, 15.0, 11.0];
 
 /// The bottom row (panelkit's `strip`, the family's): right to left, the
 /// product and its version, then MIX as text, one gap apart. Each item is
-/// as wide as it looks collapsed (Sam, 2026-10-10): the version line its
-/// text (its digits at the widest digit's width), MIX the widest
+/// as wide as it looks collapsed (Sam, 2026-10-10): MIX the widest
 /// "MIX  value" it can show, so dragging it never moves the row. The
-/// widths are constants so the widgets stay a const table;
+/// version line's slot holds any version up to "88.88.88", and its text
+/// starts at the slot's left edge, so MIX never depends on which version
+/// it is. The widths are constants so the widgets stay a const table;
 /// `the_bottom_row_is_spaced_by_its_collapsed_look` measures them with
-/// panelkit's TextMetrics and fails when the version gains a digit.
+/// panelkit's TextMetrics.
 pub const BOTTOM: Rect = Rect::new(16.0, 750.0, 1068.0, 16.0);
-const VERSION_W: f32 = 94.0;
+const VERSION_W: f32 = 109.0;
 const MIX_W: f32 = 43.0;
 /// The family's one gap, panelkit's `strip::GAP` (Sam, 2026-10-10: 12 px).
 const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, panelkit::strip::GAP, [VERSION_W, MIX_W]);
@@ -515,23 +516,16 @@ mod tests {
         let bytes = crate::pack::embedded().bytes(crate::pack::FONT).unwrap();
         let metrics = panelkit::canvas::TextMetrics::new(&bytes, &FONT_SIZES).unwrap();
         let text = |t: &str| metrics.width(t, 0);
-        // The installed product's version, as the plugin shows it.
-        let manifest = include_str!("../../../wrac/plugins/opq/src-plugin/Cargo.toml");
-        let version = manifest
-            .lines()
-            .find_map(|line| line.strip_prefix("version = \""))
-            .and_then(|rest| rest.strip_suffix('"'))
-            .unwrap();
-        // Each digit at the widest digit's width, so a bump that keeps the
-        // version's digit count keeps the row.
+        // Any version the row may show: three two-digit parts, each digit
+        // at the widest digit's width.
         let widest_digit = ('0'..='9').max_by(|a, b| text(&a.to_string()).total_cmp(&text(&b.to_string()))).unwrap();
-        let version: String = version.chars().map(|c| if c.is_ascii_digit() { widest_digit } else { c }).collect();
+        let version = "88.88.88".replace('8', &widest_digit.to_string());
         let line = text(&format!("{}  {}", crate::PLUGIN_NAME, version));
         let spec = &p::SPECS[p::MIX];
         let mix = (0..=200)
             .map(|i| text(&format!("MIX  {}", spec.format(spec.plain(i as f32 / 200.0)))))
             .fold(0.0, f32::max);
-        assert_eq!(VERSION_W, line.ceil(), "the version line's width");
+        assert_eq!(VERSION_W, line.ceil(), "the version line's slot");
         assert_eq!(MIX_W, mix.ceil(), "MIX's widest look");
     }
 

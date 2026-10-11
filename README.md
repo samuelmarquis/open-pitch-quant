@@ -147,6 +147,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.1** — the bottom row no longer depends on how long the version
+  number is: the version line sits a touch further left, always one gap
+  from MIX.
 - **0.8.0** — the **Key Transform**: four lists inside the screen, top
   right, set a source key and scale and a destination key and scale
   (`A MINOR → * MAJOR`). Unlike PITCHMAP's presets it never assumes
