@@ -116,6 +116,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.12** — the viewer keys are re-baked on the family's key-row
+  standard: each sits exactly on its place, about 2 px left and 1 px
+  down from before, and TRANSECT no longer overhangs the bezel's inner
+  edge (catalogue/v18*).
 - **0.7.11** — nothing you can see or hear yet: the viewer keys' bake
   job moves to the family's key-row standard, ready for a re-bake that
   will seat the keys exactly on their places (they sit about 2 px right

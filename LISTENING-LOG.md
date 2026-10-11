@@ -560,5 +560,8 @@ the ceiling, so Keys editing and scrolling work in every viewer.
   rack light's band. One rebake follows p189.
 - 0.7.5 (`catalogue/v16*`): the post-p189 keys (Sam on DESIGN's p189:
   "189 B, ship it"), through-mounted, one legend size, sRGB LEDs.
+- 0.7.12 (`catalogue/v18*`): the keys re-baked on the panel key row
+  standard (DESIGN's p197, which Sam ratified per DESIGN), each exactly
+  on its rect: about 2 px left and 1 px down from v16.
 
 **Verdict:** *(pending)*
