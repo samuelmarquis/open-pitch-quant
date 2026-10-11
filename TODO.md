@@ -215,6 +215,13 @@ messages, and behavior belongs in the README; neither is kept here.
   value...". In OPQ the value controls are the six continuous knobs,
   Voices and MIX (0.7.7). The bat switches and the selector are
   positions thrown on a click, so they have no menu.
+  - **Enter is its shortcut (Sam, 2026-10-10, reviewing 0.7.7's
+    diff):** "it seems we lost enter-to-type-a-value; I think we oughta
+    bring that back as a family rule, anything where right-click would
+    bring up edit-value, ENTER should be a shortcut to get at that."
+    Done in 0.7.13: Enter over a hovered value control opens its entry
+    (not while one is held; Cmd+Enter stays the host's). Relayed to
+    terrible-cepstra for the template law and the other products.
 - **The CLI writes the family's Int24 (Sam via terrible-cepstra,
   2026-10-10):** "move to the standard system and forget the old
   hashes". The HOUSE fence was re-recorded in 0.7.2 from audiokit Int24

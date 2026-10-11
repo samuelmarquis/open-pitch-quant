@@ -56,9 +56,9 @@ stem separation, ~93 ms latency, live.
   double-click resets to the default). The wheel works too, and a burst
   of notches is one undo step in the host. Switches throw on a click. To
   type a value, right-click a knob or MIX and choose **Edit value...**,
-  type it in place ("75" or "75%"), and press Enter; Escape cancels.
-  While the editor isn't typing or in its menu, every other key, Space
-  included, stays the host's.
+  or press Enter with the pointer over it; type it in place ("75" or
+  "75%"), and press Enter; Escape cancels. While the editor isn't typing
+  or in its menu, every other key, Space included, stays the host's.
 
   **Map Source** (the SOURCE switch on LAW, beside SCOPE): under **MIDI**
   the targets are the notes held on the MIDI side chain (PITCHMAP's MIDI
@@ -116,6 +116,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.13** — Enter is back as the shortcut to typing a value: with
+  the pointer over any knob or MIX, Enter opens its typed entry, the
+  same as its menu's **Edit value...** (0.7.7 had dropped it).
 - **0.7.12** — the viewer keys are re-baked on the family's key-row
   standard: each sits exactly on its place, about 2 px left and 1 px
   down from before, and TRANSECT no longer overhangs the bezel's inner

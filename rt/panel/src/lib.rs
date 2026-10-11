@@ -53,7 +53,8 @@ pub enum Edit {
 /// Keyboard modifiers held with a pointer event or a key: panelkit's
 /// (`command` is Command on macOS, Ctrl on Windows).
 pub use panelkit::keys::Modifiers;
-/// A value typed in place (MIX's right-click or Enter), panelkit's.
+/// A value typed in place (from a value control's menu, or Enter over
+/// it), panelkit's.
 pub use panelkit::entry::TextEdit;
 
 /// A drag's or the wheel's scale: Command (Ctrl) is fine adjustment, as
@@ -93,8 +94,8 @@ pub struct PanelState {
     /// The control under the pointer, and the one pressed.
     pub hover_control: Option<layout::Control>,
     pub pressed_control: Option<layout::Control>,
-    /// A value being typed (from a value control's "Edit value..."), if
-    /// any.
+    /// A value being typed (from a value control's "Edit value...", or
+    /// Enter over it), if any.
     pub text_edit: Option<TextEdit>,
     /// A value control's right-click menu, if open.
     pub menu: Option<Menu>,

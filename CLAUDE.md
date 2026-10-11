@@ -133,7 +133,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.7.12 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.7.13 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -148,7 +148,8 @@ convention existed.
   No local Blender (see TODO): renders come from DESIGN's farm. 0.7.0
   (v14*) has the viewers, TRANSECT, LADDERS and SCOPE; 0.7.5 (v16*) their
   baked, through-mounted keys (panelkit widgets::Keys); typed entry (every knob and MIX, from the right-click menu's "Edit
-  value...", the family's law since 0.7.7) is on panelkit's key policy; see
+  value...", the family's law since 0.7.7, or Enter over the control,
+  back in 0.7.13) is on panelkit's key policy; see
   LISTENING-LOG "Panel round 1" and TODO. The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

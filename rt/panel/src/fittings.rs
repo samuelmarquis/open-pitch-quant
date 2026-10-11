@@ -350,10 +350,23 @@ impl Fittings {
         keys::Open { entry: state.text_edit.is_some(), list: state.menu.is_some(), cancellable: self.capture.is_some() }
     }
 
-    /// Whether the editor takes `key` from the host: panelkit's rules
-    /// (nothing of ours beyond them: typed entry opens only from the menu).
+    /// The value control Enter would open typed entry for: the one under
+    /// the pointer, while nothing is held (the family's shortcut to its
+    /// menu's "Edit value...", Sam 2026-10-10).
+    fn enter_target(&self, state: &PanelState) -> Option<usize> {
+        if self.capture.is_some() {
+            return None;
+        }
+        let widget = layout::widget(state.hover_control?)?;
+        widget.is_value().then(|| widget.id())
+    }
+
+    /// Whether the editor takes `key` from the host: panelkit's rules,
+    /// plus Enter over a value control, which opens its typed entry.
     pub fn wants_key(&self, state: &PanelState, key: &str, mods: Modifiers) -> bool {
-        keys::wants(key, mods, &self.keys_open(state), || false)
+        keys::wants(key, mods, &self.keys_open(state), || {
+            key == "Enter" && !mods.command && self.enter_target(state).is_some()
+        })
     }
 
     /// A press outside a value being typed commits it (or drops it when it
@@ -493,6 +506,13 @@ impl Fittings {
                 EntryKey::Edited => Vec::new(),
                 EntryKey::Commit | EntryKey::Next { .. } => self.commit_entry(state),
             };
+        }
+        if key == "Enter" && !mods.command {
+            // The shortcut to "Edit value...": as choosing it from the menu.
+            if let Some(id) = self.enter_target(state) {
+                open_entry(state, id);
+            }
+            return Vec::new();
         }
         if key != "Escape" {
             return Vec::new();
@@ -672,11 +692,10 @@ mod tests {
         let mut s = PanelState::default();
         let mut f = Fittings::default();
         let (x, y) = at(p::MIX);
-        // Nothing open: the host keeps its keys, Enter included, even over
-        // MIX (typed entry opens only from the menu).
+        // Nothing open: the host keeps its keys, but for Enter over a value
+        // control (below).
         f.hover(&mut s, x, y);
         assert!(!f.wants_key(&s, "5", Modifiers::default()));
-        assert!(!f.wants_key(&s, "Enter", Modifiers::default()));
         edit_value(&mut f, &mut s, p::MIX);
         // Space is the host's even while typing.
         assert!(!f.wants_key(&s, " ", Modifiers::default()));
@@ -702,6 +721,35 @@ mod tests {
         let edits = f.down(&mut s, fx, fy, Modifiers::default(), 1);
         assert_eq!(&edits[..3], &[Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.25), Edit::End(p::MIX)]);
         assert_eq!(edits[3], Edit::Begin(p::FEEL));
+    }
+
+    #[test]
+    fn enter_over_a_value_control_opens_its_typed_entry() {
+        let enter = |f: &Fittings, s: &PanelState| f.wants_key(s, "Enter", Modifiers::default());
+        for w in &layout::WIDGETS {
+            let mut s = PanelState::default();
+            let mut f = Fittings::default();
+            // Off every control the host keeps Enter.
+            f.hover(&mut s, 2.0, 2.0);
+            assert!(!enter(&f, &s));
+            let (x, y) = w.at;
+            f.hover(&mut s, x, y);
+            // Exactly the controls whose menu holds "Edit value...".
+            assert_eq!(enter(&f, &s), w.is_value(), "{}", w.caption);
+            assert!(f.key(&mut s, "Enter", Modifiers::default()).is_empty());
+            assert_eq!(s.text_edit.as_ref().map(|e| e.id), w.is_value().then(|| w.id()), "{}", w.caption);
+            assert!(s.menu.is_none());
+        }
+        // Not while a knob is held, and Cmd+Enter is the host's.
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let (x, y) = at(p::FEEL);
+        f.hover(&mut s, x, y);
+        assert!(!f.wants_key(&s, "Enter", Modifiers { command: true, ..Modifiers::default() }));
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        assert!(!enter(&f, &s));
+        f.key(&mut s, "Enter", Modifiers::default());
+        assert!(s.text_edit.is_none());
     }
 
     #[test]
