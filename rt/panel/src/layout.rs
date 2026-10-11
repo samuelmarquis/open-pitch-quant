@@ -98,10 +98,10 @@ pub const FONT_SIZES: [f32; 4] = [10.0, 12.0, 15.0, 11.0];
 /// `the_bottom_row_is_spaced_by_its_collapsed_look` measures them with
 /// panelkit's TextMetrics and fails when the version gains a digit.
 pub const BOTTOM: Rect = Rect::new(16.0, 750.0, 1068.0, 16.0);
-const STRIP_GAP: f32 = 16.0;
-const VERSION_W: f32 = 94.0;
+const VERSION_W: f32 = 99.0;
 const MIX_W: f32 = 43.0;
-const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, STRIP_GAP, [VERSION_W, MIX_W]);
+/// The family's one gap, panelkit's `strip::GAP` (Sam, 2026-10-10: 12 px).
+const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, panelkit::strip::GAP, [VERSION_W, MIX_W]);
 pub const VERSION: Rect = ROW[0];
 pub const MIX_TEXT: Rect = ROW[1];
 

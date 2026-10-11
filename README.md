@@ -116,6 +116,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.10** — the bottom row's gap is the family's 12 px (it was 16),
+  and the version line is measured again for its extra digit.
 - **0.7.9** — the bottom row is spaced by what it shows (the family's
   rule): MIX now sits one even gap left of the version line, not about
   100 px out. Offline stills show the product's real version.
