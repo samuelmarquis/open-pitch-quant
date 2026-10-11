@@ -5,6 +5,26 @@ messages, and behavior belongs in the README; neither is kept here.
 
 ## Open
 
+- [ ] **ORACLE needs more work (Sam, 2026-10-11):** "I think 'ORACLE'
+  needs a little more work; the phase sounds much smearier than HOUSE,
+  and much smearier than I remember pitchmap sounding." Not started.
+  First step: an A/B of ORACLE against HOUSE and the PITCHMAP refpack on
+  the same material, looking at what ORACLE does to stamp phase that
+  HOUSE doesn't. HOUSE stays frozen.
+- [x] **The viewer keys in the housing's material (Sam, 2026-10-11):**
+  "baked keys are black, they should be white/match the panel's
+  material". DESIGN's p200 B: `--body beige-plastic --text-color
+  1b1b1b` on each key (also Sam's p195 rule: keys take the material of
+  the panel under them). Baked at template a202a23 (farm log
+  20261011-010947-20412; p198's flat-shaded faces come with it),
+  imported in 0.7.15 (catalogue/v19*). Sam has not picked between p200
+  B and C (a softer legend, 4a4640); C is a one-value rebake.
+- [x] **The transect runs left to right (Sam, 2026-10-11):** "the
+  TRANSCET display should move in the opposite direction, starting at
+  the left and scrolling out to the right, so that we can see what
+  notes things clip to (it's non-obvious with the current controls)."
+  0.7.15: now is at the left edge, against the key ruler, and the past
+  runs right (catalogue/v19).
 - [ ] **Onto the family's common ground (2026-10-09).** OpenPitchQuant
   predates the kits; bring it up to the template's standards. Order
   agreed with open-cepstrum's session:
@@ -116,7 +136,8 @@ messages, and behavior belongs in the README; neither is kept here.
        checks and 0 failures: all 12 value controls (double-click reset,
        drag as one gesture, the cursor back at the grab, wheel), which
        keys reach the host, and typed entry both ways (MIX from its
-       menu, Feel by hover and Enter). Still Sam's: Ableton Live itself,
+       menu, Feel by hover and Enter). Sam, 2026-10-11, on the Mac:
+       "Ableton live passes the sniff test". Not separately confirmed:
        resize, and close while playing.
   5. The WRAC template's own docs (done, 2026-10-10): `wrac/README.md`
      describes this workspace and points at `../open-wrac`, with the

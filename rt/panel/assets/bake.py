@@ -349,7 +349,11 @@ def viewer_keys_layout():
     x, y, w, h = HOUSING_RECT
     frame = [x - HOUSING_PAD, y - HOUSING_PAD, w + 2 * HOUSING_PAD, h + 2 * HOUSING_PAD]
     keys = [{"id": key, "component": "button-bezel", "key": ["monitor", -(i + 1), VIEWER_KEY_W],
-             "flags": ["--variant", "wide", "--text", VIEWER_KEY_FACES[key][0], "--led-end", "left",
+             # The housing's own plastic, key and escutcheon, under a dark
+             # legend (Sam, 2026-10-11: "baked keys are black, they should
+             # be white/match the panel's material"; DESIGN's p200 B).
+             "flags": ["--variant", "wide", "--body", "beige-plastic", "--text-color", "1b1b1b",
+                       "--text", VIEWER_KEY_FACES[key][0], "--led-end", "left",
                        "--hue", VIEWER_KEY_FACES[key][1], "--bloom", "off", "--font", "mono",
                        "--font-weight", "bold", "--width", "56", "--height", "14",
                        "--cap-height", "5.75", "--travel", "0.65", "--state", "inactive"]}

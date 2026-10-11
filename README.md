@@ -28,7 +28,8 @@ stem separation, ~93 ms latency, live.
   - **TRANSECT** (the default): each pitch object's source pitch
     (pencil), the pitch it is sung at (black ink; sepia where Threshold
     spared it, vermilion while newborn), and onsets, over the last ten
-    seconds.
+    seconds. Now is at the left, against the key ruler, so each sung
+    pitch lands beside its key; the past runs out to the right.
   - **LADDERS**: one column per live object, low to high, showing its
     harmonics over the last second. A rung is inked where the object
     claimed that harmonic's spectrum and pencilled where it didn't. At
@@ -116,6 +117,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.7.15** — the TRANSECT runs the other way: now is at the left,
+  beside the key ruler, and history scrolls out to the right, so you
+  can read which note each voice lands on. The viewer keys are the
+  housing's beige with dark legends, not black (catalogue/v19*).
 - **0.7.14** — nothing changes in the plugin. The editor now reports
   its controls to the family's native test host, which checked 0.7.13
   on a Mac: every knob and MIX (drag, wheel, double-click reset, the

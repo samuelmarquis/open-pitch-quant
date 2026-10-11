@@ -564,4 +564,19 @@ the ceiling, so Keys editing and scrolling work in every viewer.
   standard (DESIGN's p197, which Sam ratified per DESIGN), each exactly
   on its rect: about 2 px left and 1 px down from v16.
 
-**Verdict:** *(pending)*
+**Verdict (Sam, 2026-10-11, on 0.7.14 in Ableton Live on the Mac):**
+"Ableton live passes the sniff test; baked keys are black, they should
+be white/match the panel's material (ask DESIGN about this). Put a note
+in your TODO that I think 'ORACLE' needs a little more work; the phase
+sounds much smearier than HOUSE, and much smearier than I remember
+pitchmap sounding. I also think the TRANSCET display should move in the
+opposite direction, starting at the left and scrolling out to the
+right, so that we can see what notes things clip to (it's non-obvious
+with the current controls)."
+
+**Reading and action:** the editor works in Live. Three things follow.
+The keys take the housing's beige with a dark legend (DESIGN's p200 B,
+0.7.15, `catalogue/v19*`); the softer legend (C) is still Sam's to
+pick. The transect is flipped so now sits against the key ruler
+(0.7.15). ORACLE's phase smear is an open engine item in TODO, not
+started. The viewers themselves drew no objection.

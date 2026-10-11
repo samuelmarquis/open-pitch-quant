@@ -336,12 +336,15 @@ impl Board {
         self.set_clip(None);
     }
 
-    /// The transect proper: each object's path over the kept history.
+    /// The transect proper: each object's path over the kept history. Now
+    /// is at the left, against the key ruler, and the past runs out to the
+    /// right (Sam, 2026-10-11: "so that we can see what notes things clip
+    /// to").
     fn paths(&mut self, state: &PanelState) {
         let view = state.view;
         let y_of = |note: f32| layout::note_y(view, note);
         let n = state.history.len();
-        let x_of = |i: usize| PLOT.x + PLOT.w - (n - 1 - i) as f32 * (PLOT.w / HISTORY as f32);
+        let x_of = |i: usize| PLOT.x + (n - 1 - i) as f32 * (PLOT.w / HISTORY as f32);
         let frames: Vec<&VizFrame> = state.history.iter().collect();
         // Onsets: a faint wash where transient handling went dry.
         for (i, f) in frames.iter().enumerate() {
@@ -374,14 +377,15 @@ impl Board {
                 self.line(x0, o0, x1, o1, 1.6, opacity(color, 0.35 + 0.65 * weight));
             }
         }
-        // Now: each object's bend, source to sung, at the right edge.
+        // Now: each object's bend, source to sung, at the left edge: the
+        // sung pitch lands beside its key on the ruler.
         let now = frames[n - 1];
         let x = x_of(n - 1);
         for t in &now.tracks[..now.n as usize] {
             let (s, o) = (y_of(layout::hz_note(t.f0)), y_of(layout::hz_note(t.out)));
-            self.line(x - 10.0, s, x - 2.0, o, 1.0, opacity(BLUE, 0.7));
-            self.disc(x - 10.0, s, 2.0, opacity(PENCIL, 0.8));
-            self.disc(x - 2.0, o, 2.6, if t.spared { SEPIA } else { SUMI });
+            self.line(x + 10.0, s, x + 2.0, o, 1.0, opacity(BLUE, 0.7));
+            self.disc(x + 10.0, s, 2.0, opacity(PENCIL, 0.8));
+            self.disc(x + 2.0, o, 2.6, if t.spared { SEPIA } else { SUMI });
         }
     }
 
@@ -578,13 +582,14 @@ impl Board {
         let right = PLOT.x + PLOT.w;
         let mut second = 0;
         loop {
-            let x = right - second as f32 * px_per_second;
-            if x < PLOT.x {
+            // Now at the left; each second further right is older.
+            let x = PLOT.x + second as f32 * px_per_second;
+            if x > right {
                 break;
             }
             let major = second % 2 == 0;
             self.solid(Rect::new(x - 0.5, foot - if major { 6.0 } else { 3.0 }, 1.0, if major { 6.0 } else { 3.0 }), opacity(SUMI, 0.45));
-            if major && second > 0 && x > PLOT.x + 30.0 {
+            if major && second > 0 && x < right - 30.0 {
                 let label = format!("-{second} s");
                 self.text(x, foot - 18.0, &label, VALUE, opacity(SUMI, 0.45), true);
             }
