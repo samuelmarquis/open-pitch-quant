@@ -14,8 +14,8 @@
 //! (pencil), the pitch it was sung at (ink), and the targets (blue ink).
 //! Sepia is spent only on refusal: an object Threshold spared, a bypassed
 //! key, and the map ceiling.
-use crate::layout::{self, Control, Kind, Plate, Viewer, Widget, INFO, PLOT, RULER, SCREEN, WIDGETS};
-use crate::{pack, PanelState, HISTORY};
+use crate::layout::{self, Control, Kind, Plate, Slot, Viewer, Widget, INFO, PLOT, RULER, SCREEN, WIDGETS};
+use crate::{fittings, pack, PanelState, HISTORY};
 use opq_engine::params::{self as p, KeyState, SPECS};
 use opq_engine::{scope_db, scope_note, VizFrame, SCOPE_BINS, SCOPE_PER_NOTE};
 use panelkit::canvas::{opacity, paint, Canvas, Rect};
@@ -195,6 +195,7 @@ impl Board {
         self.sprite(bezel, layout::HOUSING, source, WHITE, paint::ART, 0);
         self.solid(SCREEN, PAPER);
         self.transect(state);
+        self.key_transform(state);
         self.viewer_keys(state);
         self.scroll_bar(state);
         self.info(state);
@@ -204,6 +205,7 @@ impl Board {
         }
         self.bottom_row(state);
         self.menu(state);
+        self.list(state);
         self.submit()
     }
 
@@ -216,6 +218,52 @@ impl Board {
             self.solid(Rect::new(r.x - 1.0, r.y - 1.0, r.w + 2.0, r.h + 2.0), [0.0, 0.0, 0.0, 0.9]);
             let lit = index == menu.index;
             widgets::text_button(&mut self.canvas, r, label, lit, lit, MINT, INK);
+        }
+    }
+
+    /// The Key Transform, inside the screen: the source's key and scale,
+    /// an arrow, the destination's. Each is a list; the destination scale
+    /// reads the targets back, "*" where no scale names them. Under the
+    /// MIDI source they are pencilled: the transform is the Keys source's.
+    fn key_transform(&mut self, state: &PanelState) {
+        self.solid(layout::transform_backing(), opacity(PAPER, 0.92));
+        let live = state.keys_source();
+        for slot in Slot::ALL {
+            let r = slot.rect();
+            let hovered = state.hover_control == Some(Control::Transform(slot))
+                || state.list.is_some_and(|list| list.slot == slot);
+            let ink = match (live, hovered) {
+                (_, true) => BLUE,
+                (true, false) => SUMI,
+                (false, false) => opacity(PENCIL, 0.55),
+            };
+            let label = fittings::current_row(state, slot).map_or("*", |row| slot.label(row));
+            self.solid(Rect::new(r.x, r.y + r.h - 1.0, r.w, 1.0), opacity(ink, 0.35));
+            self.text(r.x + 3.0, r.y + 2.0, label, VALUE, ink, false);
+            widgets::dropdown_arrow(&mut self.canvas, (r.x + r.w - 7.0, r.y + r.h * 0.5), ink, None);
+        }
+        let (x, y) = layout::transform_arrow();
+        let ink = if live { SUMI } else { opacity(PENCIL, 0.55) };
+        self.line(x - 5.0, y, x + 5.0, y, 1.0, ink);
+        self.line(x + 2.0, y - 3.0, x + 5.0, y, 1.0, ink);
+        self.line(x + 2.0, y + 3.0, x + 5.0, y, 1.0, ink);
+    }
+
+    /// An open Key Transform list, over everything: its rows, the one
+    /// highlighted lit, the current one marked.
+    fn list(&mut self, state: &PanelState) {
+        let Some(list) = state.list else { return };
+        let (first, last) = (list.slot.row(0), list.slot.row(list.slot.rows() - 1));
+        self.solid(Rect::new(first.x - 1.0, first.y - 1.0, first.w + 2.0, last.y + last.h - first.y + 2.0), [0.017, 0.022, 0.030, 1.0]);
+        let current = fittings::current_row(state, list.slot);
+        for row in 0..list.slot.rows() {
+            let r = list.slot.row(row);
+            let lit = row == list.index;
+            if lit {
+                self.solid(r, [0.035, 0.050, 0.065, 1.0]);
+            }
+            let ink = if lit || current == Some(row) { MINT } else { INK };
+            self.text(r.x + 3.0, r.y, list.slot.label(row), VALUE, ink, false);
         }
     }
 
@@ -841,6 +889,22 @@ pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
             };
             let shown = if state.viewer == viewer { " (showing)" } else { "" };
             Some(HoverInfo::help(control, format!("VIEWER: {}{shown}", viewer.label()), detail))
+        }
+        Control::Transform(slot) => {
+            let shown = fittings::current_row(state, slot).map_or("*", |row| slot.label(row));
+            let (name, detail) = match slot {
+                Slot::SrcKey => ("SOURCE KEY", "the key the input is in; * takes the destination's"),
+                Slot::SrcScale => (
+                    "SOURCE SCALE",
+                    "the scale the input is in: each of its degrees is sung at the destination's same degree; CHROMATIC only pulls to the nearest target",
+                ),
+                Slot::DstKey => ("DESTINATION KEY", "the key to sing in; * takes the source's"),
+                Slot::DstScale => (
+                    "DESTINATION SCALE",
+                    "the scale to sing in, written to the keys on the left; * means the keys were set by hand and spell no listed scale",
+                ),
+            };
+            Some(HoverInfo::help(control, format!("{name}: {shown}"), detail))
         }
     }
 }

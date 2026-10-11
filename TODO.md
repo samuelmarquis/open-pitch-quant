@@ -189,8 +189,56 @@ messages, and behavior belongs in the README; neither is kept here.
   - [ ] Not yet PITCHMAP's: the per-source Pitch Mapping Sliders (127
     slots, this-goes-there, -12..+23), Xclude Round mode (up/down/
     nearest for excluded pitches), Regular mode's note-ons latch-toggling
-    the keys, Global Threshold, shift-click sine reference, Key Transform
-    (root + scale presets), snapshots.
+    the keys, Global Threshold, shift-click sine reference, snapshots.
+  - [x] The Key Transform, our way (0.8.0, catalogue/v20-transform*).
+    Sam, 2026-10-11: "I want to handle this differently than PM.
+    PitchMap's way of handling this, frankly, kind of sucks; their
+    preset for e.g. 'F Major' will move a C to an F, which in most
+    cases is not what I want because I have no fucking clue if my
+    input audio is in C Major. So, what I'd like to do instead is, on
+    the panel (not a panel button, like, inside the panel) have four
+    dropdowns like DROP1 DROP2 -> DROP3 DROP4 where each dropdown can
+    select a key and a scale DROP1 and DROP3 select from C, C# ... B,
+    and DROP2 DROP4 major/minor, all the modes, and a variety of Funky
+    Scales if you feel inclined to do some digging here (neapolitan
+    minor, blues, whole-tone, whatever); by default they'll be *
+    CHROMATIC each, and with these we can choose the src-dst key
+    mapping; note that * here means 'adopt the other one'. So I can
+    map * CHROMATIC -> F MAJOR and it'll keep F locked at F, but F#
+    will drop to F, or raise to G (pick one rounding scheme and be
+    consistent, I haven't mentally weighed the pros/cons of
+    round-up/round-down/round-center/round-statistically-neutral, I'll
+    leave that to you). If the user manually edits the scale
+    themselves, show a * in the second field too, *unless* they happen
+    upon a known scale, in which case you can show that one (but all
+    bets are off with REPEAT off)."
+    What was built, and the choices that were left to Claude (Sam has
+    not reviewed them):
+    - Where: inside the screen, at the plot's top right, under the
+      viewer keys. "Inside the panel" was read as inside the monitor,
+      not a bezel key and not a plate fitting. If Sam meant the LAW
+      plate, the lists move and a plate needs room.
+    - The destination scale is the Keys target set itself: choosing
+      writes every octave; a hand edit reads back as a listed scale
+      from the destination's root, else `*`. With octaves that differ
+      (Custom) it reads `*` and there is no remap.
+    - Rounding, one rule everywhere: nearest, a tie going down. For a
+      chromatic source that is the engine's nearest-target pull, as
+      before (so F sharp goes to F or G by which side of it the pitch
+      is; an exact tie goes to F), under the ROUNDING switch's
+      hysteresis. It is neutral over real pitches, since an exact tie
+      has measure zero.
+    - A source scale maps degree to degree when the two scales have the
+      same number of notes, else each source degree goes to its nearest
+      destination note (tie down). The key change is the shortest way
+      round; a tritone goes down. Both keys `*` is C.
+    - 31 scales (`rt/engine/src/scales.rs`), no two the same set.
+    - Not host parameters: product state in the document's section, as
+      the keys are (optional member; version stays 3, 0.7.x documents
+      load). Choosing in a list turns SOURCE to KEYS.
+    - Known gaps: THRESHOLD still spares an in-tune object, which under
+      a key change leaves it untransposed; the lists are not in the
+      family probe's geometry; not yet heard by Sam or run in a host.
   - Live check of Keys on sam-pc (0.4.1, K1–K4 passed 2026-10-10). K4's
     bottom label "D4294967295" (octave −1 unsigned) is fixed in 0.4.2
     (unit-tested; no Windows recheck queued, per the ruling below).

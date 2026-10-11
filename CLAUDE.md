@@ -133,7 +133,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.7.15 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.8.0 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -150,6 +150,11 @@ convention existed.
   baked, through-mounted keys (panelkit widgets::Keys); typed entry (every knob and MIX, from the right-click menu's "Edit
   value...", the family's law since 0.7.7, or Enter over the control,
   back in 0.7.13) is on panelkit's key policy; see
-  LISTENING-LOG "Panel round 1" and TODO. The Live
+  LISTENING-LOG "Panel round 1" and TODO. 0.7.15 (v19*): the transect
+  runs left to right (now against the ruler) and the keys are beige.
+  0.8.0 (v20-transform*): the Key Transform, four lists inside the
+  screen (source key and scale, destination key and scale), product
+  state beside the keys; `rt/engine/src/scales.rs` holds the scales
+  and the remap, and TODO lists the choices Sam has not reviewed. The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

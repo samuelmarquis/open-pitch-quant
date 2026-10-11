@@ -107,6 +107,13 @@ Tracks carry the musical state:
 - **Target selection**: nearest grid note, with *Intelligent* rounding
   adding 40 cents of hysteresis toward the track's current target (stops
   boundary flapping on vibrato). *Nearest* is the memoryless variant.
+  Under a **Key Transform** with a source scale (`scales.rs`, 0.8.0) the
+  choice moves to the source side: the object's f0 is taken to its
+  nearest source-scale note, and the target is where the transform's
+  12-entry map sends that note (degree to degree, plus the key change).
+  The same hysteresis applies between source notes. Unowned peaks that
+  are mapped go the same way. With no remap this path is not taken and
+  HOUSE is unchanged.
 - **Retarget debounce**: a target change caused by source motion must
   persist 3 frames (~64 ms) before committing — a singer's portamento no
   longer drags the output through every intermediate semitone. Grid

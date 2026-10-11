@@ -73,6 +73,36 @@ stem separation, ~93 ms latency, live.
   project, not automatable. The wheel over the screen scrolls the pitch
   view as content, following the system's natural-scrolling setting
   (knobs always follow the wheel's physical direction).
+
+  **Key Transform** (the four lists at the screen's top right, reading
+  *source key, source scale → destination key, destination scale*):
+  where PITCHMAP's scale presets assume the input is in C major, here
+  you say what it is in. Each key list is `*` then C to B; each scale
+  list has 31 scales (chromatic, major, minor, the modes, harmonic and
+  melodic minor, pentatonics, blues, whole tone, diminished, Neapolitan
+  and more). It starts at `* CHROMATIC → * CHROMATIC`, which does
+  nothing.
+  - The **destination** scale is the targets: choosing one writes it to
+    the key ruler in every octave. Edit the keys by hand and it reads
+    `*`, unless the keys happen to spell a listed scale from the
+    destination's key, in which case it names that. With SCOPE at
+    Custom a hand edit sets single notes, so it reads `*` and the
+    source side has nothing to map onto.
+  - A key of `*` takes the other side's key (both `*` is C).
+  - With a **chromatic source** in the destination's key, each pitch is
+    pulled to its nearest target, as ever: `* CHROMATIC → F MAJOR` keeps
+    F at F, and a pitch between F and G goes to whichever is nearer.
+    ROUNDING decides how readily a voice hops between neighbours.
+  - With a **source scale**, each pitch is first taken to its nearest
+    source degree, and that degree is sung at the destination's same
+    degree: `C MAJOR → C MINOR` sings E as E flat, A as A flat and B as
+    B flat. If the keys differ the whole thing moves the shortest way
+    (C to F is up a fourth, C to G down a fourth, a tritone down). If
+    the two scales have different numbers of notes, each source degree
+    goes to the nearest destination note instead, a tie going down.
+  Choosing anything in the lists turns SOURCE to KEYS. The transform is
+  saved with the project and is not automatable; a project saved by
+  0.7.x opens with none.
   `cargo run --release -p opq-panel --bin
   panel-render -- --out DIR` renders it offline from the real engine;
   `rt/panel/assets/bake.py` bakes the plates and vendors the family
@@ -117,6 +147,14 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.0** — the **Key Transform**: four lists inside the screen, top
+  right, set a source key and scale and a destination key and scale
+  (`A MINOR → * MAJOR`). Unlike PITCHMAP's presets it never assumes
+  what key the input is in. The destination scale is written to the key
+  ruler and read back from it; a source scale maps degree to degree.
+  The default, `* CHROMATIC → * CHROMATIC`, changes nothing, and HOUSE
+  is unchanged. Projects saved by 0.7.x still open
+  (catalogue/v20-transform, v20-transform-list).
 - **0.7.15** — the TRANSECT runs the other way: now is at the left,
   beside the key ruler, and history scrolls out to the right, so you
   can read which note each voice lands on. The viewer keys are the

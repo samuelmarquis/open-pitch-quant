@@ -130,6 +130,9 @@ impl Processor for OpqAudioProcessor {
         let grid = if self.sync.params.keys_source() {
             let keys = self.shared.keys();
             params.bypass_keys = keys.bypass;
+            // The Key Transform's map, when it asks for more than the
+            // nearest target (no allocation: a few loops over 12 and 128).
+            params.remap = keys.remap();
             keys.held()
         } else {
             self.held

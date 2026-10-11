@@ -51,6 +51,18 @@ fn process_block_does_not_allocate() {
     busy.bypass_keys = 1 << 60;
     busy.voices = 12;
     variants.push(busy);
+    // The Key Transform's remap (C major to F minor), with unowned peaks
+    // mapped too, under both roundings.
+    let mut keys = opq_engine::params::Keys::default();
+    keys.transform = opq_engine::scales::KeyTransform { src_key: 0, src_scale: 1, dst_key: 5 };
+    keys.set_dst_scale(2);
+    let mut mapped = base;
+    mapped.remap = keys.remap();
+    assert!(mapped.remap.is_some());
+    mapped.unowned = opq_engine::Unowned::Map;
+    variants.push(mapped);
+    mapped.rounding = opq_engine::Rounding::Nearest;
+    variants.push(mapped);
 
     for p in variants {
         let p: EngineParams = p;

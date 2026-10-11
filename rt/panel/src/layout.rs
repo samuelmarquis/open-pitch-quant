@@ -98,7 +98,7 @@ pub const FONT_SIZES: [f32; 4] = [10.0, 12.0, 15.0, 11.0];
 /// `the_bottom_row_is_spaced_by_its_collapsed_look` measures them with
 /// panelkit's TextMetrics and fails when the version gains a digit.
 pub const BOTTOM: Rect = Rect::new(16.0, 750.0, 1068.0, 16.0);
-const VERSION_W: f32 = 99.0;
+const VERSION_W: f32 = 94.0;
 const MIX_W: f32 = 43.0;
 /// The family's one gap, panelkit's `strip::GAP` (Sam, 2026-10-10: 12 px).
 const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, panelkit::strip::GAP, [VERSION_W, MIX_W]);
@@ -136,6 +136,109 @@ pub fn menu_item(at: (f32, f32), index: usize) -> Rect {
     }
 }
 
+/// The Key Transform's four lists, inside the screen at the plot's top
+/// right (the transect's oldest corner, under the viewer keys): the
+/// source's key and scale, an arrow, the destination's key and scale
+/// (Sam, 2026-10-11).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Slot {
+    SrcKey,
+    SrcScale,
+    DstKey,
+    DstScale,
+}
+
+const SLOT_H: f32 = 16.0;
+const SLOT_KEY_W: f32 = 34.0;
+const SLOT_SCALE_W: f32 = 128.0;
+const SLOT_GAP: f32 = 4.0;
+const SLOT_ARROW_W: f32 = 18.0;
+/// A list row's height: 31 scales drop from the row to within the screen.
+pub const SLOT_ROW_H: f32 = 12.0;
+
+impl Slot {
+    pub const ALL: [Slot; 4] = [Slot::SrcKey, Slot::SrcScale, Slot::DstKey, Slot::DstScale];
+
+    pub fn is_key(self) -> bool {
+        matches!(self, Slot::SrcKey | Slot::DstKey)
+    }
+
+    /// How many rows its list has: "*" and the twelve keys, or the scales.
+    pub fn rows(self) -> usize {
+        if self.is_key() {
+            opq_engine::scales::KEY_NAMES.len()
+        } else {
+            opq_engine::scales::SCALES.len()
+        }
+    }
+
+    /// A row's label. A key list starts at "*".
+    pub fn label(self, row: usize) -> &'static str {
+        if self.is_key() {
+            opq_engine::scales::KEY_NAMES[Self::row_key(row) as usize]
+        } else {
+            opq_engine::scales::SCALES[row].name
+        }
+    }
+
+    /// A key list's row as a key: row 0 is "*" (12), then C..B.
+    pub fn row_key(row: usize) -> u8 {
+        if row == 0 {
+            opq_engine::scales::ANY_KEY
+        } else {
+            row as u8 - 1
+        }
+    }
+
+    /// The row a key sits on in a key list.
+    pub fn key_row(key: u8) -> usize {
+        if key >= opq_engine::scales::ANY_KEY {
+            0
+        } else {
+            key as usize + 1
+        }
+    }
+
+    /// Where it sits: the four end 8 px inside the plot's right edge.
+    pub const fn rect(self) -> Rect {
+        let right = PLOT.x + PLOT.w - 8.0;
+        let dst_scale = right - SLOT_SCALE_W;
+        let dst_key = dst_scale - SLOT_GAP - SLOT_KEY_W;
+        let src_scale = dst_key - SLOT_ARROW_W - SLOT_SCALE_W;
+        let src_key = src_scale - SLOT_GAP - SLOT_KEY_W;
+        let (x, w) = match self {
+            Slot::SrcKey => (src_key, SLOT_KEY_W),
+            Slot::SrcScale => (src_scale, SLOT_SCALE_W),
+            Slot::DstKey => (dst_key, SLOT_KEY_W),
+            Slot::DstScale => (dst_scale, SLOT_SCALE_W),
+        };
+        Rect::new(x, PLOT.y + 4.0, w, SLOT_H)
+    }
+
+    /// Its open list's `row`: dropping from it, its own width.
+    pub fn row(self, row: usize) -> Rect {
+        let r = self.rect();
+        Rect::new(r.x, r.y + r.h + 1.0 + row as f32 * SLOT_ROW_H, r.w, SLOT_ROW_H)
+    }
+
+    /// The row of its open list under the pointer.
+    pub fn row_at(self, x: f32, y: f32) -> Option<usize> {
+        (0..self.rows()).find(|&row| self.row(row).contains(x, y))
+    }
+}
+
+/// The arrow between the source and the destination: its centre.
+pub fn transform_arrow() -> (f32, f32) {
+    let (src, dst) = (Slot::SrcScale.rect(), Slot::DstKey.rect());
+    ((src.x + src.w + dst.x) * 0.5, src.y + src.h * 0.5)
+}
+
+/// The paper behind the four, so the plot's ink doesn't run under them.
+pub fn transform_backing() -> Rect {
+    let (first, last) = (Slot::SrcKey.rect(), Slot::DstScale.rect());
+    Rect::new(first.x - 4.0, first.y - 2.0, last.x + last.w - first.x + 8.0, first.h + 4.0)
+}
+
 /// The menu item under the pointer, for a menu opened at `at`.
 pub fn menu_item_at(at: (f32, f32), x: f32, y: f32) -> Option<usize> {
     (0..MENU_ITEMS.len()).find(|&i| menu_item(at, i).contains(x, y))
@@ -154,6 +257,8 @@ pub enum Control {
     ScrollBar,
     /// A viewer key on the top bezel.
     Viewer(Viewer),
+    /// One of the Key Transform's four lists.
+    Transform(Slot),
 }
 
 /// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
@@ -208,7 +313,7 @@ impl Widget {
     pub fn id(&self) -> usize {
         match self.control {
             Control::Param(id) => id,
-            Control::Key(_) | Control::ScrollBar | Control::Viewer(_) => {
+            Control::Key(_) | Control::ScrollBar | Control::Viewer(_) | Control::Transform(_) => {
                 unreachable!("only parameters are widgets")
             }
         }
@@ -322,6 +427,9 @@ pub fn target_at(view: f32, x: f32, y: f32) -> Option<Control> {
     if let Some(index) = panelkit::widgets::key_at(Viewer::ALL.map(viewer_key), x, y) {
         return Some(Control::Viewer(Viewer::ALL[index]));
     }
+    if let Some(slot) = Slot::ALL.into_iter().find(|slot| slot.rect().contains(x, y)) {
+        return Some(Control::Transform(slot));
+    }
     WIDGETS
         .iter()
         .find(|w| w.rect().contains(x, y))
@@ -373,6 +481,34 @@ pub fn hz_note(hz: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_key_transform_sits_in_the_plot_and_its_lists_in_the_screen() {
+        let inside = |outer: Rect, r: Rect| {
+            r.x >= outer.x && r.y >= outer.y && r.x + r.w <= outer.x + outer.w && r.y + r.h <= outer.y + outer.h
+        };
+        let mut right = PLOT.x;
+        for slot in Slot::ALL {
+            let r = slot.rect();
+            assert!(inside(PLOT, r) && r.x >= right, "{slot:?}");
+            right = r.x + r.w;
+            assert_eq!(target_at(VIEW_DEFAULT, r.x + 2.0, r.y + 2.0), Some(Control::Transform(slot)));
+            // Every row of its list is on the screen, and found again.
+            for row in 0..slot.rows() {
+                let item = slot.row(row);
+                assert!(inside(SCREEN, item), "{slot:?} row {row}");
+                assert_eq!(slot.row_at(item.x + 2.0, item.y + 2.0), Some(row));
+            }
+        }
+        // A key list is "*" then C to B.
+        assert_eq!((Slot::SrcKey.label(0), Slot::SrcKey.label(1), Slot::DstKey.label(12)), ("*", "C", "B"));
+        assert!((0..13).all(|row| Slot::key_row(Slot::row_key(row)) == row));
+        // The widest scale name fits its slot beside the chevron.
+        let bytes = crate::pack::embedded().bytes(crate::pack::FONT).unwrap();
+        let metrics = panelkit::canvas::TextMetrics::new(&bytes, &FONT_SIZES).unwrap();
+        let widest = (0..Slot::DstScale.rows()).map(|row| metrics.width(Slot::DstScale.label(row), 0)).fold(0.0, f32::max);
+        assert!(widest + 3.0 + 14.0 <= SLOT_SCALE_W, "{widest}");
+    }
 
     #[test]
     fn the_bottom_row_is_spaced_by_its_collapsed_look() {

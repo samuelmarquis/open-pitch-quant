@@ -10,11 +10,14 @@
 
 use pluginkit::param::{ParamSpec, Text};
 
+use crate::scales::{self, KeyTransform, Remap, SCALES};
 use crate::{Algorithm, EngineParams, Mode, Newborn, Rounding, TonalityMode, Unowned};
 
 /// Version 1 was the pre-pluginkit id-keyed document (18 parameters);
 /// version 2 is pluginkit's, with ALGORITHM and PURIFY; version 3 adds
-/// SOURCE and the key states as the document's product section.
+/// SOURCE and the key states as the document's product section. The Key
+/// Transform (0.8.0) is an optional member of that section, so a version
+/// 3 document from before it still loads.
 pub const STATE_VERSION: u32 = 3;
 pub const PARAM_COUNT: usize = 21;
 
@@ -129,12 +132,16 @@ pub static SPECS: [ParamSpec; PARAM_COUNT] = [
 pub struct Keys {
     pub target: u128,
     pub bypass: u128,
+    /// The Key Transform's source side and destination key
+    /// ([`crate::scales`]); its destination scale is `target`.
+    pub transform: KeyTransform,
 }
 
 impl Default for Keys {
     /// Every note a target, none bypassed: chromatic, as PITCHMAP starts.
+    /// The transform is "* CHROMATIC to * CHROMATIC": none.
     fn default() -> Self {
-        Self { target: u128::MAX, bypass: 0 }
+        Self { target: u128::MAX, bypass: 0, transform: KeyTransform::default() }
     }
 }
 
@@ -174,6 +181,32 @@ impl Keys {
     /// The target grid as the engine's held-note array.
     pub fn held(&self) -> [bool; 128] {
         std::array::from_fn(|n| self.target >> n & 1 == 1)
+    }
+
+    /// The targets as absolute pitch classes (bit 0 is C), when every
+    /// octave is alike; `None` once Custom edits have set single notes.
+    pub fn target_classes(&self) -> Option<u16> {
+        let classes = (self.target & 0xfff) as u16;
+        (0..128u32).all(|n| self.target >> n & 1 == (classes >> (n % 12) & 1) as u128).then_some(classes)
+    }
+
+    /// The destination scale the targets spell from the destination's
+    /// root, if they spell one of [`SCALES`].
+    pub fn dst_scale(&self) -> Option<usize> {
+        scales::recognise(self.target_classes()?, self.transform.dst_root())
+    }
+
+    /// Make the targets `scale` on the destination's root, every octave.
+    pub fn set_dst_scale(&mut self, scale: usize) {
+        let classes = scales::absolute(SCALES[scale].classes, self.transform.dst_root());
+        self.target = (0..128u32).filter(|n| classes >> (n % 12) & 1 == 1).fold(0, |mask, n| mask | 1 << n);
+    }
+
+    /// The engine's note-to-note map, if the transform asks for more than
+    /// the nearest target. With octaves that differ (Custom edits) there
+    /// is no scale to map onto, and none.
+    pub fn remap(&self) -> Option<Remap> {
+        self.transform.remap(self.target_classes()?)
     }
 }
 
@@ -344,7 +377,7 @@ mod tests {
 
     #[test]
     fn keys_set_one_note_or_every_octave() {
-        let mut k = Keys { target: 0, bypass: 0 };
+        let mut k = Keys { target: 0, ..Keys::default() };
         k.set(KeyState::Target, 60, true, false);
         assert!(k.get(KeyState::Target, 60) && !k.get(KeyState::Target, 72));
         k.set(KeyState::Target, 64, true, true);
@@ -355,5 +388,30 @@ mod tests {
         assert!(k.get(KeyState::Bypass, 67) && !k.get(KeyState::Target, 67));
         assert_eq!(k.held().iter().filter(|&&h| h).count(), 1);
         assert_eq!(Keys::default().held(), [true; 128]);
+    }
+
+    #[test]
+    fn the_targets_read_back_as_a_scale_or_as_none() {
+        let major = SCALES.iter().position(|s| s.name == "MAJOR").unwrap();
+        let mut k = Keys::default();
+        // Chromatic, no transform: no remap.
+        assert_eq!((k.dst_scale(), k.remap()), (Some(scales::CHROMATIC), None));
+        k.transform.dst_key = 5;
+        k.set_dst_scale(major);
+        assert_eq!(k.dst_scale(), Some(major));
+        // F major: F, G, A, B flat, C, D, E in every octave.
+        assert!((0..128).all(|n| k.get(KeyState::Target, n) == [0, 2, 4, 5, 7, 9, 10].contains(&(n % 12))));
+        // "* CHROMATIC to F MAJOR" is the nearest target, nothing more.
+        assert_eq!(k.remap(), None);
+        // A hand edit that leaves every octave alike is a scale or none.
+        k.set(KeyState::Target, 71, true, true);
+        assert_eq!(k.dst_scale(), None);
+        k.set(KeyState::Target, 70, false, true);
+        assert_eq!(SCALES[k.dst_scale().unwrap()].name, "LYDIAN");
+        // One note alone (Custom): no scale, and no remap to build on it.
+        k.transform.src_scale = major as u8;
+        assert!(k.remap().is_some());
+        k.set(KeyState::Target, 60, false, false);
+        assert_eq!((k.target_classes(), k.dst_scale(), k.remap()), (None, None, None));
     }
 }

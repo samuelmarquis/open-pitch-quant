@@ -18,6 +18,7 @@
 //! in this engine.
 
 pub mod params;
+pub mod scales;
 
 use audiokit::pitch::{self, midi_freq, princarg};
 use audiokit::stft::{Hop, Stft};
@@ -25,6 +26,11 @@ use realfft::num_complex::Complex64;
 use realfft::{RealFftPlanner, RealToComplex};
 use std::collections::VecDeque;
 use std::sync::Arc;
+
+/// A frequency as a fractional MIDI note (`midi_freq`'s inverse).
+fn freq_note(f: f64) -> f64 {
+    69.0 + 12.0 * (f / 440.0).log2()
+}
 
 pub const N_FFT: usize = 4096; // default window size
 pub const HOP: usize = 1024; // default hop (window/4)
@@ -133,6 +139,10 @@ pub struct EngineParams {
     /// unbent, as Threshold spares it (PITCHMAP's per-key Bypass on the
     /// Lower Keyboard). 0 = none, the HOUSE baseline.
     pub bypass_keys: u128,
+    /// The Key Transform's note-to-note map: a pitch is pulled to its
+    /// nearest source-scale note and sung where the map sends that note.
+    /// `None` = the nearest target on the grid, the HOUSE baseline.
+    pub remap: Option<scales::Remap>,
 }
 
 impl Default for EngineParams {
@@ -160,6 +170,7 @@ impl Default for EngineParams {
             purify: 0.0,
             newborn: Newborn::Map,
             bypass_keys: 0,
+            remap: None,
         }
     }
 }
@@ -662,6 +673,32 @@ impl Engine {
         best
     }
 
+    /// Where a pitch is sung: its nearest target on the grid, or under a
+    /// Key Transform the place the map sends its nearest source note.
+    fn target_for(&self, f: f64, remap: Option<&scales::Remap>) -> f64 {
+        match remap {
+            None => self.nearest_grid(f),
+            Some(remap) => midi_freq(remap.sung(remap.source_note(freq_note(f))) as f64),
+        }
+    }
+
+    /// Under a Key Transform, the source note nearest `f` that the map
+    /// sings at `target`, if any does (for the rounding's hysteresis).
+    fn source_of(&self, f: f64, target: f64, remap: &scales::Remap) -> Option<f64> {
+        let note = freq_note(f);
+        let floor = note.floor() as i32;
+        let mut best: Option<f64> = None;
+        for n in floor - 12..=floor + 13 {
+            if remap.src >> n.rem_euclid(12) & 1 == 1
+                && (midi_freq(remap.sung(n) as f64) / target).ln().abs() < 1e-9
+                && best.is_none_or(|b| (n as f64 - note).abs() < (b - note).abs())
+            {
+                best = Some(n as f64);
+            }
+        }
+        best
+    }
+
     /// One hop: the frame has analyzed every channel; decide, map, and
     /// leave each channel's resynthesis spectrum in the hop.
     fn run_frame(&mut self, hop: &mut Hop<'_, f64>, held: &[bool; 128], p: &EngineParams) {
@@ -882,14 +919,29 @@ impl Engine {
                     best = Some(ti);
                 }
             }
-            let mut tgt = self.nearest_grid(f0);
+            let mut tgt = self.target_for(f0, p.remap.as_ref());
             if p.rounding == Rounding::Intelligent {
                 if let Some(ti) = best {
                     let old = self.tracks[ti].tgt;
-                    let in_grid =
-                        self.grid.iter().any(|&g| ((g / old).ln()).abs() < 1e-9);
-                    if in_grid && (f0 / old).ln().abs() < (f0 / tgt).ln().abs() + hyst {
-                        tgt = old;
+                    match p.remap.as_ref() {
+                        None => {
+                            let in_grid =
+                                self.grid.iter().any(|&g| ((g / old).ln()).abs() < 1e-9);
+                            if in_grid && (f0 / old).ln().abs() < (f0 / tgt).ln().abs() + hyst {
+                                tgt = old;
+                            }
+                        }
+                        // The same hysteresis, measured where the choice
+                        // is made: between source notes.
+                        Some(remap) => {
+                            let note = freq_note(f0);
+                            let now = remap.source_note(note) as f64;
+                            if let Some(held) = self.source_of(f0, old, remap) {
+                                if (note - held).abs() < (note - now).abs() + p.hyst_cents / 100.0 {
+                                    tgt = old;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1076,7 +1128,7 @@ impl Engine {
                 }
                 if p.unowned == Unowned::Map {
                     df = if mappable {
-                        self.nearest_grid(fp) - fp
+                        self.target_for(fp, p.remap.as_ref()) - fp
                     } else {
                         0.0
                     };
@@ -1097,7 +1149,7 @@ impl Engine {
                     }
                     region_gain = p.purify;
                     recover = true;
-                    df = self.nearest_grid(fp) - fp;
+                    df = self.target_for(fp, p.remap.as_ref()) - fp;
                 } else {
                     df = 0.0;
                     discard = mappable && p.algorithm == Algorithm::Oracle;

@@ -5,7 +5,7 @@
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
 //!        panel-render --geometry   (the family probe's geometry, JSON)
 //! Scenarios: house, oracle, keys, empty, drag, typing, menu, ladders,
-//! scope (default: all).
+//! scope, transform, transform-list (default: all).
 use opq_engine::params::{self as p, KeyState, Keys, Params};
 use opq_engine::Engine;
 use opq_panel::layout;
@@ -16,7 +16,9 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const SR: f64 = 48_000.0;
-const SCENARIOS: [&str; 9] = ["house", "oracle", "keys", "empty", "drag", "typing", "menu", "ladders", "scope"];
+const SCENARIOS: [&str; 11] = [
+    "house", "oracle", "keys", "empty", "drag", "typing", "menu", "ladders", "scope", "transform", "transform-list",
+];
 
 fn midi_hz(note: f64) -> f64 {
     440.0 * ((note - 69.0) / 12.0).exp2()
@@ -70,6 +72,7 @@ fn feed(state: &mut PanelState, held: &[u8], seconds: f64) {
     let mut engine_params = params.engine();
     if params.keys_source() {
         engine_params.bypass_keys = state.keys.bypass;
+        engine_params.remap = state.keys.remap();
     }
     let mut t = 0.0f64;
     for _ in 0..(seconds * SR / block as f64) as usize {
@@ -121,7 +124,7 @@ fn scenario(name: &str) -> PanelState {
             // The Keys source: C major in every octave, E bypassed, the view
             // scrolled up an octave, the pointer on a key.
             state.params.set(p::SOURCE, 1.0);
-            state.keys = Keys { target: 0, bypass: 0 };
+            state.keys = Keys { target: 0, ..Keys::default() };
             for pc in [0, 2, 4, 5, 7, 9, 11] {
                 state.keys.set(KeyState::Target, pc, true, true);
             }
@@ -154,6 +157,37 @@ fn scenario(name: &str) -> PanelState {
             f.key(&mut state, "Enter", Modifiers::default());
             for key in ["2", "5", "0"] {
                 f.key(&mut state, key, Modifiers::default());
+            }
+        }
+        "transform" | "transform-list" => {
+            // The Key Transform, chosen through its lists as a user would
+            // (from the MIDI source, so the first choice turns it to
+            // Keys): A minor to A major, so the walking voice's C5 is
+            // sung at C sharp. In "transform-list" the destination's
+            // scale list is open with the pointer down it.
+            let mut f = Fittings::default();
+            let rows = |slot: layout::Slot, name: &str| (0..slot.rows()).find(|&row| slot.label(row) == name).unwrap();
+            for (slot, name) in [
+                (layout::Slot::SrcKey, "A"),
+                (layout::Slot::SrcScale, "MINOR"),
+                (layout::Slot::DstScale, "MAJOR"),
+            ] {
+                let at = slot.rect();
+                f.down(&mut state, at.x + 4.0, at.y + 4.0, Modifiers::default(), 1);
+                f.up(&mut state);
+                let row = slot.row(rows(slot, name));
+                f.down(&mut state, row.x + 4.0, row.y + 4.0, Modifiers::default(), 1);
+                f.up(&mut state);
+            }
+            feed(&mut state, &[], 11.0);
+            let slot = layout::Slot::DstScale;
+            let at = slot.rect();
+            f.hover(&mut state, at.x + 20.0, at.y + 8.0);
+            if name == "transform-list" {
+                f.down(&mut state, at.x + 20.0, at.y + 8.0, Modifiers::default(), 1);
+                f.up(&mut state);
+                let row = slot.row(rows(slot, "LYDIAN"));
+                f.hover(&mut state, row.x + 20.0, row.y + 6.0);
             }
         }
         "menu" => {

@@ -580,3 +580,24 @@ The keys take the housing's beige with a dark legend (DESIGN's p200 B,
 pick. The transect is flipped so now sits against the key ruler
 (0.7.15). ORACLE's phase smear is an open engine item in TODO, not
 started. The viewers themselves drew no objection.
+
+## The Key Transform, first build (0.8.0, 2026-10-11)
+
+**Question:** does naming the source key and scale, beside the
+destination's, do what PITCHMAP's scale presets don't: move material
+into a key without assuming it began in C major? And are Claude's
+choices where Sam left them open the right ones: nearest with ties
+down as the one rounding, degree-to-degree for same-sized scales, the
+lists inside the screen at the plot's top right?
+
+**Config:** Sam's brief is verbatim in TODO ("I want to handle this
+differently than PM..."). Four lists, source key and scale then
+destination key and scale, default `* CHROMATIC → * CHROMATIC`; 31
+scales; the destination scale written to and read from the key ruler;
+a source scale as a 12-entry remap in the engine; product state, not
+parameters. Stills: `catalogue/v20-transform.png` (A MINOR → * MAJOR
+on the harness's three voices) and `v20-transform-list.png` (the
+destination's scale list open). HOUSE byte-identical with no remap.
+
+**Verdict:** *(pending: not yet heard by Sam, and not yet run in a
+host)*

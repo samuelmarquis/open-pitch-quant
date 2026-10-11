@@ -16,6 +16,7 @@ use std::sync::{Arc, Mutex};
 
 use opq_engine::VizFrame;
 use opq_engine::params::{Keys, PARAM_COUNT, ParamSchema, ParameterBatch, Params};
+use opq_engine::scales::KeyTransform;
 use pluginkit::sync::{AudioParams, ParamSync};
 use wrac_clap_adapter::HostStateDirtyNotifier;
 
@@ -34,8 +35,9 @@ pub(crate) struct SharedState {
     /// The Keys source's key states (product state, not parameters): the
     /// target and bypass masks as low/high halves. The editor writes them,
     /// audio reads them each block; a torn read between halves lasts one
-    /// block at most.
-    keys: [AtomicU64; 4],
+    /// block at most. The fifth word is the Key Transform, a byte each for
+    /// its source key, source scale and destination key.
+    keys: [AtomicU64; 5],
     /// Tells the host its saved state changed when the keys do.
     dirty: Option<Arc<dyn HostStateDirtyNotifier>>,
 }
@@ -62,7 +64,10 @@ impl SharedState {
     /// The key states.
     pub(crate) fn keys(&self) -> Keys {
         let w = |i: usize| self.keys[i].load(Ordering::Relaxed) as u128;
-        Keys { target: w(0) | w(1) << 64, bypass: w(2) | w(3) << 64 }
+        let t = w(4);
+        let transform =
+            KeyTransform { src_key: t as u8, src_scale: (t >> 8) as u8, dst_key: (t >> 16) as u8 }.sanitised();
+        Keys { target: w(0) | w(1) << 64, bypass: w(2) | w(3) << 64, transform }
     }
 
     /// Replace the key states. An editor edit (`edited`) tells the host
@@ -135,7 +140,14 @@ impl SharedState {
     }
 }
 
-/// Key masks as the four 64-bit words SharedState stores.
-fn split(keys: Keys) -> [u64; 4] {
-    [keys.target as u64, (keys.target >> 64) as u64, keys.bypass as u64, (keys.bypass >> 64) as u64]
+/// Key masks and the transform as the five 64-bit words SharedState stores.
+fn split(keys: Keys) -> [u64; 5] {
+    let t = keys.transform;
+    [
+        keys.target as u64,
+        (keys.target >> 64) as u64,
+        keys.bypass as u64,
+        (keys.bypass >> 64) as u64,
+        t.src_key as u64 | (t.src_scale as u64) << 8 | (t.dst_key as u64) << 16,
+    ]
 }

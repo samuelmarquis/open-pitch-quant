@@ -76,6 +76,14 @@ pub struct Menu {
     pub index: usize,
 }
 
+/// One of the Key Transform's lists, open: whose it is and the
+/// highlighted row.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct List {
+    pub slot: layout::Slot,
+    pub index: usize,
+}
+
 /// Everything the board draws, and the editor-local view state.
 pub struct PanelState {
     pub params: Params,
@@ -99,6 +107,8 @@ pub struct PanelState {
     pub text_edit: Option<TextEdit>,
     /// A value control's right-click menu, if open.
     pub menu: Option<Menu>,
+    /// One of the Key Transform's lists, if open.
+    pub list: Option<List>,
     /// Session tallies the LCD reports: objects born, onsets seen.
     pub born: u64,
     pub onsets: u64,
@@ -141,6 +151,7 @@ impl PanelState {
             pressed_control: None,
             text_edit: None,
             menu: None,
+            list: None,
             born: 0,
             onsets: 0,
             last_id: -1,

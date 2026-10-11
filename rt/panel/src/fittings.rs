@@ -30,11 +30,17 @@
 //! - The scroll bar's thumb drags the view; a press on its track brings
 //!   the thumb's centre there and keeps dragging.
 //!
+//! - The Key Transform's four lists (source key and scale, destination
+//!   key and scale) open on a press and choose on a press or Enter; the
+//!   arrows, Home, End and a typed letter move through one. A choice sets
+//!   the key states (the destination scale is the targets) and switches
+//!   the source to Keys, since the transform is the Keys source's.
+//!
 //! Every value is echoed into `state.params` (and `state.keys`) before it is
 //! returned.
-use crate::layout::{self, Control, Kind, MENU_ITEMS};
-use crate::{fine, Edit, Menu, Modifiers, PanelState, TextEdit};
-use opq_engine::params::{KeyState, SPECS};
+use crate::layout::{self, Control, Kind, Slot, MENU_ITEMS};
+use crate::{fine, Edit, List, Menu, Modifiers, PanelState, TextEdit};
+use opq_engine::params::{KeyState, SOURCE, SPECS};
 use panelkit::entry::EntryKey;
 use panelkit::strip::{self, MenuKey};
 use panelkit::{interaction, keys, widgets};
@@ -86,6 +92,43 @@ fn paint(state: &mut PanelState, key_state: KeyState, note: u32, on: bool) -> Ed
     let repeat = state.repeat_scope();
     state.keys.set(key_state, note, on, repeat);
     Edit::Keys(state.keys)
+}
+
+/// The row a Key Transform list shows as current: its key, its scale, or
+/// for the destination scale the one the targets spell (none: a set no
+/// scale names, or octaves that differ).
+pub fn current_row(state: &PanelState, slot: Slot) -> Option<usize> {
+    let transform = state.keys.transform;
+    match slot {
+        Slot::SrcKey => Some(Slot::key_row(transform.src_key)),
+        Slot::SrcScale => Some(transform.src_scale as usize),
+        Slot::DstKey => Some(Slot::key_row(transform.dst_key)),
+        Slot::DstScale => state.keys.dst_scale(),
+    }
+}
+
+/// A row chosen in one of the Key Transform's lists. A destination scale
+/// is written to the targets, every octave. A key change carries a named
+/// destination scale to its new root (a hand-made target set stays as it
+/// is). The source becomes Keys if it wasn't: the transform is its.
+fn choose_row(state: &mut PanelState, slot: Slot, row: usize) -> Vec<Edit> {
+    let mut keys = state.keys;
+    let named = keys.dst_scale();
+    match slot {
+        Slot::SrcKey => keys.transform.src_key = Slot::row_key(row),
+        Slot::SrcScale => keys.transform.src_scale = row as u8,
+        Slot::DstKey => keys.transform.dst_key = Slot::row_key(row),
+        Slot::DstScale => keys.set_dst_scale(row),
+    }
+    if let (Some(scale), true) = (named, slot != Slot::DstScale) {
+        keys.set_dst_scale(scale);
+    }
+    state.keys = keys;
+    let mut edits = vec![Edit::Keys(keys)];
+    if !state.keys_source() {
+        edits.extend(gesture(state, SOURCE, 1.0));
+    }
+    edits
 }
 
 #[derive(Default)]
@@ -158,6 +201,11 @@ impl Fittings {
                 menu.index = index;
             }
         }
+        if let Some(list) = state.list.as_mut() {
+            if let Some(row) = list.slot.row_at(x, y) {
+                list.index = row;
+            }
+        }
         if self.capture.is_none() {
             state.hover_control = layout::target_at(state.view, x, y);
         }
@@ -170,6 +218,13 @@ impl Fittings {
         if let Some(menu) = state.menu.take() {
             if let Some(index) = layout::menu_item_at(menu.at, x, y) {
                 choose(state, menu.id, index);
+            }
+            return edits;
+        }
+        // An open list likewise: a row chooses, anywhere else closes it.
+        if let Some(list) = state.list.take() {
+            if let Some(row) = list.slot.row_at(x, y) {
+                edits.extend(choose_row(state, list.slot, row));
             }
             return edits;
         }
@@ -199,6 +254,11 @@ impl Fittings {
         if let Control::Viewer(viewer) = control {
             // Editor-local: what the screen shows is no parameter.
             state.viewer = viewer;
+            return edits;
+        }
+        if let Control::Transform(slot) = control {
+            // Its list opens on what it shows (a hand-made set: the top).
+            state.list = Some(List { slot, index: current_row(state, slot).unwrap_or(0) });
             return edits;
         }
         if let Control::Key(note) = control {
@@ -297,6 +357,7 @@ impl Fittings {
     pub fn cancel(&mut self, state: &mut PanelState) -> Vec<Edit> {
         state.text_edit = None;
         state.menu = None;
+        state.list = None;
         let mut edits = self.end_wheel();
         edits.extend(self.up(state));
         edits
@@ -335,6 +396,7 @@ impl Fittings {
         let mut edits = self.end_wheel();
         edits.extend(self.down_outside_entry(state, x, y));
         state.menu = None;
+        state.list = None;
         if let Some(widget) = layout::target_at(state.view, x, y).and_then(layout::widget) {
             if widget.is_value() {
                 edits.extend(self.up(state));
@@ -347,7 +409,11 @@ impl Fittings {
     /// What is open, for panelkit's key policy (and Win32's wait for a
     /// typed character).
     pub fn keys_open(&self, state: &PanelState) -> keys::Open {
-        keys::Open { entry: state.text_edit.is_some(), list: state.menu.is_some(), cancellable: self.capture.is_some() }
+        keys::Open {
+            entry: state.text_edit.is_some(),
+            list: state.menu.is_some() || state.list.is_some(),
+            cancellable: self.capture.is_some(),
+        }
     }
 
     /// The value control Enter would open typed entry for: the one under
@@ -421,8 +487,12 @@ impl Fittings {
         };
         // Over the screen (the plot, a key, the scroll bar), the wheel
         // scrolls the view.
-        if matches!(control, None | Some(Control::Key(_) | Control::ScrollBar | Control::Viewer(_))) {
-            if layout::scrolls_view(x, y) {
+        if matches!(
+            control,
+            None | Some(Control::Key(_) | Control::ScrollBar | Control::Viewer(_) | Control::Transform(_))
+        ) {
+            // (An open list holds the view still under it.)
+            if layout::scrolls_view(x, y) && state.list.is_none() {
                 state.view = (state.view + content * VIEW_STEP).clamp(0.0, layout::VIEW_MAX);
             }
             return Vec::new();
@@ -494,6 +564,21 @@ impl Fittings {
                 let id = menu.id;
                 state.menu = None;
                 choose(state, id, index);
+            }
+            return Vec::new();
+        }
+        if let Some(list) = state.list.as_mut() {
+            if key == "Escape" {
+                state.list = None;
+                return Vec::new();
+            }
+            let slot = list.slot;
+            let label = |row: usize| slot.label(row).to_owned();
+            if let MenuKey::Chose(row) =
+                strip::menu_key(&mut list.index, slot.rows(), 1, key, mods.shift, mods.command, label)
+            {
+                state.list = None;
+                return choose_row(state, slot, row);
             }
             return Vec::new();
         }
@@ -721,6 +806,98 @@ mod tests {
         let edits = f.down(&mut s, fx, fy, Modifiers::default(), 1);
         assert_eq!(&edits[..3], &[Edit::Begin(p::MIX), Edit::Value(p::MIX, 0.25), Edit::End(p::MIX)]);
         assert_eq!(edits[3], Edit::Begin(p::FEEL));
+    }
+
+    /// Open `slot`'s list with a press and choose the row named `name`.
+    fn pick(f: &mut Fittings, s: &mut PanelState, slot: Slot, name: &str) -> Vec<Edit> {
+        let r = slot.rect();
+        assert!(f.down(s, r.x + 4.0, r.y + 4.0, Modifiers::default(), 1).is_empty());
+        f.up(s);
+        assert_eq!(s.list.map(|list| list.slot), Some(slot));
+        let row = slot.row((0..slot.rows()).find(|&row| slot.label(row) == name).unwrap());
+        let edits = f.down(s, row.x + 4.0, row.y + 4.0, Modifiers::default(), 1);
+        f.up(s);
+        assert!(s.list.is_none());
+        edits
+    }
+
+    fn shown(s: &PanelState) -> [&'static str; 4] {
+        Slot::ALL.map(|slot| current_row(s, slot).map_or("*", |row| slot.label(row)))
+    }
+
+    #[test]
+    fn the_key_transform_is_chosen_from_its_lists() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        assert_eq!(shown(&s), ["*", "CHROMATIC", "*", "CHROMATIC"]);
+        assert!(!s.keys_source());
+        // "* CHROMATIC to F MAJOR": the first choice turns the source to
+        // Keys (one gesture); the scale lands on the keys once F is named.
+        let edits = pick(&mut f, &mut s, Slot::DstScale, "MAJOR");
+        assert_eq!(edits.len(), 4);
+        assert!(matches!(edits[0], Edit::Keys(_)));
+        assert_eq!(edits[1..], [Edit::Begin(SOURCE), Edit::Value(SOURCE, 1.0), Edit::End(SOURCE)]);
+        assert!(s.keys_source());
+        // The key change carries the named scale to its new root.
+        let edits = pick(&mut f, &mut s, Slot::DstKey, "F");
+        assert_eq!(edits, [Edit::Keys(s.keys)]);
+        assert_eq!(shown(&s), ["*", "CHROMATIC", "F", "MAJOR"]);
+        assert!((0..128).all(|n| s.keys.get(KeyState::Target, n) == [0, 2, 4, 5, 7, 9, 10].contains(&(n % 12))));
+        // Nothing more than the nearest target is asked of the engine.
+        assert_eq!(s.keys.remap(), None);
+        // A source scale makes it a map; "*" took F for the source's key.
+        pick(&mut f, &mut s, Slot::SrcScale, "MINOR");
+        let remap = s.keys.remap().expect("F minor to F major");
+        assert_eq!(remap.sung(68), 69);
+
+        // A key edited by hand: the destination reads "*", unless the keys
+        // happen to spell a listed scale.
+        let (x, y) = (layout::RULER.x + 4.0, layout::note_y(s.view, 71.0));
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        f.up(&mut s);
+        assert_eq!(shown(&s)[3], "*");
+        let (x, y) = (layout::RULER.x + 4.0, layout::note_y(s.view, 70.0));
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        f.up(&mut s);
+        assert_eq!(shown(&s)[3], "LYDIAN");
+        // With SCOPE at Custom one key is one note: no scale.
+        s.params.set(p::SCOPE, 1.0);
+        f.down(&mut s, x, y, Modifiers::default(), 1);
+        f.up(&mut s);
+        assert_eq!((shown(&s)[3], s.keys.remap()), ("*", None));
+    }
+
+    #[test]
+    fn a_key_transform_list_is_worked_from_the_keyboard_and_closes() {
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let none = Modifiers::default();
+        let r = Slot::SrcScale.rect();
+        f.down(&mut s, r.x + 4.0, r.y + 4.0, none, 1);
+        f.up(&mut s);
+        // Open: the editor takes the list's keys, Space stays the host's.
+        assert!(f.wants_key(&s, "ArrowDown", none) && f.wants_key(&s, "Enter", none));
+        assert!(!f.wants_key(&s, " ", none));
+        // A typed letter finds the next row starting with it.
+        f.key(&mut s, "w", none);
+        assert_eq!(Slot::SrcScale.label(s.list.unwrap().index), "WHOLE TONE");
+        f.key(&mut s, "Home", none);
+        f.key(&mut s, "ArrowDown", none);
+        let edits = f.key(&mut s, "Enter", none);
+        assert!(s.list.is_none() && matches!(edits[0], Edit::Keys(_)));
+        assert_eq!(shown(&s)[1], "MAJOR");
+        // Escape closes without choosing; so does a press elsewhere, which
+        // does nothing more.
+        f.down(&mut s, r.x + 4.0, r.y + 4.0, none, 1);
+        f.up(&mut s);
+        f.key(&mut s, "End", none);
+        assert!(f.key(&mut s, "Escape", none).is_empty() && s.list.is_none());
+        f.down(&mut s, r.x + 4.0, r.y + 4.0, none, 1);
+        f.up(&mut s);
+        let (x, y) = at(p::FEEL);
+        assert!(f.down(&mut s, x, y, none, 2).is_empty() && s.list.is_none());
+        assert_eq!(shown(&s)[1], "MAJOR");
+        assert!(!f.wants_key(&s, "ArrowDown", none));
     }
 
     #[test]
