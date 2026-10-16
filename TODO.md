@@ -193,8 +193,10 @@ messages, and behavior belongs in the README; neither is kept here.
          bake is retired. All rack windows are drawn before any ink.
        - [ ] (c) The ten continuous knobs (six skins) into their plates' scenes:
          bake.py KNOB_PARTS, 101 frames each, and every part re-run (19 jobs, 1038
-         frames). Sent to DESIGN; awaiting their refit of the knob rects and the
-         run. The import streams frames and wraps parts into 11-column atlases.
+         frames). Running on DESIGN's farm. Rects stay 58: every knob matches today's
+         59.7 px circle within 1-2 px. The tab's sideways shadow block is real (DESIGN:
+         the low side light on a near-upright tab), so it stays. The panel side is
+         written but uncommitted until the frames land. The import streams frames and wraps parts into 11-column atlases.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

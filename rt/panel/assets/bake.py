@@ -56,12 +56,8 @@ PLATES = {
 PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
                 "--bevel-segments", "4", "--ortho-px", "200", "--samples", "160"]
 
-# Knob atlases (cepstrum-knob-preview/1: 11x10 cells of 120 px, frames
-# 0..100 row-major, sRGB-encoded linear-premultiplied), copied as baked.
-# No witchhat (Sam, 2026-10-10: "hate the witchhat knob. nix it") and no
-# handwheel (it is for a One Knob situation, which this board isn't).
-KNOBS = ["hifi-black-turned", "heady", "catalin", "leather-oxblood", "wood-ebony",
-         "chrome-heat-tint"]
+# The knobs were open-cepstrum's knob-preview atlases, copied as baked,
+# until 0.9.5; they are rack-baked with their plates now (KNOB_PARTS).
 
 # Component renders resampled to their 2x draw size: name -> (source, w, h,
 # crop).
@@ -570,20 +566,6 @@ def pack_viewer_keys(record, renders=None):
     print("viewer keys (farm)", flush=True)
 
 
-def vendor_knobs(record):
-    (VENDOR / "knobs").mkdir(exist_ok=True)
-    for knob in KNOBS:
-        source = CEP_VENDOR / "knob-preview" / f"knob-{knob}.png"
-        target = VENDOR / "knobs" / source.name
-        shutil.copyfile(source, target)
-        bake = source.with_name(f"knob-{knob}-bake.json")
-        record[f"knobs/{source.name}"] = {
-            "kind": "knob atlas (cepstrum-knob-preview/1)",
-            "source": f"open-cepstrum/rt/panel/assets/vendor/knob-preview/{source.name}",
-            "bake": json.loads(bake.read_text()) .get("canonical_flags") if bake.exists() else None,
-        }
-
-
 def resample_sprites(record):
     for name, (source, w, h, crop) in SPRITES.items():
         target = VENDOR / f"{name}.png"
@@ -614,7 +596,7 @@ def copy_files(record):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=["rack", "housing",
-                                                      "keys", "glass", "knobs", "sprites", "copies"])
+                                                      "keys", "glass", "sprites", "copies"])
     parser.add_argument("--renders",
                         help="the farm's renders (rack plates, housing, keys, glass): take them in, no Blender")
     parser.add_argument("--jobs", metavar="DIR",
@@ -631,7 +613,7 @@ def main():
              "housing": lambda record: bake_housing(record, args.renders),
              "keys": lambda record: pack_viewer_keys(record, args.renders),
              "glass": lambda record: bake_glass(record, args.renders),
-             "knobs": vendor_knobs, "sprites": resample_sprites,
+             "sprites": resample_sprites,
              "copies": copy_files}
     for step in args.only:
         steps[step](record)
@@ -647,7 +629,7 @@ def main():
     sources = manifest.setdefault("sources", {})
     if {"rack", "housing", "keys", "glass", "sprites"} & set(args.only):
         sources["open-plugin-template"] = git_head(TEMPLATE)
-    if {"knobs", "copies"} & set(args.only):
+    if {"copies"} & set(args.only):
         sources["open-cepstrum"] = git_head(CEPSTRUM)
     manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
 
