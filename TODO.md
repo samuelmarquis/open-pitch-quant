@@ -171,6 +171,14 @@ messages, and behavior belongs in the README; neither is kept here.
              20261010-233347-54679); imported in 0.7.12 (catalogue/v18*).
              Each key fills its cell. layout.rs's rects are unchanged,
              and the housing needed no re-bake (it holds no key cut).
+     - [ ] The family's screen glass (Sam via DESIGN, p211 C, 2026-10-16:
+       "reduce the glass reflection intensity to 1/3 and make that the
+       default, then tell everyone to pick it up"). The plan went to DESIGN's farm:
+       a standalone screen_scene.py bake at HOUSING_FLAGS (sid opq-screen),
+       returning _refl, _vig and the manifest. Then: a bake.py import step,
+       and in board.rs, inside SCREEN over the paper, compositing col *= vig.r;
+       col += refl.rgb in linear light, under the keys and menus. A
+       catalogue still goes to Sam before it ships.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

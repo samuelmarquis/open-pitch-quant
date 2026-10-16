@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.14** — records only: the family's screen glass (the reflection
+  at 1/3, plus the vignette) is planned for the paper screen. Its bake is on
+  DESIGN's farm; nothing you hear or see changes yet.
 - **0.8.13** — on audition: a HOUSE FEEL dropdown on the bottom strip
   switches HOUSE's Feel law between A (as frozen) and three fixes for its
   warble on a note change: B holds it within 50 cents, C measures it
