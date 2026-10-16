@@ -739,3 +739,33 @@ DESIGN re-baked D with a matte white cap (pass 51 Dmatte), and every part
 of the slot that shows beside the tab reads pure black. The green is the
 brushed tab's face mirroring the jade, so it's not an open slot. p214
 stands as sent.
+
+## The switch: toggle-tab (p214, 2026-10-16)
+
+**Question:** which of the template's switches should replace the bat
+on the board?
+
+**Sam, verbatim:** "214, I need to see that plate with the other knobs on
+it before I can decide." Then, after whole-board stills of A–D in both
+states: "214, D".
+
+**Action:** all seven two-way switches are toggle-tab, fitted at 30 px.
+Each plate is its own rack scene: the plate, its tabs and LAW's
+chickenhead, dead-on under the rack light (pass 54 on DESIGN's farm;
+bake.py RACK_PLATES, `--only rack --renders DIR`).
+
+Two findings shaped the import:
+- The tab's change between states runs far past it: a long shadow streak
+  down and right to the plate's corner, plus soft shade to the left. So
+  each part is drawn as a masked window, the feathered region its states
+  change, cut from frames that share the plate's noise (the far-off
+  difference between frames is at most 2 of 255).
+- The tab reaches ±31 px, against the bat's ±22. Its legends move out to
+  ±43 px, and on LAW, SOURCE and SCOPE move 8 px right (clear of the
+  screw) and the chickenhead moves 6 px up (clear of their legends).
+
+**Sam's standing ruling (via DESIGN, 05a5502), verbatim:** "Yeah just
+bring everybody/everything into the new render idioms and don't block on
+me--if I dislike it, I'll point it out from the plugin interface later".
+From here, migrating into the house idioms ships without a plate. Claude
+picks the house default and logs it here.

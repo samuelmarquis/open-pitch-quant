@@ -178,23 +178,17 @@ messages, and behavior belongs in the README; neither is kept here.
        re-baked at template 73fa7f3 on DESIGN's farm and imported in 0.8.17
        (catalogue/v24-deadon-keys.png). The housing stays, since it is
        already orthographic.
-     - [ ] Plates and knobs into the rack (open-comp style). DESIGN agreed
-       the order: the plates with their toggles and chickenhead, then Voices'
-       stepped knob, then the continuous knobs with open-cepstrum's. The
-       pilot is FINISH (bake.py `finish_pilot_layout`, written by `--jobs`):
-       the plate plus TRANSITIONS in both states, as one rack scene. It is on
-       the farm (pass 50, template 73fa7f3). The toggle is now fitted by width to
-       its 38 px ring (DESIGN). It is plated for Sam as p213: today's board next
-       to the pilot. The rack light reads brighter and greener on the jade.
-       Sam ruled p213: B, the rack bake (LISTENING-LOG). Two things come
-       first. One is the bat's open bore, which shows the plate: template
-       geometry, so DESIGN fixes it. The other is the switch: candidates
-       (fixed bat, slide, key, tab) are to be plated on the FINISH pilot.
-       The bat bore is fixed in template 716da7d (checked: dark in both states).
-       The candidates are plated as p214 (pass 51: A bat 38 px, B slide 22x42,
-       C black key 22x44, D tab 30x30).
-       The pick goes into every plate's bake (seven switches), so the FINISH
-       import and the CAPTURE and LAW pilots wait on it.
+     - [ ] Plates and knobs into the rack (open-comp style). Sam ruled
+       p213 B (the rack plate) and p214 D (toggle-tab for all seven switches).
+       Since 05a5502 the migration doesn't wait for plates. In order:
+       - [ ] (a) The plates (pass 54 on DESIGN's farm): bake.py RACK_PLATES,
+         `--jobs` writes layouts/ and jobs.json, and `--only rack --renders
+         DIR` imports them. The panel side (layout TAB_WINDOW and
+         SELECTOR_WINDOW, pack RACK_PARTS, board `rack_part`, the legends
+         clear of the tab) is written but uncommitted, because it builds
+         only against the imported frames.
+       - [ ] (b) Voices' stepped knob into the CAPTURE scene.
+       - [ ] (c) The six continuous knobs into their plates' scenes.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

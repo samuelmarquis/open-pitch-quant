@@ -12,7 +12,7 @@ Sources, all read-only:
 
 Run from anywhere:
   python3 -I rt/panel/assets/bake.py            # everything
-  python3 -I rt/panel/assets/bake.py --only plates
+  python3 -I rt/panel/assets/bake.py --only rack --renders DIR
 
 Needs Blender 5.2 (BLENDER, default ~/Applications/Blender.app) for the
 plates, components and housing, ffmpeg for resampling component renders to
@@ -69,14 +69,8 @@ KNOBS = ["hifi-black-turned", "heady", "catalin", "leather-oxblood", "wood-ebony
 # name -> (generator, flags, 2x slot px). Slots must match layout.rs.
 CONTRACT_RES = 640
 CONTRACT_CROP = (136, 136, 368, 368)  # x, y, w, h
-COMPONENT_RENDERS = {
-    "toggle-up": ("toggle-bat/generator/toggle_scene.py", ["--state", "up"], 88),
-    "toggle-down": ("toggle-bat/generator/toggle_scene.py", ["--state", "down"], 88),
-    # The chickenhead's 5-detent throw: 0.25 points the nose -30 deg
-    # (HOUSE), 0.75 +30 deg (ORACLE).
-    "selector-house": ("knob-chickenhead/generator/knob_scene.py", ["--color", "black", "--value", "0.25"], 176),
-    "selector-oracle": ("knob-chickenhead/generator/knob_scene.py", ["--color", "black", "--value", "0.75"], 176),
-}
+# (The toggles and the chickenhead were footprint-contract renders here
+# until 0.8.23; they are rack-baked with their plates now: RACK_PLATES.)
 
 # Component renders resampled to their 2x draw size: name -> (source, w, h,
 # crop).
@@ -129,69 +123,6 @@ def git_head(repo):
                               capture_output=True, text=True, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None
-
-
-def bake_plates(record, renders=None):
-    """With `renders` (the farm's NAME.png and receipts.txt), only takes the
-    farm's plates in, checking each receipt names the plate; no Blender."""
-    if renders is None:
-        no_local_blender()
-    farm_receipts = (Path(renders) / "receipts.txt").read_text().splitlines() if renders else []
-    with tempfile.TemporaryDirectory() as temp:
-        for name, (w, h, flags) in PLATES.items():
-            out = Path(temp) / f"{name}.png"
-            args = [str(BLENDER), "-b", "-P",
-                    str(COMPONENTS / "panel-board/generator/panel_scene.py"), "--",
-                    str(out), "--w", str(w / 100), "--h", str(h / 100), *flags, *PLATE_COMMON]
-            if renders:
-                out = Path(renders) / f"{name}.png"
-                receipt = [r for r in farm_receipts if r.startswith("panel-board ") and r.endswith(out.name)]
-            else:
-                run = subprocess.run(args, capture_output=True, text=True)
-                receipt = [line for line in run.stdout.splitlines() if line.startswith("panel-board ")]
-            # Blender exits 0 after a script exception: the file and the
-            # receipt are the proof.
-            if not out.exists() or not receipt:
-                sys.exit(f"{name}: bake failed or the farm's plate/receipt is missing")
-            shutil.copyfile(out, VENDOR / out.name)
-            record[out.name] = {
-                "kind": "plate",
-                "logical": [w, h],
-                "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
-                "args": args[5:],
-                "receipt": receipt[-1],
-            }
-            print("plate", name, flush=True)
-
-
-def render_components(record):
-    no_local_blender()
-    cx, cy, cw, ch = CONTRACT_CROP
-    with tempfile.TemporaryDirectory() as temp:
-        for name, (generator, flags, size) in COMPONENT_RENDERS.items():
-            raw = Path(temp) / f"{name}.png"
-            args = [str(BLENDER), "-b", "-P", str(COMPONENTS / generator), "--", str(raw),
-                    *flags, "--footprint", "0.5", "--res", str(CONTRACT_RES)]
-            run = subprocess.run(args, capture_output=True, text=True)
-            receipt = [line for line in run.stdout.splitlines() if "->" in line and str(raw) in line]
-            # Blender exits 0 after a script exception: the file and the
-            # receipt are the proof.
-            if not raw.exists() or not receipt:
-                sys.exit(f"{name}: render failed\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
-            target = VENDOR / f"{name}.png"
-            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(raw), "-vf",
-                            f"crop={cw}:{ch}:{cx}:{cy},scale={size}:{size}:flags=lanczos",
-                            "-pix_fmt", "rgba", str(target)], check=True)
-            record[target.name] = {
-                "kind": "component render, footprint contract",
-                "generator": f"open-plugin-template/components/{generator}",
-                "args": args[5:],
-                "receipt": receipt[-1],
-                "crop": list(CONTRACT_CROP),
-                "size": [size, size],
-                "resample": "ffmpeg lanczos, straight alpha",
-            }
-            print("component", name, flush=True)
 
 
 def no_local_blender():
@@ -412,39 +343,179 @@ def bake_glass(record, renders=None):
     print("glass (farm)", flush=True)
 
 
-# The open-comp migration's pilot (Sam, p210 B; DESIGN's order, plates
-# first): FINISH as one rack scene, the plate with its one fixed raised part,
-# the TRANSITIONS bat toggle, baked through both states. The knobs stay
-# per-part sprites drawn over it for now (step c). FINISH is layout.rs's;
-# the toggle is fitted by width to its 38 px dark ring as today's board
-# draws it (DESIGN, pass 50), centred on f(2), ROW_2 = (1022, 672).
-FINISH_RECT = (748, 494, 336, 250)
-TRANSITIONS_TOGGLE = (1003, 653, 38, 38)
+# The plates as rack scenes (Sam, p210 B and p213 B: the open-comp style;
+# p214 D: every two-way switch is toggle-tab). Each plate is its own rack
+# scene, as the FINISH pilot Sam passed: the plate, its switches and LAW's
+# chickenhead, dead-on under the rack light. The knobs stay per-part sprites
+# for now (steps b and c). Each stateful part renders the whole plate through
+# its states (--states), so every frame shares the plate's noise; the import
+# keeps one frame as the plate and crops each part's window (layout.rs
+# TAB_WINDOW, SELECTOR_WINDOW) from its frames. Centres are layout.rs's widgets.
+RACK_PLATES = {"capture": (16, 494, 336, 250), "law": (360, 494, 380, 250),
+               "finish": (748, 494, 336, 250)}
+TAB = 30          # the tab's fitted width, logical px (pass 51 D)
+TABS = {          # id -> (plate, centre)
+    "gate-mode": ("capture", (78, 672)), "unowned": ("capture", (184, 672)),
+    "transients": ("capture", (290, 672)),
+    "source": ("law", (412, 676)), "scope": ("law", (492, 676)),
+    "rounding": ("law", (672, 672)),
+    "transitions": ("finish", (1022, 672)),
+}
+TAB_STATES = ["down", "up"]
+# The ALGORITHM chickenhead: today's sprite is 88 logical px round, at
+# (436, 576) since the tabs (0.8.23); its 5-detent throw puts HOUSE at 0.25
+# and ORACLE at 0.75.
+SELECTOR = ("law", (436, 576), 88)
+SELECTOR_VALUES = ["0.25", "0.75"]
+# The windows the import crops round each part (layout.rs TAB_WINDOW,
+# SELECTOR_WINDOW): dx, dy, w, h from its centre, logical px. Under the rack
+# light a part's change between states runs well past it: a long shadow
+# streak down and right, soft shade to the left (pass 51 D). Inside its
+# window, a part keeps only what its states change (alpha, feathered), so
+# neighbours' windows may overlap.
+TAB_WINDOW = (-64, -56, 144, 136)
+SELECTOR_WINDOW = (-70, -70, 160, 160)
 
 
-def finish_pilot_layout():
-    x, y, w, h = FINISH_RECT
-    face = PLATES["plate-finish"][2]
-    common = [f for f in PLATE_COMMON]
+RACK_BASE = "design-lab/passes/54-opq-rack"
+
+
+def rack_plate_layout(plate):
+    x, y, w, h = RACK_PLATES[plate]
+    face = PLATES[f"plate-{plate}"][2]
+    common = list(PLATE_COMMON)
     for flag in ("--ortho-px", "--samples"):  # the rack's camera and samples own these
         i = common.index(flag)
         del common[i:i + 2]
-    plate = {"id": "plate-finish", "component": "panel-board", "rect": [x, y, w, h],
-             "flags": ["--w", w / 100, "--h", h / 100, *face, *common]}
-    toggle = {"id": "transitions", "component": "toggle-bat", "rect": list(TRANSITIONS_TOGGLE),
-              "fit": "width", "z": "seat", "flags": ["--state", "down"]}
-    return {"px_per_unit": 100, "frame": [x, y, w, h], "elements": [plate, toggle]}
+    elements = [{"id": f"plate-{plate}", "component": "panel-board", "rect": [x, y, w, h],
+                 "flags": ["--w", w / 100, "--h", h / 100, *face, *common]}]
+    for key, (home, (cx, cy)) in TABS.items():
+        if home == plate:
+            elements.append({"id": key, "component": "toggle-tab",
+                             "rect": [cx - TAB / 2, cy - TAB / 2, TAB, TAB],
+                             "fit": "width", "z": "seat", "flags": ["--state", TAB_STATES[0]]})
+    home, (cx, cy), d = SELECTOR
+    if home == plate:
+        elements.append({"id": "algorithm", "component": "knob-chickenhead",
+                         "rect": [cx - d / 2, cy - d / 2, d, d], "fit": "diameter",
+                         "flags": ["--color", "black", "--value", SELECTOR_VALUES[0]]})
+    return {"px_per_unit": 100, "frame": [x, y, w, h], "elements": elements}
+
+
+def rack_parts(plate):
+    """A plate's stateful parts: (id, flag, values)."""
+    parts = [(key, "--state", TAB_STATES) for key, (home, _) in TABS.items() if home == plate]
+    if SELECTOR[0] == plate:
+        parts.append(("algorithm", "--value", SELECTOR_VALUES))
+    return parts
+
+
+def rack_jobs(base):
+    """The farm's jobs for every plate, in the farm's jobs format, paths
+    under `base` (relative to the template root)."""
+    jobs = []
+    for plate in RACK_PLATES:
+        for key, flag, values in rack_parts(plate):
+            outs = [f"{base}/out/{plate}/{key}-{i}.png" for i in range(len(values))]
+            jobs.append({"argv": ["BLENDER", "-b", "-P", "components/_studio/rack.py", "--",
+                                  f"{base}/layouts/{plate}.json",
+                                  f"{base}/out/{plate}/{key}-{{i}}.png", "--density", "2",
+                                  "--states", f"{key}:{flag}={','.join(values)}"],
+                         "outputs": outs})
+    return {"root": str(TEMPLATE), "sync": ["components", f"{base}/layouts"], "jobs": jobs}
+
+
+def bake_rack(record, renders=None):
+    """Takes the farm's plate frames in (RACK_BASE's out/<plate>/<part>-<i>.png
+    and receipts.txt). Each plate's first frame becomes plate-<plate>.png.
+    Each part's window is cropped from its frames into rack-<part>.png, one
+    cell per state side by side, its alpha the feathered region its states
+    change. Refuses a plate whose first-state frames disagree, or a part
+    whose change outside its window is more than a few stray pixels (a far
+    rivet catching the part's reflection). No Blender."""
+    import numpy as np
+    from PIL import Image, ImageFilter
+
+    if renders is None:
+        no_local_blender()
+    farm = Path(renders)
+    receipts = (farm / "receipts.txt").read_text().splitlines()
+    noise = 3     # frames of one plate share the seed: max difference far off
+    stray = 40    # changed pixels allowed outside a window (2x px)
+
+    for plate, (px, py, pw, ph) in RACK_PLATES.items():
+        parts = rack_parts(plate)
+        frames = {}
+        for key, _, values in parts:
+            frames[key] = []
+            for i in range(len(values)):
+                path = farm / "out" / plate / f"{key}-{i}.png"
+                if not path.exists() or not any(r.endswith(f"{plate}/{key}-{i}.png") for r in receipts):
+                    sys.exit(f"rack: {plate}/{key}-{i}.png or its receipt is missing")
+                frames[key].append(np.asarray(Image.open(path).convert("RGBA"), dtype=np.int16))
+        base = frames[parts[0][0]][0]
+        if base.shape[:2] != (ph * 2, pw * 2):
+            sys.exit(f"rack: {plate} frames are {base.shape[1::-1]}, not {(pw * 2, ph * 2)}")
+        for key, _, _ in parts:
+            if np.abs(frames[key][0] - base).max() > noise:
+                sys.exit(f"rack: {plate}'s first-state frames disagree ({key})")
+        Image.fromarray(base.astype(np.uint8)).save(VENDOR / f"plate-{plate}.png")
+        record[f"plate-{plate}.png"] = {
+            "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",
+            "generator": "open-plugin-template/components/_studio/rack.py",
+            "layout": rack_plate_layout(plate),
+            "logical": [pw, ph],
+            "receipt": [r for r in receipts if f"{plate}/{parts[0][0]}-0.png" in r][-1:],
+        }
+        for key, flag, values in parts:
+            (cx, cy), (dx, dy, w, h) = ((SELECTOR[1], SELECTOR_WINDOW) if key == "algorithm"
+                                        else (TABS[key][1], TAB_WINDOW))
+            x0, y0 = round((cx + dx - px) * 2), round((cy + dy - py) * 2)
+            x1, y1 = x0 + w * 2, y0 + h * 2
+            changed = np.zeros(base.shape[:2], bool)
+            for frame in frames[key][1:]:
+                changed |= np.abs(frame - base).max(axis=2) > noise
+            outside = changed.copy()
+            outside[max(y0, 0):y1, max(x0, 0):x1] = False
+            if outside.sum() > stray:
+                sys.exit(f"rack: {key} changes {outside.sum()} px outside its window")
+            # The window, padded where it runs off the plate (transparent).
+            pad = ((max(-y0, 0), max(y1 - base.shape[0], 0)), (max(-x0, 0), max(x1 - base.shape[1], 0)))
+            window = (slice(max(y0, 0), y1), slice(max(x0, 0), x1))
+            mask = np.pad(changed[window], pad).astype(np.uint8) * 255
+            mask = Image.fromarray(mask).filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(2))
+            alpha = np.asarray(mask, dtype=np.int16)
+            strip = np.zeros((h * 2, w * 2 * len(values), 4), np.uint8)
+            for i, frame in enumerate(frames[key]):
+                cell = np.pad(frame[window], pad + ((0, 0),))
+                cell[..., 3] = cell[..., 3] * alpha // 255
+                strip[:, i * w * 2:(i + 1) * w * 2] = cell.astype(np.uint8)
+            Image.fromarray(strip).save(VENDOR / f"rack-{key}.png")
+            record[f"rack-{key}.png"] = {
+                "kind": "rack part's window per state, cropped from its plate's frames, "
+                        "alpha the feathered region its states change",
+                "plate": plate, "states": [f"{flag}={v}" for v in values],
+                "window_2x": [x0, y0, x1, y1], "stray_px": int(outside.sum()),
+                "receipt": [r for r in receipts if f"{plate}/{key}-" in r],
+            }
+        print("rack", plate, flush=True)
 
 
 def write_jobs(out):
-    """Writes the farm's job files into `out`: keys.json,
-    which the import steps check the farm baked."""
+    """Writes the farm's job files into `out`: keys.json, and the plates'
+    rack layouts (layouts/<plate>.json) with their jobs.json (paths under
+    RACK_BASE in the template), which the import steps check the farm baked."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "keys.json").write_text(json.dumps(viewer_keys_layout(), indent=1) + "\n")
     print(out / "keys.json", flush=True)
-    (out / "finish-pilot.json").write_text(json.dumps(finish_pilot_layout(), indent=1) + "\n")
-    print(out / "finish-pilot.json", flush=True)
+    (out / "layouts").mkdir(exist_ok=True)
+    for plate in RACK_PLATES:
+        path = out / "layouts" / f"{plate}.json"
+        path.write_text(json.dumps(rack_plate_layout(plate), indent=1) + "\n")
+        print(path, flush=True)
+    (out / "jobs.json").write_text(json.dumps(rack_jobs(RACK_BASE), indent=1) + "\n")
+    print(out / "jobs.json", flush=True)
 
 
 def pack_viewer_keys(record, renders=None):
@@ -534,7 +605,7 @@ def copy_files(record):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", nargs="*", default=["plates", "components", "stepped", "housing",
+    parser.add_argument("--only", nargs="*", default=["rack", "stepped", "housing",
                                                       "keys", "glass", "knobs", "sprites", "copies"])
     parser.add_argument("--renders",
                         help="the farm's renders (plates, stepped knob, housing): take them in, no Blender")
@@ -548,8 +619,7 @@ def main():
     manifest_path = VENDOR / "provenance.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     record = manifest.setdefault("files", {})
-    steps = {"plates": lambda record: bake_plates(record, args.renders),
-             "components": render_components,
+    steps = {"rack": lambda record: bake_rack(record, args.renders),
              "stepped": lambda record: bake_stepped(record, args.renders),
              "housing": lambda record: bake_housing(record, args.renders),
              "keys": lambda record: pack_viewer_keys(record, args.renders),
@@ -568,7 +638,7 @@ def main():
     # A source's commit is the one this run drew from: only a step that took
     # files from it moves it (a housing import leaves cep's knobs dated).
     sources = manifest.setdefault("sources", {})
-    if {"plates", "components", "stepped", "housing", "keys", "glass", "sprites"} & set(args.only):
+    if {"rack", "stepped", "housing", "keys", "glass", "sprites"} & set(args.only):
         sources["open-plugin-template"] = git_head(TEMPLATE)
     if {"knobs", "copies"} & set(args.only):
         sources["open-cepstrum"] = git_head(CEPSTRUM)
