@@ -415,10 +415,11 @@ def bake_glass(record, renders=None):
 # The open-comp migration's pilot (Sam, p210 B; DESIGN's order, plates
 # first): FINISH as one rack scene, the plate with its one fixed raised part,
 # the TRANSITIONS bat toggle, baked through both states. The knobs stay
-# per-part sprites drawn over it for now (step c). Rects are layout.rs's:
-# FINISH, and the toggle's drawn rect (layout::TOGGLE at f(2), ROW_2).
+# per-part sprites drawn over it for now (step c). FINISH is layout.rs's;
+# the toggle is fitted by width to its 38 px dark ring as today's board
+# draws it (DESIGN, pass 50), centred on f(2), ROW_2 = (1022, 672).
 FINISH_RECT = (748, 494, 336, 250)
-TRANSITIONS_TOGGLE = (1000, 650, 44, 44)
+TRANSITIONS_TOGGLE = (1003, 653, 38, 38)
 
 
 def finish_pilot_layout():
@@ -431,7 +432,7 @@ def finish_pilot_layout():
     plate = {"id": "plate-finish", "component": "panel-board", "rect": [x, y, w, h],
              "flags": ["--w", w / 100, "--h", h / 100, *face, *common]}
     toggle = {"id": "transitions", "component": "toggle-bat", "rect": list(TRANSITIONS_TOGGLE),
-              "z": "seat", "flags": ["--state", "down"]}
+              "fit": "width", "z": "seat", "flags": ["--state", "down"]}
     return {"px_per_unit": 100, "frame": [x, y, w, h], "elements": [plate, toggle]}
 
 

@@ -183,8 +183,10 @@ messages, and behavior belongs in the README; neither is kept here.
        stepped knob, then the continuous knobs with open-cepstrum's. The
        pilot is FINISH (bake.py `finish_pilot_layout`, written by `--jobs`):
        the plate plus TRANSITIONS in both states, as one rack scene. It is on
-       the farm; DESIGN plates it for Sam next to today's board before
-       anything else moves.
+       the farm (pass 50, template 73fa7f3). The toggle is now fitted by width to
+       its 38 px ring (DESIGN). It is plated for Sam as p213: today's board next
+       to the pilot. The rack light reads brighter and greener on the jade.
+       The import waits on his ruling.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.18** — no visible change: the FINISH plate's trial render
+  as one rack scene is done and waiting on a design ruling.
 - **0.8.17** — the viewer keys are re-baked dead-on, as the family's rack
   now draws every raised part (catalogue/v24-deadon-keys.png).
 - **0.8.16** — the screen glass from 0.8.15 is now installed (its
