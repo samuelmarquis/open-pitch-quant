@@ -190,6 +190,9 @@ messages, and behavior belongs in the README; neither is kept here.
        first. One is the bat's open bore, which shows the plate: template
        geometry, so DESIGN fixes it. The other is the switch: candidates
        (fixed bat, slide, key, tab) are to be plated on the FINISH pilot.
+       The bat bore is fixed in template 716da7d (checked: dark in both states).
+       The candidates are plated as p214 (pass 51: A bat 38 px, B slide 22x42,
+       C black key 22x44, D tab 30x30).
        The pick goes into every plate's bake (seven switches), so the FINISH
        import and the CAPTURE and LAW pilots wait on it.
      - [ ] Still known: plate titles are drawn text, not the

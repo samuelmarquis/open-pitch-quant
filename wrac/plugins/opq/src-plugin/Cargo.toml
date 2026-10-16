@@ -1,6 +1,6 @@
 [package]
 name = "opq_plugin_wrac"
-version = "0.8.20"
+version = "0.8.21"
 edition = "2024"
 description = "OpenPitchQuant - real-time polyphonic pitch mapping"
 license = "MIT"
