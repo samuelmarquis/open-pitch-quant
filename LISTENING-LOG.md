@@ -733,3 +733,9 @@ states, made for a protected action, and we have none.
 DESIGN is asked to plate them on the FINISH pilot: A the fixed bat, B
 slide, C key, D tab. Our 44 px-tall slot is the size limit. The FINISH
 import, and the CAPTURE and LAW pilots, wait on the switch.
+
+**p214 check (DESIGN):** I asked about the green inside the tab's slot.
+DESIGN re-baked D with a matte white cap (pass 51 Dmatte), and every part
+of the slot that shows beside the tab reads pure black. The green is the
+brushed tab's face mirroring the jade, so it's not an open slot. p214
+stands as sent.

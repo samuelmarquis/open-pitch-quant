@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.22** — records only: the tab switch option's slot was checked
+  and is sound; the green in it is a reflection.
 - **0.8.21** — records only: the bat switch's base is fixed in the
   family template; you have the four switch options to pick from.
 - **0.8.20** — records only: you passed the FINISH plate as one rack
