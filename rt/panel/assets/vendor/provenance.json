@@ -169,113 +169,6 @@
    "sha256": "aae14f8028938b51b263a2bf42d9aa59b39a4345f10f301bf9296647272f6fe0",
    "source": "open-cepstrum/rt/panel/assets/vendor/knob-preview/knob-leather-oxblood.png"
   },
-  "knobs/knob-voices.png": {
-   "cell": [
-    144,
-    144
-   ],
-   "crop": [
-    100,
-    100,
-    440,
-    440
-   ],
-   "kind": "stepped knob strip: knob over ring, one cell per step",
-   "knob": {
-    "args": [
-     "--body",
-     "pom-white",
-     "--cap",
-     "aluminium-spun",
-     "--detents",
-     "12",
-     "--start-deg",
-     "-135",
-     "--end-deg",
-     "-45",
-     "--footprint",
-     "0.5",
-     "--value",
-     "1.000000",
-     "--res",
-     "640"
-    ],
-    "generator": "open-plugin-template/components/knob-boss/generator/knob_scene.py"
-   },
-   "receipts": [
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0 [footprint:native=0.509681,factor=0.981006] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-0.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0 [n_on=1] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-0.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.090909 [footprint:native=0.509681,factor=0.981006] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-1.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.090909 [n_on=2] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-1.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.181818 [footprint:native=0.509681,factor=0.981006] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-2.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.181818 [n_on=3] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-2.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.272727 [footprint:native=0.509681,factor=0.981006] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-3.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.272727 [n_on=4] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-3.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.363636 [footprint:native=0.509681,factor=0.981006] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-4.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.363636 [n_on=5] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-4.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.454545 [footprint:native=0.509681,factor=0.981006] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-5.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.454545 [n_on=6] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-5.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.545455 [footprint:native=0.509681,factor=0.981006] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-6.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.545455 [n_on=7] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-6.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.636364 [footprint:native=0.509681,factor=0.981006] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-7.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.636364 [n_on=8] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-7.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.727273 [footprint:native=0.509681,factor=0.981006] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-8.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.727273 [n_on=9] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-8.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.818182 [footprint:native=0.509681,factor=0.981006] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-9.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.818182 [n_on=10] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-9.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=0.909091 [footprint:native=0.509681,factor=0.981006] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-10.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=0.909091 [n_on=11] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-10.png"
-    ],
-    [
-     "knob-boss accent=same adaptive=on body=pom-white cap=aluminium-spun denoise=on detents=12 end-deg=-45 footprint=0.5 preset=none raw=off res=640 samples=220 scale=1 seed=0 start-deg=-135 value=1 [footprint:native=0.509681,factor=0.981006] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-knob-11.png",
-     "knob-ring adaptive=on aperture=0.12,0.92 backing=paint-matte-dark cursor=on cursor-gain=1.7 cut-in=off denoise=on device=gpu diffuser=diffusant-matte emit=1.45 end-deg=-45 from=0 gap=0.34 ghost=0.036 height=none housing=paint-matte-dark hue=amber inner=0.4874152852 isolate=off lens=none lit=auto mode=bar outer=none preset=none raw=off relief=flat res=640 samples=220 scale=1 seed=0 segments=12 start-deg=-135 sweep=270 value=1 [n_on=12] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/knob-voices-ring-11.png"
-    ]
-   ],
-   "resample": "PIL lanczos, straight alpha",
-   "ring": {
-    "args": [
-     "--segments",
-     "12",
-     "--from",
-     "0",
-     "--start-deg",
-     "-135",
-     "--end-deg",
-     "-45",
-     "--hue",
-     "amber",
-     "--value",
-     "1.000000",
-     "--res",
-     "640"
-    ],
-    "generator": "open-plugin-template/components/knob-ring/generator/knob_scene.py"
-   },
-   "sha256": "f7f1d966e0b559129baeac333f514d8c45acf34c6e723db8412664c959648377",
-   "steps": 12,
-   "values": "k / (steps - 1), k = 0..steps-1 (the receipts' --value)"
-  },
   "knobs/knob-wood-ebony.png": {
    "bake": [
     "--preset",
@@ -427,6 +320,58 @@
        30
       ],
       "z": "seat"
+     },
+     {
+      "component": "knob-ring",
+      "fit": "diameter",
+      "flags": [
+       "--segments",
+       "12",
+       "--from",
+       "0",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--hue",
+       "amber",
+       "--value",
+       "0"
+      ],
+      "id": "voices-ring",
+      "rect": [
+       43,
+       525,
+       70,
+       70
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "knob-boss",
+      "fit": "diameter",
+      "flags": [
+       "--body",
+       "pom-white",
+       "--cap",
+       "aluminium-spun",
+       "--detents",
+       "12",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "voices",
+      "rect": [
+       50.5,
+       532.5,
+       55,
+       55
+      ],
+      "z": "seat"
      }
     ],
     "frame": [
@@ -442,9 +387,9 @@
     250
    ],
    "receipt": [
-    "461e58a5d6cee61cfc1978cd0c8a6fb5 672x500 out/capture/gate-mode-0.png"
+    "2aeaacecdf9f47ab82839b3952dceba2 672x500 out/capture/gate-mode-0.png"
    ],
-   "sha256": "b25431aa7af581f1fb25246f25d24ba63038d00b8cff01529a462b4be4fdf1ed"
+   "sha256": "3948b1faa7b72366de41e90c83512ef92f1ea1e2b631293363118234b8d2e6e2"
   },
   "plate-finish.png": {
    "generator": "open-plugin-template/components/_studio/rack.py",
@@ -526,7 +471,7 @@
        "--h",
        2.5,
        "--face",
-       "brass",
+       "brass-bare",
        "--fasteners",
        "screws",
        "--edge",
@@ -625,18 +570,18 @@
     250
    ],
    "receipt": [
-    "99708cf07feb83e8bc0ee3cfa6ca84ed 760x500 out/law/source-0.png"
+    "899edba5e9fceedbd0fb35f96f9b50a5 760x500 out/law/source-0.png"
    ],
-   "sha256": "0ece8d59471a1d638b7bf334de3bad651edfe693ee877b4df9f4e98e7240aac6"
+   "sha256": "36c9c706613335bb2c527f5d3750e671ae7b2bec3912ab3182ee0f5b7e5deef6"
   },
   "rack-algorithm.png": {
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "law",
    "receipt": [
-    "211d96585ab8ab79b7912ee46bcc04e4 760x500 out/law/algorithm-0.png",
-    "f66f2a9420d38c8b672d198ca8eaa07c 760x500 out/law/algorithm-1.png"
+    "eb0157478c650931709930ff84cd4af6 760x500 out/law/algorithm-0.png",
+    "a57982d30bbea815179b652a3d3168d5 760x500 out/law/algorithm-1.png"
    ],
-   "sha256": "e6815a1815768c032ea8a2c6bc7738b287362e65347ccbbe61b75bba1509134b",
+   "sha256": "309c035fee8df970e190a7ba03b823414a512a1b6cfce2e0768e26ae99226641",
    "states": [
     "--value=0.25",
     "--value=0.75"
@@ -653,15 +598,15 @@
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "capture",
    "receipt": [
-    "461e58a5d6cee61cfc1978cd0c8a6fb5 672x500 out/capture/gate-mode-0.png",
-    "381bf356ee038c88141387f7647b62dd 672x500 out/capture/gate-mode-1.png"
+    "2aeaacecdf9f47ab82839b3952dceba2 672x500 out/capture/gate-mode-0.png",
+    "565cc9ba3638b5ae91f1ce8e71129f62 672x500 out/capture/gate-mode-1.png"
    ],
-   "sha256": "25e6a7dae0144d38fda2222b7a5f0408b5f13be18e3b128a1274cc957afb59b3",
+   "sha256": "20a8d378370af9eaa03da2ff55db6a99332ce94d86bd20fdbcf98e6be2bbeb55",
    "states": [
     "--state=down",
     "--state=up"
    ],
-   "stray_px": 0,
+   "stray_px": 1,
    "window_2x": [
     -4,
     244,
@@ -673,10 +618,10 @@
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "law",
    "receipt": [
-    "1cb95e897af7d87f85831ae43c818812 760x500 out/law/rounding-0.png",
-    "cda95f583ae2d2b67a9cdaddba59c5d0 760x500 out/law/rounding-1.png"
+    "259a27486543c394f93b8456fb740459 760x500 out/law/rounding-0.png",
+    "47d00e1c89a6c804fbb65041f43139cc 760x500 out/law/rounding-1.png"
    ],
-   "sha256": "6914e5f72adf48adc3692834997a6e0be99f2816a98dca70d49d420018314fb0",
+   "sha256": "31d666324bdf4837e27611ade2c5c1a69091470e8f95ab8a4e75291c874e8849",
    "states": [
     "--state=down",
     "--state=up"
@@ -693,15 +638,15 @@
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "law",
    "receipt": [
-    "ecd46713865b618f2b7198bb1aa059d5 760x500 out/law/scope-0.png",
-    "6223c6439247639e5b05233f56f42c28 760x500 out/law/scope-1.png"
+    "cc67e0fb940c49ea011e1d508ff42de8 760x500 out/law/scope-0.png",
+    "c9e258fdef68f1813f024c32ef57c3b5 760x500 out/law/scope-1.png"
    ],
-   "sha256": "1325fefafbcb40501fd87f4abbe19584b18452e282402417089a6ab6d476dfaa",
+   "sha256": "e9ee9207d3a0a89024acd729e23ef6f7b27724ce49c2c62a97ce18bd56080def",
    "states": [
     "--state=down",
     "--state=up"
    ],
-   "stray_px": 1,
+   "stray_px": 0,
    "window_2x": [
     136,
     252,
@@ -713,15 +658,15 @@
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "law",
    "receipt": [
-    "99708cf07feb83e8bc0ee3cfa6ca84ed 760x500 out/law/source-0.png",
-    "3b61515d708974fbfb13d117ec7f7fb7 760x500 out/law/source-1.png"
+    "899edba5e9fceedbd0fb35f96f9b50a5 760x500 out/law/source-0.png",
+    "1debd327436ab6c1449217b6d431d294 760x500 out/law/source-1.png"
    ],
-   "sha256": "413a608dabf9a47b0c375817c89496d14bd2cd5d0a654ed515305fea634926db",
+   "sha256": "38a2b7c816c17ddaab5b4d8c4abaf292d7a7b3fddf5311e257920b9c9221ee87",
    "states": [
     "--state=down",
     "--state=up"
    ],
-   "stray_px": 39,
+   "stray_px": 30,
    "window_2x": [
     -24,
     252,
@@ -733,15 +678,15 @@
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "capture",
    "receipt": [
-    "1502a4edbd3f6c87917d0d6f9f92820b 672x500 out/capture/transients-0.png",
-    "c58cb28bc464136e8b67a069de760d5a 672x500 out/capture/transients-1.png"
+    "43cb3cd2685a21b0ba4330796f2b8a0e 672x500 out/capture/transients-0.png",
+    "dba92bdbcd6d4dbf14babbb61b285b3c 672x500 out/capture/transients-1.png"
    ],
-   "sha256": "e31c03c94d1145f4964df8c3b9c8642a6e0122237296c3a6839a60012d44ce73",
+   "sha256": "be4a816bca30817f66e388d050d9b19deea71c2f5f7a9f2057d63c01d93a1cd6",
    "states": [
     "--state=down",
     "--state=up"
    ],
-   "stray_px": 1,
+   "stray_px": 3,
    "window_2x": [
     420,
     244,
@@ -773,20 +718,60 @@
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "capture",
    "receipt": [
-    "e701f6903643ea7aa8764dae590da2ff 672x500 out/capture/unowned-0.png",
-    "f93aed19b6327c931b609fceb2535cc5 672x500 out/capture/unowned-1.png"
+    "abac9310a4cfd1808fe62cacd87de053 672x500 out/capture/unowned-0.png",
+    "bc43df9a41599b517a2dd4735fc0d4f9 672x500 out/capture/unowned-1.png"
    ],
-   "sha256": "7a2f464268ccde637bbfd2f63831cc6be60bf62fc2392f6ed1ab33f6126f6167",
+   "sha256": "9e4a674b60d8d7ab05defccf3cb50243fd8e5e0e287e5b13df5296eeb42dd37f",
    "states": [
     "--state=down",
     "--state=up"
    ],
-   "stray_px": 0,
+   "stray_px": 4,
    "window_2x": [
     208,
     244,
     496,
     516
+   ]
+  },
+  "rack-voices.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "capture",
+   "receipt": [
+    "d4ff7e541bea9b74a255c8fcb7927b01 672x500 out/capture/voices-0.png",
+    "6859d686e0db43ccfb81609b72214ecb 672x500 out/capture/voices-1.png",
+    "9155409cde794ebfdcfa4bff97420a2f 672x500 out/capture/voices-10.png",
+    "3f7dd3ced2d1d3e22a789020190d7571 672x500 out/capture/voices-11.png",
+    "fc8bda8e7e7dd415508eaeb4ff3bb14f 672x500 out/capture/voices-2.png",
+    "4d0dd730eacd1035639cf99d3b77152e 672x500 out/capture/voices-3.png",
+    "5661644adb393f6138b33412185b125e 672x500 out/capture/voices-4.png",
+    "314ec02513acfecaf12f85d1f0216e38 672x500 out/capture/voices-5.png",
+    "46d529eacb64a1ce5411d77d7d6b7a56 672x500 out/capture/voices-6.png",
+    "70476259d348b26afab86b7be70f9907 672x500 out/capture/voices-7.png",
+    "397b4e8663d53b754bf6fab290ec6317 672x500 out/capture/voices-8.png",
+    "0c5e6075d3d6b2e055b479dc3b432e32 672x500 out/capture/voices-9.png"
+   ],
+   "sha256": "17c0f80bd0a1bfcdbbcfd147f9a6747333d5c993635655407b3e83f0baabac22",
+   "states": [
+    "--value=0.000000",
+    "--value=0.090909",
+    "--value=0.181818",
+    "--value=0.272727",
+    "--value=0.363636",
+    "--value=0.454545",
+    "--value=0.545455",
+    "--value=0.636364",
+    "--value=0.727273",
+    "--value=0.818182",
+    "--value=0.909091",
+    "--value=1.000000"
+   ],
+   "stray_px": 6,
+   "window_2x": [
+    -20,
+    -4,
+    300,
+    296
    ]
   },
   "viewer-keys.png": {
@@ -984,6 +969,6 @@
  },
  "sources": {
   "open-cepstrum": "5b5d34906924870f023dbd0d29d041cde7e143e4",
-  "open-plugin-template": "754a813ca2ab6f6f8b5b1fb1fe5e87f348426bbc"
+  "open-plugin-template": "4d805f406d5ed8535c40095e85e3cf81e9e175fa"
  }
 }

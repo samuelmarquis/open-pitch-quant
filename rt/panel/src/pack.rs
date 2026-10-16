@@ -7,9 +7,6 @@ panelkit::pack! {
     /// The monitor housing, our own composer bake at this board's monitor
     /// (2x, drawn whole at layout::HOUSING).
     BEZEL = "assets/vendor/monitor-housing.png";
-    /// Voices' stepped knob, the boss over its lens ring: one cell per
-    /// step (bake.py STEPPED).
-    KNOB_VOICES = "assets/vendor/knobs/knob-voices.png";
     /// The rack plates: each plate's rack scene (its switches and LAW's
     /// chickenhead in their first state) at exactly 2x.
     PLATE_CAPTURE = "assets/vendor/plate-capture.png";
@@ -33,6 +30,8 @@ panelkit::pack! {
     RACK_ROUNDING = "assets/vendor/rack-rounding.png";
     RACK_TRANSITIONS = "assets/vendor/rack-transitions.png";
     RACK_ALGORITHM = "assets/vendor/rack-algorithm.png";
+    /// Voices' boss over its lens ring, one cell per step.
+    RACK_VOICES = "assets/vendor/rack-voices.png";
     /// The viewer keys, one straight-alpha row in layout::Viewer::ALL order,
     /// each key's inactive then active 128x32 cell (bake.py VIEWER_KEYS).
     VIEWER_KEYS = "assets/vendor/viewer-keys.png";
@@ -47,7 +46,7 @@ panelkit::pack! {
 pub const KNOBS: [&str; 6] = [KNOB_HIFI, KNOB_HEADY, KNOB_CATALIN, KNOB_LEATHER, KNOB_EBONY, KNOB_HEAT_TINT];
 
 /// The rack-baked parts in layout::RACK_PARTS order.
-pub const RACK_PARTS: [&str; 8] = [
+pub const RACK_PARTS: [&str; 9] = [
     RACK_GATE_MODE, RACK_UNOWNED, RACK_TRANSIENTS, RACK_SOURCE, RACK_SCOPE, RACK_ROUNDING,
-    RACK_TRANSITIONS, RACK_ALGORITHM,
+    RACK_TRANSITIONS, RACK_ALGORITHM, RACK_VOICES,
 ];

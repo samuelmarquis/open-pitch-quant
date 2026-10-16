@@ -151,6 +151,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.2** — LAW's plate is a satin brass, an even gold, in place of
+  the mirror brass that read cream with a dark band. Voices' knob and its
+  amber ring are part of CAPTURE's render, with real shadows, stepping
+  through all 12 positions. A neighbour's switch no longer covers the
+  ALGORITHM caption (catalogue/v26-rack-voices.png).
 - **0.9.1** — no visible change yet: LAW's brass face switches to a satin
   brass, and the Voices knob is being rendered into CAPTURE's scene. Both
   arrive in the next build.

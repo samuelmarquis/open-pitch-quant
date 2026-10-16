@@ -403,8 +403,11 @@ def bake_rack(record, renders=None):
         if base.shape[:2] != (ph * 2, pw * 2):
             sys.exit(f"rack: {plate} frames are {base.shape[1::-1]}, not {(pw * 2, ph * 2)}")
         for key, *_ in parts:
-            if np.abs(frames[key][0] - base).max() > noise:
-                sys.exit(f"rack: {plate}'s first-state frames disagree ({key})")
+            # A few speckled pixels may differ between runs (sampling at an
+            # edge: 4 px by 9 in CAPTURE's pass-54 re-run); a scene does not.
+            off = int((np.abs(frames[key][0] - base).max(axis=2) > noise).sum())
+            if off > stray:
+                sys.exit(f"rack: {plate}'s first-state frames disagree ({key}, {off} px)")
         Image.fromarray(base.astype(np.uint8)).save(VENDOR / f"plate-{plate}.png")
         record[f"plate-{plate}.png"] = {
             "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",

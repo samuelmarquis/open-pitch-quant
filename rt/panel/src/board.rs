@@ -100,10 +100,8 @@ struct Textures {
     bezel: usize,
     plates: [usize; 3],
     knobs: [usize; 6],
-    /// Voices' stepped strip, one cell per step.
-    voices: usize,
     /// The rack-baked parts' cell strips, in layout::RACK_PARTS order.
-    parts: [usize; 8],
+    parts: [usize; 9],
     /// The viewer keys' row: each key up, then lit.
     viewer_keys: usize,
     /// The screen's glass: the vignette's mask, then the reflection.
@@ -168,9 +166,8 @@ impl Board {
                 }
                 knobs
             },
-            voices: up(pack::KNOB_VOICES)?,
             parts: {
-                let mut parts = [0; 8];
+                let mut parts = [0; 9];
                 for (slot, key) in parts.iter_mut().zip(pack::RACK_PARTS) {
                     *slot = up(key)?;
                 }
@@ -214,6 +211,11 @@ impl Board {
         self.glass();
         self.info(state);
         self.plates();
+        // Every rack-baked part before any ink: a part's window may run
+        // under a neighbour's caption.
+        for widget in &WIDGETS {
+            self.rack_part(state, widget);
+        }
         for widget in &WIDGETS {
             self.widget(state, widget);
         }
@@ -689,13 +691,24 @@ impl Board {
         }
     }
 
-    /// A rack-baked part at one state: its cell, cut from its plate's
+    /// A rack-baked part at its state: its window, cut from its plate's
     /// frame at that state, laid over the plate (which holds the first).
-    fn rack_part(&mut self, widget: &Widget, state: usize) {
+    fn rack_part(&mut self, panel: &PanelState, widget: &Widget) {
         let Some((index, rect)) = layout::rack_cell(widget) else { return };
+        let value = panel.params.get(widget.id());
+        let state = match widget.kind {
+            Kind::Stepped => {
+                let spec = &SPECS[widget.id()];
+                let steps = (spec.max - spec.min).round() as usize + 1;
+                ((value - spec.min).round().max(0.0) as usize).min(steps - 1)
+            }
+            _ => usize::from(value >= 0.5),
+        };
         let texture = self.t.parts[index];
-        let (w, h) = (self.textures[texture].width, self.textures[texture].height);
-        let cell = w / 2.0;
+        // The strip is at the bake's density: a cell is the window scaled
+        // as the strip's height is.
+        let h = self.textures[texture].height;
+        let cell = rect.w * h / rect.h;
         self.sprite(texture, rect, Rect::new(state as f32 * cell, 0.0, cell, h), WHITE, paint::ART, 0);
     }
 
@@ -717,22 +730,12 @@ impl Board {
                 self.guided_caption(state, widget, ink, hovered);
             }
             Kind::Stepped => {
-                // One baked cell per step; the ring and the knob's own
-                // shadow are in the bake.
-                let texture = self.t.voices;
-                let spec = &SPECS[id];
-                let steps = (spec.max - spec.min).round() as usize + 1;
-                let step = ((value - spec.min).round().max(0.0) as usize).min(steps - 1);
-                let s = layout::STEPPED;
-                let rect = Rect::new(cx - s * 0.5, cy - s * 0.5, s, s);
-                let cell = self.textures[texture].height;
-                let source = Rect::new(step as f32 * cell, 0.0, cell, cell);
-                self.sprite(texture, rect, source, WHITE, paint::ART, 0);
+                // The boss, its ring and their shadows are rack-baked
+                // (rack_part, drawn with the plates).
                 self.guided_caption(state, widget, ink, hovered);
             }
             Kind::Toggle(down, up) => {
                 let on = value >= 0.5;
-                self.rack_part(widget, usize::from(on));
                 // The two positions, clear of the tab's reach, the live one
                 // lit in the value ink.
                 let h = layout::TOGGLE.1;
@@ -744,7 +747,6 @@ impl Board {
             }
             Kind::Selector => {
                 let oracle = value >= 0.5;
-                self.rack_part(widget, usize::from(oracle));
                 let lit = value_ink(widget.plate);
                 let dim = opacity(ink, 0.45);
                 // Each name sits where the pointer stands for it, clear of

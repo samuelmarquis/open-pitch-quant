@@ -134,10 +134,15 @@ pub const SELECTOR_DRAW: f32 = 88.0;
 /// alpha, so windows may overlap. The import checks nothing spills out.
 pub const TAB_WINDOW: (f32, f32, f32, f32) = (-64.0, -56.0, 144.0, 136.0);
 pub const SELECTOR_WINDOW: (f32, f32, f32, f32) = (-70.0, -70.0, 160.0, 160.0);
+/// Voices' window: its boss and lens ring, stepping together (bake.py
+/// VOICES_WINDOW).
+pub const VOICES_WINDOW: (f32, f32, f32, f32) = (-72.0, -68.0, 160.0, 150.0);
 /// The parts baked into the plates through their states, in pack::RACK_PARTS
 /// order.
-pub const RACK_PARTS: [usize; 8] =
-    [p::GATE_MODE, p::UNOWNED, p::TRANSIENT, p::SOURCE, p::SCOPE, p::ROUNDING, p::TRANSITIONS, p::ALGORITHM];
+pub const RACK_PARTS: [usize; 9] = [
+    p::GATE_MODE, p::UNOWNED, p::TRANSIENT, p::SOURCE, p::SCOPE, p::ROUNDING, p::TRANSITIONS, p::ALGORITHM,
+    p::VOICES,
+];
 /// A stepped knob's drawn cell: its knob at the knobs' scale, its ring
 /// round it (bake.py STEPPED: 144 px at 2x).
 pub const STEPPED: f32 = 72.0;
@@ -433,6 +438,7 @@ pub fn rack_cell(widget: &Widget) -> Option<(usize, Rect)> {
     let index = RACK_PARTS.iter().position(|&id| id == widget.id())?;
     let (dx, dy, w, h) = match widget.kind {
         Kind::Selector => SELECTOR_WINDOW,
+        Kind::Stepped => VOICES_WINDOW,
         _ => TAB_WINDOW,
     };
     let (cx, cy) = widget.at;
