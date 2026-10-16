@@ -47,9 +47,10 @@ PLATES = {
     # Sam, 2026-10-10: "switch the capture panel to anodized-blue".
     # Three plates fill the rack (Sam: "nix the output panel").
     "plate-capture": (336, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
-    # Under the rack light the mirror "brass" read cream with a room band;
-    # DESIGN's house call (p217, 27ce85b): brass-bare, an even gold.
-    "plate-law": (380, 250, ["--face", "brass-bare", "--fasteners", "screws"]),
+    # The mirror brass reads cream with a room band under the rack light;
+    # DESIGN's call was brass-bare (p217), and Sam overruled it (a61c9df): "217
+    # I actually kind of prefer the as-shipped/mirror to satin".
+    "plate-law": (380, 250, ["--face", "brass", "--fasteners", "screws"]),
     # Sam on DESIGN's p181: "let's go catalin jade" (the polished plate key).
     "plate-finish": (336, 250, ["--face", "catalin-jade-polished", "--fasteners", "rivets"]),
 }
@@ -57,7 +58,7 @@ PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
                 "--bevel-segments", "4", "--ortho-px", "200", "--samples", "160"]
 
 # The knobs were open-cepstrum's knob-preview atlases, copied as baked,
-# until 0.9.5; they are rack-baked with their plates now (KNOB_PARTS).
+# until 0.9.6; they are rack-baked with their plates now (KNOB_PARTS).
 
 # Component renders resampled to their 2x draw size: name -> (source, w, h,
 # crop).

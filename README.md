@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.5** — no visible change yet: you preferred the mirror brass for
+  LAW (p217), so it goes back to that with the knob renders.
 - **0.9.4** — no visible change: the knobs' rack renders are on DESIGN's
   farm, and the bake script no longer copies open-cepstrum's knob images.
 - **0.9.3** — no visible change: the ten knobs' rack renders are set up

@@ -1026,7 +1026,7 @@ dependencies = [
 
 [[package]]
 name = "opq_plugin_wrac"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "block2",
  "log",

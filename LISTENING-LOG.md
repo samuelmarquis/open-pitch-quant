@@ -776,3 +776,15 @@ picks the house default and logs it here.
   It's asked for as a plate (brass against brass-bare), and LAW ships as ruled
   until Sam picks.
 - CAPTURE's anodized blue and FINISH's jade read as in the pilot.
+
+## LAW's brass under the rack light (p217, 2026-10-16)
+
+**Question:** LAW's mirror brass reads cream, with a dark room band under
+the rack light. Should it stay, or go to brass-bare (an even satin gold)?
+DESIGN called brass-bare under the standing ruling, and it shipped in 0.9.2.
+
+**Sam, verbatim:** "217 I actually kind of prefer the as-shipped/mirror to
+satin."
+
+**Action:** LAW goes back to --face brass. bake.py is set; DESIGN re-runs
+LAW's jobs after the knob batch, and the plate ships with step (c).

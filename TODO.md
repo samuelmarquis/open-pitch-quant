@@ -185,9 +185,10 @@ messages, and behavior belongs in the README; neither is kept here.
          pass 54 (template 754a813). The import gives each changed pixel to the
          part that changes it most, because the glossy chickenhead mirrors the
          tabs.
-       - [x] LAW's face is brass-bare (DESIGN's house call under the standing
-         ruling, p217, 27ce85b), shipped in 0.9.2. The mirror brass read cream
-         with a room band.
+       - [x] LAW's face: brass-bare shipped in 0.9.2 (DESIGN's call, p217).
+         Sam overruled it for the mirror brass (a61c9df), so LAW goes back to
+         --face brass with step (c). LAW's re-run follows the knob batch, and
+         its first-pass frames must not be imported.
        - [x] (b) Voices in CAPTURE's scene, 0.9.2 (catalogue/v26-rack-voices.png):
          the boss and its ring step together (template e82dedd), and the stepped
          bake is retired. All rack windows are drawn before any ink.
