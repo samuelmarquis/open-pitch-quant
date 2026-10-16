@@ -18,85 +18,16 @@
 //! - A chromatic source in the destination's key is no remap at all: the
 //!   engine pulls each pitch to its nearest target, as it always has.
 
-/// A scale: its name and its pitch classes above the root (bit i is i
-/// semitones up; bit 0, the root, is always set).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Scale {
-    pub name: &'static str,
-    pub classes: u16,
-}
-
-const fn scale<const N: usize>(name: &'static str, steps: [u8; N]) -> Scale {
-    let mut classes = 0u16;
-    let mut i = 0;
-    while i < N {
-        classes |= 1 << steps[i];
-        i += 1;
-    }
-    Scale { name, classes }
-}
-
-pub const CHROMATIC: usize = 0;
-
-/// The scales on offer, in the lists' order. No two share a set of pitch
-/// classes, so a set read back from the ruler names one scale at most.
-pub const SCALES: [Scale; 31] = [
-    scale("CHROMATIC", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
-    scale("MAJOR", [0, 2, 4, 5, 7, 9, 11]),
-    scale("MINOR", [0, 2, 3, 5, 7, 8, 10]),
-    scale("DORIAN", [0, 2, 3, 5, 7, 9, 10]),
-    scale("PHRYGIAN", [0, 1, 3, 5, 7, 8, 10]),
-    scale("LYDIAN", [0, 2, 4, 6, 7, 9, 11]),
-    scale("MIXOLYDIAN", [0, 2, 4, 5, 7, 9, 10]),
-    scale("LOCRIAN", [0, 1, 3, 5, 6, 8, 10]),
-    scale("HARMONIC MINOR", [0, 2, 3, 5, 7, 8, 11]),
-    scale("MELODIC MINOR", [0, 2, 3, 5, 7, 9, 11]),
-    scale("HARMONIC MAJOR", [0, 2, 4, 5, 7, 8, 11]),
-    scale("PHRYGIAN DOMINANT", [0, 1, 4, 5, 7, 8, 10]),
-    scale("LYDIAN DOMINANT", [0, 2, 4, 6, 7, 9, 10]),
-    scale("ALTERED", [0, 1, 3, 4, 6, 8, 10]),
-    scale("DOUBLE HARMONIC", [0, 1, 4, 5, 7, 8, 11]),
-    scale("HUNGARIAN MINOR", [0, 2, 3, 6, 7, 8, 11]),
-    scale("NEAPOLITAN MINOR", [0, 1, 3, 5, 7, 8, 11]),
-    scale("NEAPOLITAN MAJOR", [0, 1, 3, 5, 7, 9, 11]),
-    scale("ENIGMATIC", [0, 1, 4, 6, 8, 10, 11]),
-    scale("PERSIAN", [0, 1, 4, 5, 6, 8, 11]),
-    scale("MAJOR PENTATONIC", [0, 2, 4, 7, 9]),
-    scale("MINOR PENTATONIC", [0, 3, 5, 7, 10]),
-    scale("BLUES", [0, 3, 5, 6, 7, 10]),
-    scale("WHOLE TONE", [0, 2, 4, 6, 8, 10]),
-    scale("DIMINISHED W-H", [0, 2, 3, 5, 6, 8, 9, 11]),
-    scale("DIMINISHED H-W", [0, 1, 3, 4, 6, 7, 9, 10]),
-    scale("AUGMENTED", [0, 3, 4, 7, 8, 11]),
-    scale("HIRAJOSHI", [0, 2, 3, 7, 8]),
-    scale("IN SEN", [0, 1, 5, 7, 10]),
-    scale("IWATO", [0, 1, 5, 6, 10]),
-    scale("PROMETHEUS", [0, 2, 4, 6, 9, 10]),
-];
+// The scale list and its pitch-class arithmetic are the family's
+// (audiokit::scales, moved there from here in 0.8.9); the transform's
+// rules below stay OpenPitchQuant's.
+pub use audiokit::scales::{absolute, recognise, relative, Scale, CHROMATIC, SCALES};
 
 /// The key names, C first; [`ANY_KEY`] reads "*".
 pub const KEY_NAMES: [&str; 13] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", "*"];
 
 /// "*": this side's key is the other side's.
 pub const ANY_KEY: u8 = 12;
-
-/// Pitch classes above a root, as absolute pitch classes (bit 0 is C).
-pub fn absolute(classes: u16, root: u8) -> u16 {
-    let root = (root % 12) as u32;
-    ((classes << root) | (classes >> (12 - root))) & 0xfff
-}
-
-/// Absolute pitch classes, as classes above `root`.
-pub fn relative(classes: u16, root: u8) -> u16 {
-    absolute(classes, (12 - root % 12) % 12)
-}
-
-/// The scale whose pitch classes above `root` are exactly these absolute
-/// ones, if any.
-pub fn recognise(classes: u16, root: u8) -> Option<usize> {
-    let above = relative(classes, root);
-    SCALES.iter().position(|scale| scale.classes == above)
-}
 
 /// The source side of the transform, and the destination's key. The
 /// destination's scale is the Keys target set itself.

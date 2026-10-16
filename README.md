@@ -148,6 +148,7 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.9** — nothing changes in the sound or the panel; the scale list now comes from the family's DSP kit (audiokit), shared with the harmonizer. HOUSE renders are byte-identical.
 - **0.8.8** — nothing changes in the plugin; the plan to share the scale list with the family's DSP kit is recorded.
 - **0.8.7** — nothing changes in the plugin; the native test's drag on Voices is sized to cross a step.
 - **0.8.6** — Voices drags on the same speed curve as the other knobs:

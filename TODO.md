@@ -31,8 +31,9 @@ messages, and behavior belongs in the README; neither is kept here.
   First step: an A/B of ORACLE against HOUSE and the PITCHMAP refpack on
   the same material, looking at what ORACLE does to stamp phase that
   HOUSE doesn't. HOUSE stays frozen.
-- [ ] **Scales into audiokit (open-harmonizer, 2026-10-15), waiting on
-  them.** The harmonizer will move `Scale`, `SCALES` (append-only: saved
+- [x] **Scales into audiokit (open-harmonizer, 2026-10-15); done in
+  0.8.9 on open-audiokit 673a980, HOUSE byte-identical; the note-hold
+  primitive is still to come.** The harmonizer will move `Scale`, `SCALES` (append-only: saved
   state stores the index), `CHROMATIC` and `absolute`/`relative`/
   `recognise` from `rt/engine/src/scales.rs` into audiokit and send the
   module path; we switch OPQ over ourselves (HOUSE fence, renders
