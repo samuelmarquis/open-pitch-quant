@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.19** — records only: how the trial FINISH plate's jade would
+  be adjusted, if wanted.
 - **0.8.18** — no visible change: the FINISH plate's trial render
   as one rack scene is done and waiting on a design ruling.
 - **0.8.17** — the viewer keys are re-baked dead-on, as the family's rack

@@ -186,7 +186,10 @@ messages, and behavior belongs in the README; neither is kept here.
        the farm (pass 50, template 73fa7f3). The toggle is now fitted by width to
        its 38 px ring (DESIGN). It is plated for Sam as p213: today's board next
        to the pilot. The rack light reads brighter and greener on the jade.
-       The import waits on his ruling.
+       The import waits on his ruling. If he wants the jade nearer today's,
+       the fix is on our side: a darker catalin-jade-polished param or another
+       face key. The rack light is shared by the family (DESIGN), and DESIGN
+       plates face options if asked.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
