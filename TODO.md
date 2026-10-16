@@ -192,12 +192,18 @@ messages, and behavior belongs in the README; neither is kept here.
        - [x] (b) Voices in CAPTURE's scene, 0.9.2 (catalogue/v26-rack-voices.png):
          the boss and its ring step together (template e82dedd), and the stepped
          bake is retired. All rack windows are drawn before any ink.
-       - [ ] (c) The ten continuous knobs (six skins) into their plates' scenes:
-         bake.py KNOB_PARTS, 101 frames each, and every part re-run (19 jobs, 1038
-         frames). Running on DESIGN's farm. Rects stay 58: every knob matches today's
-         59.7 px circle within 1-2 px. The tab's sideways shadow block is real (DESIGN:
-         the low side light on a near-upright tab), so it stays. The panel side is
-         written but uncommitted until the frames land. The import streams frames and wraps parts into 11-column atlases.
+       - [x] (c) The ten continuous knobs (six skins) into their plates' scenes,
+         0.9.6 (catalogue/v27-rack-knobs.png): bake.py KNOB_PARTS, 101 frames each,
+         every part re-run (19 jobs, 1038 frames; LAW on --face brass, farm
+         20261016-150829-56920; receipts a05cb9a). Rects stay 58: every knob matches
+         the old 59.7 px circle within 1-2 px. The tab's sideways shadow block is real
+         (DESIGN: the low side light on a near-upright tab), so it stays. The import
+         streams frames and wraps parts into 11-column atlases. Each part's mask is
+         filled (a knob's unswept wedge) and opaque where the part changes. The
+         alpha product had wrapped int16 to 253 since 0.9.0, a visible ghost of the
+         zero indicator on black knobs. A part mirrored in a neighbour's rim
+         (TRANSITIONS in FORMANT and COHERENCE) stays in its first state there;
+         provenance records it as mirrored_px. The old knob atlases are gone.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

@@ -58,14 +58,6 @@ const SEPIA: [f32; 4] = [0.341, 0.0844, 0.007, 1.0];
 /// Vermilion: an object being born, an onset (sRGB 204 52 26).
 const VERMILION: [f32; 4] = [0.604, 0.034, 0.010, 1.0];
 
-/// OpenCepstrum's knob shadow and fill.
-const KNOB_SHADOW: [(f32, f32, f32, f32); 4] = [
-    (0.6, 1.0, 1.0, 0.22),
-    (1.2, 2.2, 1.03, 0.12),
-    (2.0, 3.6, 1.07, 0.07),
-    (3.0, 5.2, 1.12, 0.04),
-];
-const KNOB_FILL: f32 = 1.03;
 /// The rack bakes' density: 2 image px per logical px.
 const RACK_DENSITY: f32 = 2.0;
 
@@ -101,9 +93,8 @@ const BYPASS_CLICK: &str = if cfg!(target_os = "macos") { "Option-click" } else 
 struct Textures {
     bezel: usize,
     plates: [usize; 3],
-    knobs: [usize; 6],
     /// The rack-baked parts' cell strips, in layout::RACK_PARTS order.
-    parts: [usize; 9],
+    parts: [usize; 19],
     /// The viewer keys' row: each key up, then lit.
     viewer_keys: usize,
     /// The screen's glass: the vignette's mask, then the reflection.
@@ -161,15 +152,8 @@ impl Board {
         let t = Textures {
             bezel: up(pack::BEZEL)?,
             plates: [up(pack::PLATE_CAPTURE)?, up(pack::PLATE_LAW)?, up(pack::PLATE_FINISH)?],
-            knobs: {
-                let mut knobs = [0; 6];
-                for (slot, key) in knobs.iter_mut().zip(pack::KNOBS) {
-                    *slot = up(key)?;
-                }
-                knobs
-            },
             parts: {
-                let mut parts = [0; 9];
+                let mut parts = [0; 19];
                 for (slot, key) in parts.iter_mut().zip(pack::RACK_PARTS) {
                     *slot = up(key)?;
                 }
@@ -704,6 +688,7 @@ impl Board {
                 let steps = (spec.max - spec.min).round() as usize + 1;
                 ((value - spec.min).round().max(0.0) as usize).min(steps - 1)
             }
+            Kind::Knob(_) => widgets::frame(SPECS[widget.id()].normalized(value), 101) as usize,
             _ => usize::from(value >= 0.5),
         };
         let texture = self.t.parts[index];
@@ -723,14 +708,9 @@ impl Board {
         let ink = plate_ink(widget.plate);
         let hovered = state.hover_control == Some(widget.control) || state.pressed_control == Some(widget.control);
         match widget.kind {
-            Kind::Knob(skin) => {
-                let texture = self.t.knobs[skin as usize];
-                let size = layout::KNOB * KNOB_FILL;
-                let rect = Rect::new(cx - size * 0.5, cy - size * 0.5, size, size);
-                let sheet = widgets::Sheet { columns: 11, cell: (120.0, 120.0) };
-                let source = sheet.cell(widgets::frame(SPECS[id].normalized(value), 101));
-                widgets::cast_shadow(self, texture, rect, source, &KNOB_SHADOW);
-                self.sprite(texture, rect, source, WHITE, paint::PREMULTIPLIED, 0);
+            Kind::Knob(_) => {
+                // The knob and its shadow are rack-baked (rack_part, drawn
+                // with the plates), 101 positions.
                 self.guided_caption(state, widget, ink, hovered);
             }
             Kind::Stepped => {

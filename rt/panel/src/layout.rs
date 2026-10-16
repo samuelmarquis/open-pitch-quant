@@ -137,11 +137,15 @@ pub const SELECTOR_WINDOW: (f32, f32, f32, f32) = (-70.0, -70.0, 160.0, 160.0);
 /// Voices' window: its boss and lens ring, stepping together (bake.py
 /// VOICES_WINDOW).
 pub const VOICES_WINDOW: (f32, f32, f32, f32) = (-72.0, -68.0, 160.0, 150.0);
+/// A continuous knob's window, through its 101 positions (bake.py
+/// KNOB_WINDOW).
+pub const KNOB_WINDOW: (f32, f32, f32, f32) = (-60.0, -60.0, 140.0, 140.0);
 /// The parts baked into the plates through their states, in pack::RACK_PARTS
 /// order.
-pub const RACK_PARTS: [usize; 9] = [
+pub const RACK_PARTS: [usize; 19] = [
     p::GATE_MODE, p::UNOWNED, p::TRANSIENT, p::SOURCE, p::SCOPE, p::ROUNDING, p::TRANSITIONS, p::ALGORITHM,
-    p::VOICES,
+    p::VOICES, p::GATE, p::FMAX, p::FEEL, p::GLIDE, p::THRESHOLD, p::PURIFY, p::GRIT, p::FORMANT,
+    p::CARRY, p::COHERENCE,
 ];
 /// A stepped knob's drawn cell: its knob at the knobs' scale, its ring
 /// round it (bake.py STEPPED: 144 px at 2x).
@@ -280,8 +284,8 @@ pub enum Control {
     HouseFeel,
 }
 
-/// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
-/// is for continuous controls.
+/// A knob's skin, as bake.py's KNOB_PARTS bakes it (the record of which
+/// knob is which). Hifi, the plain black knob, is for continuous controls.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Skin {
     Hifi,
@@ -439,6 +443,7 @@ pub fn rack_cell(widget: &Widget) -> Option<(usize, Rect)> {
     let (dx, dy, w, h) = match widget.kind {
         Kind::Selector => SELECTOR_WINDOW,
         Kind::Stepped => VOICES_WINDOW,
+        Kind::Knob(_) => KNOB_WINDOW,
         _ => TAB_WINDOW,
     };
     let (cx, cy) = widget.at;

@@ -151,6 +151,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.6** — every knob is now part of its plate's render: the ten
+  continuous knobs turn through 101 rendered positions each, with their real
+  shadows and reflections, and LAW is back on the mirror brass. A faint
+  outline that showed through every rendered part is gone
+  (catalogue/v27-rack-knobs.png).
 - **0.9.5** — no visible change yet: you preferred the mirror brass for
   LAW (p217), so it goes back to that with the knob renders.
 - **0.9.4** — no visible change: the knobs' rack renders are on DESIGN's

@@ -426,6 +426,7 @@ def bake_rack(record, renders=None):
     Blender."""
     import numpy as np
     from PIL import Image, ImageFilter
+    from scipy import ndimage
 
     if renders is None:
         no_local_blender()
@@ -470,29 +471,52 @@ def bake_rack(record, renders=None):
         }
         owner = np.where(change.max(axis=0) > noise, change.argmax(axis=0), -1)
         del change
-        for n, (key, flag, values, _) in enumerate(parts):
+        boxes = []
+        for key, *_ in parts:
             (cx, cy), (dx, dy, w, h) = rack_window(key)
             x0, y0 = round((cx + dx - px) * 2), round((cy + dy - py) * 2)
-            x1, y1 = x0 + w * 2, y0 + h * 2
+            boxes.append((x0, y0, x0 + w * 2, y0 + h * 2))
+        for n, (key, flag, values, _) in enumerate(parts):
+            (_, _), (_, _, w, h) = rack_window(key)
+            x0, y0, x1, y1 = boxes[n]
             changed = owner == n
             outside = changed.copy()
             outside[max(y0, 0):y1, max(x0, 0):x1] = False
+            # A part mirrored in a neighbour's rim (TRANSITIONS in FORMANT's
+            # leather skirt and COHERENCE's chrome) lies in that neighbour's
+            # window, whose cells keep it in this part's first state; only
+            # spill onto bare plate would be lost.
+            mirrored = outside.copy()
+            for m, (a0, b0, a1, b1) in enumerate(boxes):
+                if m != n:
+                    outside[max(b0, 0):b1, max(a0, 0):a1] = False
+            mirrored &= ~outside
             if outside.sum() > stray:
                 sys.exit(f"rack: {key} changes {outside.sum()} px outside its window")
             # The window, padded where it runs off the plate (transparent).
             pad = ((max(-y0, 0), max(y1 - base.shape[0], 0)), (max(-x0, 0), max(x1 - base.shape[1], 0)))
             window = (slice(max(y0, 0), y1), slice(max(x0, 0), x1))
             theirs = ((owner >= 0) & ~changed)[window]
-            grown = Image.fromarray(np.pad(changed[window], pad).astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(9))
+            # Fill what the part's change encloses (a knob's unswept wedge and
+            # hub): feathered at a hole's edge, the plate's first-state
+            # indicator would ghost through every other state.
+            mine = ndimage.binary_fill_holes(changed[window]) & ~theirs
+            grown = Image.fromarray(np.pad(mine, pad).astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(9))
             grown = np.asarray(grown) * ~np.pad(theirs, pad)
             alpha = np.asarray(Image.fromarray(grown.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2)),
                                dtype=np.int16)
+            # The region the part changes is opaque, the feather only its
+            # margin.
+            alpha = np.where(np.pad(mine, pad), 255, alpha)
             columns = min(len(values), ATLAS_COLUMNS)
             rows = -(-len(values) // columns)
             atlas = np.zeros((h * 2 * rows, w * 2 * columns, 4), np.uint8)
             for i, path in enumerate(paths[key]):
                 cell = np.pad(load(path)[window], pad + ((0, 0),))
-                cell[..., 3] = cell[..., 3] * alpha // 255
+                # In int32: 255 * 255 wraps int16 to 253 after the uint8 cast,
+                # and linear-light compositing makes that 1% of the plate's
+                # white indicator a visible ghost on a black knob.
+                cell[..., 3] = (cell[..., 3].astype(np.int32) * alpha // 255).astype(np.int16)
                 r, c = divmod(i, columns)
                 atlas[r * h * 2:(r + 1) * h * 2, c * w * 2:(c + 1) * w * 2] = cell.astype(np.uint8)
             Image.fromarray(atlas).save(VENDOR / f"rack-{key}.png")
@@ -501,6 +525,7 @@ def bake_rack(record, renders=None):
                         "alpha the feathered region its states change most",
                 "plate": plate, "states": [f"{flag}={v}" for v in values], "columns": columns,
                 "window_2x": [x0, y0, x1, y1], "stray_px": int(outside.sum()),
+                "mirrored_px": int(mirrored.sum()),
                 "receipt": [r for r in receipts if f"{plate}/{key}-" in r][:2],
             }
         print("rack", plate, flush=True)

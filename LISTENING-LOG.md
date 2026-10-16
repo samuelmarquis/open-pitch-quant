@@ -788,3 +788,25 @@ satin."
 
 **Action:** LAW goes back to --face brass. bake.py is set; DESIGN re-runs
 LAW's jobs after the knob batch, and the plate ships with step (c).
+
+## The knobs in the rack (step c, 0.9.6, 2026-10-16)
+
+**Question:** none for Sam (standing ruling 05a5502: migration into the
+house idioms ships without a plate). Do the ten knobs read right as parts
+of their plates' renders, and does LAW's mirror brass (p217) hold up?
+
+**Config:** pass 54, template a61c9df. CAPTURE and FINISH are farm
+20261016-141117-44140, and LAW is 20261016-150829-56920 (--face brass).
+1038 frames in all. Still: `catalogue/v27-rack-knobs.png`.
+
+**Claude's read:**
+- The knobs sit in the plates' light: real shadows, and COHERENCE's chrome
+  mirrors its neighbours.
+- A ghost of each black knob's zero indicator showed at every other value.
+  That was an int16 overflow in the import: every rack cell was 253/255
+  opaque, and linear-light blending made that 1% visible on black. It is
+  fixed.
+- On the mirror brass, the dark legends over the room band (SOURCE, SCOPE,
+  THRESHOLD, ROUNDING, and the red MIDI and REPEAT) are low-contrast. This
+  is noted for Sam, and their colour is unchanged unless he asks.
+
