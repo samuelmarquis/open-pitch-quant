@@ -148,6 +148,7 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.8** — nothing changes in the plugin; the plan to share the scale list with the family's DSP kit is recorded.
 - **0.8.7** — nothing changes in the plugin; the native test's drag on Voices is sized to cross a step.
 - **0.8.6** — Voices drags on the same speed curve as the other knobs:
   a slow drag works toward the next voice count and lands on it (about

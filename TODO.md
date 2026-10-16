@@ -31,6 +31,16 @@ messages, and behavior belongs in the README; neither is kept here.
   First step: an A/B of ORACLE against HOUSE and the PITCHMAP refpack on
   the same material, looking at what ORACLE does to stamp phase that
   HOUSE doesn't. HOUSE stays frozen.
+- [ ] **Scales into audiokit (open-harmonizer, 2026-10-15), waiting on
+  them.** The harmonizer will move `Scale`, `SCALES` (append-only: saved
+  state stores the index), `CHROMATIC` and `absolute`/`relative`/
+  `recognise` from `rt/engine/src/scales.rs` into audiokit and send the
+  module path; we switch OPQ over ourselves (HOUSE fence, renders
+  identical). `KeyTransform`, `Remap`, `ANY_KEY` and the "*" stay here
+  until Sam has reviewed the transform's choices. They will also offer an
+  audiokit note-hold primitive (hysteresis, 3-frame debounce, log-ratio
+  glide with a 1.5-frame floor) written to drop into `map_frame` in the
+  same float order; adopt it only if HOUSE stays byte-identical.
 - [x] **The viewer keys in the housing's material (Sam, 2026-10-11):**
   "baked keys are black, they should be white/match the panel's
   material". DESIGN's p200 B: `--body beige-plastic --text-color
