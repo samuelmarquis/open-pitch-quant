@@ -29,6 +29,11 @@ panelkit::pack! {
     /// The viewer keys, one straight-alpha row in layout::Viewer::ALL order,
     /// each key's inactive then active 128x32 cell (bake.py VIEWER_KEYS).
     VIEWER_KEYS = "assets/vendor/viewer-keys.png";
+    /// The family's screen glass (screen-monitor's _vig and _refl, bake.py
+    /// GLASS_SID), cropped to the screen and recast for the canvas's blend:
+    /// the vignette as black with alpha 1 - vig, the reflection with alpha 0.
+    GLASS_VIG = "assets/vendor/glass-vig.png";
+    GLASS_REFL = "assets/vendor/glass-refl.png";
 }
 
 /// The knob atlases in layout::Skin order.

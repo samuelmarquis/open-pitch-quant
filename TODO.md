@@ -173,12 +173,14 @@ messages, and behavior belongs in the README; neither is kept here.
              and the housing needed no re-bake (it holds no key cut).
      - [ ] The family's screen glass (Sam via DESIGN, p211 C, 2026-10-16:
        "reduce the glass reflection intensity to 1/3 and make that the
-       default, then tell everyone to pick it up"). The plan went to DESIGN's farm:
-       a standalone screen_scene.py bake at HOUSING_FLAGS (sid opq-screen),
-       returning _refl, _vig and the manifest. Then: a bake.py import step,
-       and in board.rs, inside SCREEN over the paper, compositing col *= vig.r;
-       col += refl.rgb in linear light, under the keys and menus. A
-       catalogue still goes to Sam before it ships.
+       default, then tell everyone to pick it up"). Wired in 0.8.15, but not
+       installed yet. DESIGN's farm baked the layers (sid opq-screen, at
+       HOUSING_FLAGS). `bake.py --only glass --renders DIR` imports them,
+       cropped to SCREEN, and board.rs `glass()` draws vig then refl over
+       the content, under the menus. The first vig read 0.81 on clear glass:
+       a template bug (AgX view), fixed in 7244624 and re-baked. DESIGN is
+       asking Sam (p212: the dimmed look vs the fixed one), so the catalogue
+       still and the install wait on his answer.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

@@ -107,6 +107,8 @@ struct Textures {
     toggle: [usize; 2],
     /// The viewer keys' row: each key up, then lit.
     viewer_keys: usize,
+    /// The screen's glass: the vignette's mask, then the reflection.
+    glass: [usize; 2],
 }
 
 pub struct Board {
@@ -154,6 +156,8 @@ impl Board {
         canvas.add_face("Source Sans", &pack.bytes(pack::FONT)?, &FONT_SIZES, &[false, false, true, false])?;
         let serif = canvas.add_face("Tinos", panelkit::menu::SERIF, &FONT_SIZES, &[false; 4])?;
         debug_assert_eq!(serif, SERIF_FACE);
+        // The vignette is mask data: its alpha is read as is.
+        let vig = canvas.upload_png(pack::GLASS_VIG, &pack.bytes(pack::GLASS_VIG)?, false)?;
         let mut up = |key: &str| canvas.upload_png(key, &pack.bytes(key)?, true);
         let t = Textures {
             bezel: up(pack::BEZEL)?,
@@ -169,6 +173,7 @@ impl Board {
             selector: [up(pack::SELECTOR_HOUSE)?, up(pack::SELECTOR_ORACLE)?],
             toggle: [up(pack::TOGGLE_DOWN)?, up(pack::TOGGLE_UP)?],
             viewer_keys: up(pack::VIEWER_KEYS)?,
+            glass: [vig, up(pack::GLASS_REFL)?],
         };
         Ok(Self { canvas, t })
     }
@@ -202,6 +207,7 @@ impl Board {
         self.key_transform(state);
         self.viewer_keys(state);
         self.scroll_bar(state);
+        self.glass();
         self.info(state);
         self.plates();
         for widget in &WIDGETS {
@@ -211,6 +217,19 @@ impl Board {
         self.menu(state);
         self.list(state);
         self.submit()
+    }
+
+    /// The family's screen glass over the screen's content, in linear
+    /// light: col *= vig, then col += refl (screen-monitor's contract). The
+    /// premultiplied blend does both: black at alpha 1 - vig leaves col *
+    /// vig, and the reflection at alpha 0 adds.
+    fn glass(&mut self) {
+        let [vig, refl] = self.t.glass;
+        for (slot, mode) in [(vig, paint::COVERAGE), (refl, paint::PREMULTIPLIED)] {
+            let source = Rect::new(0.0, 0.0, self.textures[slot].width, self.textures[slot].height);
+            let ink = if mode == paint::COVERAGE { BLACK } else { WHITE };
+            self.sprite(slot, SCREEN, source, ink, mode, 0);
+        }
     }
 
     /// A value control's right-click menu, over everything: the family's

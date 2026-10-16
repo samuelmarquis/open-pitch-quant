@@ -363,6 +363,55 @@ def viewer_keys_layout():
     return {"px_per_unit": 100, "frame": frame, "lit": frame, "elements": [monitor] + keys}
 
 
+# The family's screen glass (Sam, p211 C, 2026-10-16): screen-monitor's
+# _vig and _refl, a standalone screen_scene.py bake at HOUSING_FLAGS so its
+# layers cover MONITOR at density 2 and its aperture is SCREEN. Farm only.
+GLASS_SID = "opq-screen"
+GLASS_APERTURE = {"x": 48, "y": 48, "w": 2040, "h": 820}
+
+
+def bake_glass(record, renders=None):
+    """Takes the farm's <sid>_vig.png, <sid>_refl.png and <sid>.json in,
+    cropped to the aperture (the board draws them over SCREEN) and recast
+    for the canvas's premultiplied blend: glass-vig.png is black with alpha
+    1 - vig (so drawing it multiplies by vig), glass-refl.png is the
+    reflection with alpha 0 (so drawing it adds). No Blender."""
+    from PIL import Image
+
+    if renders is None:
+        no_local_blender()
+    farm = Path(renders)
+    manifest = json.loads((farm / f"{GLASS_SID}.json").read_text())
+    names = [f"{GLASS_SID}_vig.png", f"{GLASS_SID}_refl.png", f"{GLASS_SID}.json"]
+    receipts = [r for r in (farm / "receipts.txt").read_text().splitlines()
+                if all(n in r for n in names)]
+    if not receipts:
+        sys.exit("glass: no receipt names the farm's layers")
+    if manifest["res"] != [2136, 916] or manifest["aperture"] != GLASS_APERTURE:
+        sys.exit(f"glass: the farm baked another geometry: {manifest['res']} {manifest['aperture']}")
+    if manifest["glare"]["strength"] != 1.0:
+        sys.exit("glass: glare.strength is not the identity")
+    a = GLASS_APERTURE
+    box = (a["x"], a["y"], a["x"] + a["w"], a["y"] + a["h"])
+    vig = Image.open(farm / names[0]).convert("RGB").getchannel("R").crop(box)
+    refl = Image.open(farm / names[1]).convert("RGB").crop(box)
+    black = Image.new("L", vig.size, 0)
+    Image.merge("RGBA", (black, black, black, vig.point(lambda v: 255 - v))).save(VENDOR / "glass-vig.png")
+    r, g, b = refl.split()
+    Image.merge("RGBA", (r, g, b, black)).save(VENDOR / "glass-refl.png")
+    for out, source in (("glass-vig.png", names[0]), ("glass-refl.png", names[1])):
+        record[out] = {
+            "kind": "screen glass layer, screen_scene.py bake on DESIGN's farm, "
+                    "cropped to the aperture and recast for the canvas blend",
+            "generator": "open-plugin-template/components/screen-monitor/generator/screen_scene.py",
+            "source": source,
+            "args": ["--sid", GLASS_SID] + HOUSING_FLAGS,
+            "manifest": manifest,
+            "receipt": receipts[-1:],
+        }
+    print("glass (farm)", flush=True)
+
+
 def write_jobs(out):
     """Writes the farm's job files into `out`: keys.json,
     which the import steps check the farm baked."""
@@ -460,7 +509,7 @@ def copy_files(record):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=["plates", "components", "stepped", "housing",
-                                                      "keys", "knobs", "sprites", "copies"])
+                                                      "keys", "glass", "knobs", "sprites", "copies"])
     parser.add_argument("--renders",
                         help="the farm's renders (plates, stepped knob, housing): take them in, no Blender")
     parser.add_argument("--jobs", metavar="DIR",
@@ -478,6 +527,7 @@ def main():
              "stepped": lambda record: bake_stepped(record, args.renders),
              "housing": lambda record: bake_housing(record, args.renders),
              "keys": lambda record: pack_viewer_keys(record, args.renders),
+             "glass": lambda record: bake_glass(record, args.renders),
              "knobs": vendor_knobs, "sprites": resample_sprites,
              "copies": copy_files}
     for step in args.only:
@@ -492,7 +542,7 @@ def main():
     # A source's commit is the one this run drew from: only a step that took
     # files from it moves it (a housing import leaves cep's knobs dated).
     sources = manifest.setdefault("sources", {})
-    if {"plates", "components", "stepped", "housing", "keys", "sprites"} & set(args.only):
+    if {"plates", "components", "stepped", "housing", "keys", "glass", "sprites"} & set(args.only):
         sources["open-plugin-template"] = git_head(TEMPLATE)
     if {"knobs", "copies"} & set(args.only):
         sources["open-cepstrum"] = git_head(CEPSTRUM)

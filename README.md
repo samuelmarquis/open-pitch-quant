@@ -151,6 +151,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.15** — the screen gets the family's glass: the housing's
+  vignette and its reflection (at 1/3), laid over the paper screen and
+  under the menus. Built but not installed yet: it's waiting on a design
+  ruling.
 - **0.8.14** — records only: the family's screen glass (the reflection
   at 1/3, plus the vignette) is planned for the paper screen. Its bake is on
   DESIGN's farm; nothing you hear or see changes yet.
