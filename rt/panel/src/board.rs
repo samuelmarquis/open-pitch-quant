@@ -235,7 +235,7 @@ impl Board {
         for slot in Slot::ALL {
             let r = slot.rect();
             let hovered = state.hover_control == Some(Control::Transform(slot))
-                || state.list.as_ref().is_some_and(|list| list.target == slot);
+                || state.list.as_ref().is_some_and(|list| list.target == layout::Chooser::Transform(slot));
             // Set like the lists, in the family's serif, in full ink
             // (Sam, 2026-10-16: "use a darker lettering").
             let ink = match (live, hovered) {
@@ -813,6 +813,12 @@ impl Board {
         let line = format!("{}  {}", crate::PLUGIN_NAME, state.version);
         let r = layout::VERSION;
         self.text(r.x, strip::text_top(r), &line, VALUE, MUTED, false);
+        // HOUSE's Feel law on audition, a strip dropdown.
+        let r = layout::HOUSE_FEEL;
+        let open = state.list.as_ref().is_some_and(|list| list.target == layout::Chooser::HouseFeel);
+        let ink = if open || state.hover_control == Some(Control::HouseFeel) { MINT } else { INK };
+        self.text(r.x, strip::text_top(r), &layout::house_feel_text(state.house_feel), VALUE, ink, false);
+        widgets::dropdown_arrow(&mut self.canvas, (r.x + r.w - layout::STRIP_CHEVRON_INSET, r.y + r.h * 0.5), ink, None);
     }
 
     // ---- submission ------------------------------------------------------
@@ -915,6 +921,16 @@ pub(crate) fn hover_info(state: &PanelState) -> Option<HoverInfo<Control>> {
                 ),
             };
             Some(HoverInfo::help(control, format!("{name}: {shown}"), detail))
+        }
+        Control::HouseFeel => {
+            use opq_engine::HouseFeel;
+            let detail = match state.house_feel {
+                HouseFeel::A => "on audition: HOUSE's Feel as frozen, which can warble a semitone or more as a voice changes note",
+                HouseFeel::B => "on audition: HOUSE's Feel held within 50 cents of the note, as ORACLE's is",
+                HouseFeel::C => "on audition: HOUSE's Feel measured afresh each time a voice changes note",
+                HouseFeel::D => "on audition: HOUSE's Feel measured afresh on a new note and held within 50 cents",
+            };
+            Some(HoverInfo::help(control, layout::house_feel_text(state.house_feel), detail))
         }
     }
 }

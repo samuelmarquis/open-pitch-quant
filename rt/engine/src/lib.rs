@@ -144,6 +144,46 @@ pub struct EngineParams {
     /// nearest source-scale note and sung where the map sends that note.
     /// `None` = the nearest target on the grid, the HOUSE baseline.
     pub remap: Option<scales::Remap>,
+    /// HOUSE's Feel law, on audition (Sam, 2026-10-16): A, the frozen
+    /// baseline, and three fixes for its warble on a note change.
+    pub house_feel: HouseFeel,
+}
+
+/// HOUSE's Feel deviation, on audition until Sam picks one (LISTENING-LOG
+/// "HOUSE's Feel, second round"). ORACLE's law is its own throughout.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum HouseFeel {
+    /// The deviation from the voice's 250 ms average, unbounded: HOUSE
+    /// as frozen.
+    #[default]
+    A,
+    /// A, held within ±50 cents (ORACLE's bound).
+    B,
+    /// A, the average restarting when the voice commits to a new note.
+    C,
+    /// B and C.
+    D,
+}
+
+impl HouseFeel {
+    pub const ALL: [HouseFeel; 4] = [HouseFeel::A, HouseFeel::B, HouseFeel::C, HouseFeel::D];
+
+    pub fn index(self) -> u8 {
+        self as u8
+    }
+
+    /// From its index; anything else is A.
+    pub fn from_index(index: u8) -> Self {
+        Self::ALL.get(index as usize).copied().unwrap_or_default()
+    }
+
+    fn capped(self) -> bool {
+        matches!(self, HouseFeel::B | HouseFeel::D)
+    }
+
+    fn restarts(self) -> bool {
+        matches!(self, HouseFeel::C | HouseFeel::D)
+    }
 }
 
 impl Default for EngineParams {
@@ -172,6 +212,7 @@ impl Default for EngineParams {
             newborn: Newborn::Map,
             bypass_keys: 0,
             remap: None,
+            house_feel: HouseFeel::A,
         }
     }
 }
@@ -969,7 +1010,10 @@ impl Engine {
                     // instantly, births still ramp.
                     let grid_changed = self.grid_mask != self.prev_grid_mask;
                     let onset_only = p.algorithm == Algorithm::Oracle;
-                    trk.retune.propose(tgt, trk.f0, t, glide_frames, grid_changed, 3, onset_only, f0);
+                    let proposal = trk.retune.propose(tgt, trk.f0, t, glide_frames, grid_changed, 3, onset_only, f0);
+                    if proposal == glide::Proposal::Committed && p.house_feel.restarts() {
+                        trk.lema = f0.ln();
+                    }
                     trk.f0 = f0;
                     trk.lema += ema_a * (f0.ln() - trk.lema);
                     trk.seen = t;
@@ -1003,7 +1047,13 @@ impl Engine {
                 let f_chrom = midi_freq((69.0 + 12.0 * (trk.f0 / 440.0).log2()).round());
                 trk.f0.ln() - f_chrom.ln()
             } else {
-                trk.f0.ln() - trk.lema // micro-variation about the track EMA
+                // micro-variation about the track EMA
+                let dev = trk.f0.ln() - trk.lema;
+                if p.house_feel.capped() {
+                    dev.clamp(-std::f64::consts::LN_2 / 24.0, std::f64::consts::LN_2 / 24.0)
+                } else {
+                    dev
+                }
             };
             self.obj_mult.push(if bypass {
                 1.0

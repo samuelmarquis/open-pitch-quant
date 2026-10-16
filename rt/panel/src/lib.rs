@@ -48,6 +48,8 @@ pub enum Edit {
     Value(usize, f32),
     End(usize),
     Keys(Keys),
+    /// HOUSE's Feel law on audition: product state, not a parameter.
+    HouseFeel(opq_engine::HouseFeel),
 }
 
 /// Keyboard modifiers held with a pointer event or a key: panelkit's
@@ -100,7 +102,9 @@ pub struct PanelState {
     /// A value control's right-click menu, if open.
     pub menu: Option<Menu>,
     /// One of the Key Transform's lists, if open: panelkit's family menu.
-    pub list: Option<layout::TransformMenu>,
+    pub list: Option<layout::ChoiceMenu>,
+    /// HOUSE's Feel law, on audition (the strip's dropdown).
+    pub house_feel: opq_engine::HouseFeel,
     /// Session tallies the LCD reports: objects born, onsets seen.
     pub born: u64,
     pub onsets: u64,
@@ -144,6 +148,7 @@ impl PanelState {
             text_edit: None,
             menu: None,
             list: None,
+            house_feel: opq_engine::HouseFeel::A,
             born: 0,
             onsets: 0,
             last_id: -1,

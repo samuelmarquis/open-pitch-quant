@@ -41,7 +41,7 @@
 //!
 //! Every value is echoed into `state.params` (and `state.keys`) before it is
 //! returned.
-use crate::layout::{self, Control, Kind, Slot, MENU_ITEMS};
+use crate::layout::{self, Chooser, Control, Kind, Slot, MENU_ITEMS};
 use crate::{fine, Edit, Menu, Modifiers, PanelState, TextEdit};
 use opq_engine::params::{KeyState, SOURCE, SPECS};
 use panelkit::entry::EntryKey;
@@ -115,7 +115,14 @@ pub fn current_row(state: &PanelState, slot: Slot) -> Option<usize> {
 /// is written to the targets, every octave. A key change carries a named
 /// destination scale to its new root (a hand-made target set stays as it
 /// is). The source becomes Keys if it wasn't: the transform is its.
-fn choose_row(state: &mut PanelState, slot: Slot, row: usize) -> Vec<Edit> {
+fn choose_row(state: &mut PanelState, chooser: Chooser, row: usize) -> Vec<Edit> {
+    let slot = match chooser {
+        Chooser::Transform(slot) => slot,
+        Chooser::HouseFeel => {
+            state.house_feel = opq_engine::HouseFeel::from_index(row as u8);
+            return vec![Edit::HouseFeel(state.house_feel)];
+        }
+    };
     let mut keys = state.keys;
     let named = keys.dst_scale();
     match slot {
@@ -208,7 +215,9 @@ impl Fittings {
         if let Some(list) = state.list.as_mut() {
             list.point(x, y, layout::MENU_BOUNDS);
         }
-        if self.capture.is_none() {
+        // Nothing under an open list is hovered: the line keeps its owner.
+        let over_list = state.list.as_ref().is_some_and(|list| list.contains(x, y, layout::MENU_BOUNDS));
+        if self.capture.is_none() && !over_list {
             state.hover_control = layout::target_at(state.view, x, y);
         }
     }
@@ -269,6 +278,10 @@ impl Fittings {
         if let Control::Transform(slot) = control {
             // Its list opens on what it shows (a hand-made set: the top).
             state.list = Some(layout::transform_menu(slot, current_row(state, slot)));
+            return edits;
+        }
+        if control == Control::HouseFeel {
+            state.list = Some(layout::house_feel_menu(state.house_feel));
             return edits;
         }
         if let Control::Key(note) = control {
@@ -592,7 +605,7 @@ impl Fittings {
             return Vec::new();
         }
         if let Some(list) = state.list.as_mut() {
-            let slot = list.target;
+            let chooser = list.target;
             return match list.key(key, mods.shift, mods.command) {
                 MenuKeyed::Moved => Vec::new(),
                 MenuKeyed::Closed => {
@@ -601,7 +614,7 @@ impl Fittings {
                 }
                 MenuKeyed::Chose(row) => {
                     state.list = None;
-                    choose_row(state, slot, row)
+                    choose_row(state, chooser, row)
                 }
             };
         }
@@ -873,7 +886,7 @@ mod tests {
         let r = slot.rect();
         assert!(f.down(s, r.x + 4.0, r.y + 4.0, Modifiers::default(), 1).is_empty());
         f.up(s);
-        assert_eq!(s.list.as_ref().map(|list| list.target), Some(slot));
+        assert_eq!(s.list.as_ref().map(|list| list.target), Some(Chooser::Transform(slot)));
         let row = (0..slot.rows()).find(|&row| slot.label(row) == name).unwrap();
         let path = layout::menu_path(s.list.as_ref().unwrap(), row);
         for &(x, y) in &path {
@@ -930,6 +943,32 @@ mod tests {
         f.down(&mut s, x, y, Modifiers::default(), 1);
         f.up(&mut s);
         assert_eq!((shown(&s)[3], s.keys.remap()), ("*", None));
+    }
+
+    #[test]
+    fn the_strip_dropdown_picks_houses_feel_law() {
+        use opq_engine::HouseFeel;
+        let mut s = PanelState::default();
+        let mut f = Fittings::default();
+        let none = Modifiers::default();
+        let (x, y) = layout::HOUSE_FEEL.center();
+        assert_eq!(layout::target_at(s.view, x, y), Some(Control::HouseFeel));
+        f.down(&mut s, x, y, none, 1);
+        f.up(&mut s);
+        let menu = s.list.as_ref().unwrap();
+        assert_eq!((menu.target, menu.cursor()), (Chooser::HouseFeel, Some(0)));
+        // It opens above the strip, inside the board.
+        let r = menu.rect(layout::MENU_BOUNDS);
+        assert!(r.y + r.h <= layout::HOUSE_FEEL.y && r.y >= 0.0);
+        let (bx, by) = layout::menu_path(menu, 1)[0];
+        f.hover(&mut s, bx, by);
+        assert_eq!(f.down(&mut s, bx, by, none, 1), [Edit::HouseFeel(HouseFeel::B)]);
+        assert!(s.list.is_none() && s.house_feel == HouseFeel::B);
+        // From the keys: it reopens on B; Down and Enter take C.
+        f.down(&mut s, x, y, none, 1);
+        f.up(&mut s);
+        f.key(&mut s, "ArrowDown", none);
+        assert_eq!(f.key(&mut s, "Enter", none), [Edit::HouseFeel(HouseFeel::C)]);
     }
 
     #[test]

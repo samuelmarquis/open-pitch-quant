@@ -652,5 +652,14 @@ retunes HOUSE broadly, because the champion settings run Feel at 0.35.
 of the second note, and changes the fewest renders. C barely helps: by
 the time a note change commits, the lag has already played.
 
-**Verdict:** *(pending: Sam to hear `out/feel-ab-2/` and give the go to
-re-record HOUSE-BASELINE.json with B)*
+**Sam, next:** "Put a small dropdown on the command strip to switch
+between A(old behavior)/B/C/D; I'll try it on a bunch of audio and lyk
+which one's good"
+
+**Action:** 0.8.13 adds HOUSE FEEL A/B/C/D on the bottom strip (product
+state, saved with the project; not a host parameter). A is byte-identical
+to the frozen HOUSE (fence intact); B, C and D through the switch are
+byte-identical to this round's renders. The CLI takes `--house-feel
+a|b|c|d`. Still: `catalogue/v22-house-feel.png`.
+
+**Verdict:** *(pending: Sam trying the four on his own material)*

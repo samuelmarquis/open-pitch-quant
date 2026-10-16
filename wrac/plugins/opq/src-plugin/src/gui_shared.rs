@@ -47,6 +47,7 @@ pub(crate) fn apply(edits: Vec<Edit>, shared: &SharedState, notifier: &dyn HostP
             // Product state, not a parameter: stored, and the host told
             // its saved state changed.
             Edit::Keys(keys) => shared.set_keys(keys, true),
+            Edit::HouseFeel(feel) => shared.set_house_feel(feel, true),
         }
     }
 }
@@ -73,6 +74,7 @@ impl ViewState {
         let mut panel = PanelState::new(Instant::now());
         panel.params = params;
         panel.keys = shared.keys();
+        panel.house_feel = shared.house_feel();
         panel.version = env!("CARGO_PKG_VERSION");
         Self {
             shared,
@@ -104,6 +106,7 @@ impl ViewState {
         self.restore_revision = revision;
         self.panel.params = params;
         self.panel.keys = self.shared.keys();
+        self.panel.house_feel = self.shared.house_feel();
         self.frames.clear();
         self.shared.drain_viz(&mut self.frames);
         self.panel.push_frames(self.frames.drain(..));

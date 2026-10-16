@@ -125,6 +125,7 @@ impl Processor for OpqAudioProcessor {
             batch.apply(&mut self.sync.params, |_, _, _| {});
         }
         let mut params = self.sync.params.engine();
+        params.house_feel = self.shared.house_feel();
         // The grid: the panel's keys (and their Bypass) under the Keys
         // source, else the notes held on the MIDI side chain.
         let grid = if self.sync.params.keys_source() {

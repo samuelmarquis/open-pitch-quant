@@ -241,6 +241,15 @@ fn main() {
                     _ => die("bad --mode"),
                 }
             }
+            "--house-feel" => {
+                p.house_feel = match val().as_str() {
+                    "a" | "A" => opq_engine::HouseFeel::A,
+                    "b" | "B" => opq_engine::HouseFeel::B,
+                    "c" | "C" => opq_engine::HouseFeel::C,
+                    "d" | "D" => opq_engine::HouseFeel::D,
+                    _ => die("bad --house-feel (a|b|c|d)"),
+                }
+            }
             "--algorithm" => {
                 p.algorithm = match val().as_str() {
                     "house" => Algorithm::House,

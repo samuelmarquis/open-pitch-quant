@@ -151,6 +151,12 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.13** — on audition: a HOUSE FEEL dropdown on the bottom strip
+  switches HOUSE's Feel law between A (as frozen) and three fixes for its
+  warble on a note change: B holds it within 50 cents, C measures it
+  afresh on each new note, D does both. It is saved with the project
+  and is not a host parameter. A sounds exactly as before; ORACLE
+  ignores it. Infotext no longer reads the control under an open menu.
 - **0.8.12** — nothing changes in the plugin; a fix for HOUSE's Feel warble is measured and awaits a listen.
 - **0.8.11** — nothing changes in the sound: each voice's glide, hold and retarget debounce now come from the family's DSP kit (audiokit), shared with the harmonizer. HOUSE and ORACLE renders are byte-identical.
 - **0.8.10** — the Key Transform's lists are the family's menus: white

@@ -14,7 +14,11 @@ messages, and behavior belongs in the README; neither is kept here.
   capping the deviation at ±50 c (ORACLE's bound) lands it within
   ~10-30 c of ORACLE; restarting the average on a note change barely
   helps. The cap is recommended; it changes 30 of the 56 frozen renders,
-  so it needs Sam's go to re-record the baseline. The original note: "One thing that I think HOUSE should get from ORACLE;
+  so it needs Sam's go to re-record the baseline. Sam is auditioning
+  A/B/C/D on his own material through the strip's HOUSE FEEL dropdown
+  (0.8.13). When he picks: make the pick HOUSE's only law, remove the
+  dropdown, `EngineParams.house_feel`, `--house-feel` and the saved
+  field, and re-record the baseline if it isn't A. The original note: "One thing that I think HOUSE should get from ORACLE;
   FEEL for ORACLE seems to track small deviations but not large ones,
   but FEEL on HOUSE allows deviations of a semitone or more." The
   cause: ORACLE's deviation is from the voice's own nearest semitone,

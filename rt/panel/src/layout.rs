@@ -101,10 +101,23 @@ pub const FONT_SIZES: [f32; 4] = [10.0, 12.0, 15.0, 11.0];
 pub const BOTTOM: Rect = Rect::new(16.0, 750.0, 1068.0, 16.0);
 const VERSION_W: f32 = 109.0;
 const MIX_W: f32 = 43.0;
+/// HOUSE's Feel on audition (Sam, 2026-10-16): "HOUSE FEEL D" and its
+/// chevron, open-eq's strip dropdown (13 px for the chevron).
+const HOUSE_FEEL_W: f32 = 74.0;
+/// A strip dropdown's chevron: its centre in from the item's right edge,
+/// and the room it takes after the text (open-eq's).
+pub const STRIP_CHEVRON_INSET: f32 = 4.0;
+pub const STRIP_CHEVRON_W: f32 = 13.0;
 /// The family's one gap, panelkit's `strip::GAP` (Sam, 2026-10-10: 12 px).
-const ROW: [Rect; 2] = panelkit::strip::place(BOTTOM, 6.0, panelkit::strip::GAP, [VERSION_W, MIX_W]);
+const ROW: [Rect; 3] = panelkit::strip::place(BOTTOM, 6.0, panelkit::strip::GAP, [VERSION_W, MIX_W, HOUSE_FEEL_W]);
 pub const VERSION: Rect = ROW[0];
 pub const MIX_TEXT: Rect = ROW[1];
+pub const HOUSE_FEEL: Rect = ROW[2];
+
+/// The strip dropdown's text for HOUSE's Feel law.
+pub fn house_feel_text(feel: opq_engine::HouseFeel) -> String {
+    format!("HOUSE FEEL {:?}", feel)
+}
 
 /// Knob, toggle and selector draw sizes.
 pub const KNOB: f32 = 58.0;
@@ -247,6 +260,8 @@ pub enum Control {
     Viewer(Viewer),
     /// One of the Key Transform's four lists.
     Transform(Slot),
+    /// HOUSE's Feel law, on audition: a dropdown on the bottom strip.
+    HouseFeel,
 }
 
 /// The knob bakes, in the pack's KNOBS order. Hifi, the plain black knob,
@@ -301,7 +316,7 @@ impl Widget {
     pub fn id(&self) -> usize {
         match self.control {
             Control::Param(id) => id,
-            Control::Key(_) | Control::ScrollBar | Control::Viewer(_) | Control::Transform(_) => {
+            Control::Key(_) | Control::ScrollBar | Control::Viewer(_) | Control::Transform(_) | Control::HouseFeel => {
                 unreachable!("only parameters are widgets")
             }
         }
@@ -418,6 +433,9 @@ pub fn target_at(view: f32, x: f32, y: f32) -> Option<Control> {
     if let Some(slot) = Slot::ALL.into_iter().find(|slot| slot.rect().contains(x, y)) {
         return Some(Control::Transform(slot));
     }
+    if HOUSE_FEEL.contains(x, y) {
+        return Some(Control::HouseFeel);
+    }
     WIDGETS
         .iter()
         .find(|w| w.rect().contains(x, y))
@@ -456,12 +474,20 @@ pub fn note_at(view: f32, y: f32) -> Option<u32> {
     (0.0..128.0).contains(&note).then_some(note as u32)
 }
 
-/// An open Key Transform list: panelkit's family menu (Sam, 2026-10-16:
-/// "the new house-style dropdowns"), for its slot, choosing a row of
-/// [`Slot::label`]'s.
-pub type TransformMenu = panelkit::menu::ContextMenu<Slot, usize>;
-/// The lists open inside the screen.
-pub const MENU_BOUNDS: Rect = SCREEN;
+/// Whose an open choice menu is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Chooser {
+    /// A Key Transform list, choosing a row of [`Slot::label`]'s.
+    Transform(Slot),
+    /// HOUSE's Feel law, choosing a [`opq_engine::HouseFeel`] by index.
+    HouseFeel,
+}
+
+/// An open choice menu: panelkit's family menu (Sam, 2026-10-16: "the new
+/// house-style dropdowns").
+pub type ChoiceMenu = panelkit::menu::ContextMenu<Chooser, usize>;
+/// The menus open on the board; the Key Transform's stay on the screen.
+pub const MENU_BOUNDS: Rect = Rect::new(0.0, 0.0, WIDTH as f32, HEIGHT as f32);
 /// The menus' size: the family's 12 px serif.
 pub const MENU_SIZE: usize = 1;
 
@@ -500,7 +526,7 @@ pub fn menu_label(label: &str) -> String {
 /// `slot`'s list opened, its cursor on `current` (the row the slot shows;
 /// none for a hand-made target set). The current row is marked with a dot,
 /// and a scale group with the current scale shows its name.
-pub fn transform_menu(slot: Slot, current: Option<usize>) -> TransformMenu {
+pub fn transform_menu(slot: Slot, current: Option<usize>) -> ChoiceMenu {
     use panelkit::menu::Row;
     const MARK: &str = "\u{2022}";
     let row = |index: usize| {
@@ -534,17 +560,42 @@ pub fn transform_menu(slot: Slot, current: Option<usize>) -> TransformMenu {
     }
     let r = slot.rect();
     let serif = serif();
-    let menu = TransformMenu::open(slot, (r.x, r.y + r.h + 2.0), rows, |text| serif.width(text, MENU_SIZE));
+    let menu = ChoiceMenu::open(Chooser::Transform(slot), (r.x, r.y + r.h + 2.0), rows, |text| serif.width(text, MENU_SIZE));
     match cursor {
         Some(cursor) => menu.with_cursor(cursor),
         None => menu,
     }
 }
 
+/// HOUSE's Feel menu, over the strip: the four laws, the current one
+/// dotted and under the cursor.
+pub fn house_feel_menu(current: opq_engine::HouseFeel) -> ChoiceMenu {
+    use opq_engine::HouseFeel;
+    use panelkit::menu::{Row, PAD, ROW_H};
+    let rows: Vec<Row<usize>> = HouseFeel::ALL
+        .iter()
+        .map(|&feel| {
+            let label = match feel {
+                HouseFeel::A => "A: as frozen",
+                HouseFeel::B => "B: capped at 50 cents",
+                HouseFeel::C => "C: restarts on a new note",
+                HouseFeel::D => "D: B and C",
+            };
+            let row = Row::new(label, feel.index() as usize);
+            if feel == current { row.value("\u{2022}") } else { row }
+        })
+        .collect();
+    let r = HOUSE_FEEL;
+    let h = 2.0 * PAD + rows.len() as f32 * ROW_H;
+    let serif = serif();
+    ChoiceMenu::open(Chooser::HouseFeel, (r.x, r.y - h - 2.0), rows, |text| serif.width(text, MENU_SIZE))
+        .with_cursor(current.index() as usize)
+}
+
 /// Where the pointer goes to choose `row` in an open list: the row, or its
 /// scale group's row (which opens the group) and then the row in the
 /// submenu. For the tests and the offline harness.
-pub fn menu_path(menu: &TransformMenu, row: usize) -> Vec<(f32, f32)> {
+pub fn menu_path(menu: &ChoiceMenu, row: usize) -> Vec<(f32, f32)> {
     let rows = menu.rows();
     if let Some(index) = rows.iter().position(|item| !item.opens() && item.action == row) {
         return vec![menu.row(index, MENU_BOUNDS).center()];
@@ -625,6 +676,8 @@ mod tests {
             .fold(0.0, f32::max);
         assert_eq!(VERSION_W, line.ceil(), "the version line's slot");
         assert_eq!(MIX_W, mix.ceil(), "MIX's widest look");
+        let feel = opq_engine::HouseFeel::ALL.map(|f| text(&house_feel_text(f))).into_iter().fold(0.0, f32::max);
+        assert_eq!(HOUSE_FEEL_W, (feel + STRIP_CHEVRON_W).ceil(), "HOUSE FEEL's widest look");
     }
 
     #[test]

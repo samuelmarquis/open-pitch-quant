@@ -11,10 +11,10 @@
 //! block's frames (a skipped drum column, never a glitch).
 
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use opq_engine::VizFrame;
+use opq_engine::{HouseFeel, VizFrame};
 use opq_engine::params::{Keys, PARAM_COUNT, ParamSchema, ParameterBatch, Params};
 use opq_engine::scales::KeyTransform;
 use pluginkit::sync::{AudioParams, ParamSync};
@@ -38,6 +38,8 @@ pub(crate) struct SharedState {
     /// block at most. The fifth word is the Key Transform, a byte each for
     /// its source key, source scale and destination key.
     keys: [AtomicU64; 5],
+    /// HOUSE's Feel law on audition (product state): its index.
+    house_feel: AtomicU8,
     /// Tells the host its saved state changed when the keys do.
     dirty: Option<Arc<dyn HostStateDirtyNotifier>>,
 }
@@ -57,6 +59,7 @@ impl SharedState {
             sr_bits: AtomicU32::new(0),
             hop: AtomicU32::new(0),
             keys: words.map(AtomicU64::new),
+            house_feel: AtomicU8::new(0),
             dirty,
         }
     }
@@ -76,6 +79,19 @@ impl SharedState {
         for (slot, word) in self.keys.iter().zip(split(keys)) {
             slot.store(word, Ordering::Relaxed);
         }
+        if edited && let Some(dirty) = &self.dirty {
+            dirty.mark_dirty();
+        }
+    }
+
+    /// HOUSE's Feel law on audition.
+    pub(crate) fn house_feel(&self) -> HouseFeel {
+        HouseFeel::from_index(self.house_feel.load(Ordering::Relaxed))
+    }
+
+    /// Replace it; an editor edit (`edited`) tells the host, as for keys.
+    pub(crate) fn set_house_feel(&self, feel: HouseFeel, edited: bool) {
+        self.house_feel.store(feel.index(), Ordering::Relaxed);
         if edited && let Some(dirty) = &self.dirty {
             dirty.mark_dirty();
         }

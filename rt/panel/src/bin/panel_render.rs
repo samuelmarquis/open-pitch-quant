@@ -5,7 +5,7 @@
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
 //!        panel-render --geometry   (the family probe's geometry, JSON)
 //! Scenarios: house, oracle, keys, empty, drag, typing, menu, ladders,
-//! scope, transform, transform-list (default: all).
+//! scope, transform, transform-list, house-feel (default: all).
 use opq_engine::params::{self as p, KeyState, Keys, Params};
 use opq_engine::Engine;
 use opq_panel::layout;
@@ -16,8 +16,8 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 const SR: f64 = 48_000.0;
-const SCENARIOS: [&str; 11] = [
-    "house", "oracle", "keys", "empty", "drag", "typing", "menu", "ladders", "scope", "transform", "transform-list",
+const SCENARIOS: [&str; 12] = [
+    "house", "oracle", "keys", "empty", "drag", "typing", "menu", "ladders", "scope", "transform", "transform-list", "house-feel",
 ];
 
 fn midi_hz(note: f64) -> f64 {
@@ -195,6 +195,17 @@ fn scenario(name: &str) -> PanelState {
                     f.hover(&mut state, x, y);
                 }
             }
+        }
+        "house-feel" => {
+            // The strip's HOUSE FEEL dropdown open, the pointer on B.
+            feed(&mut state, &chord, 11.0);
+            let mut f = Fittings::default();
+            let (x, y) = layout::HOUSE_FEEL.center();
+            f.hover(&mut state, x, y);
+            f.down(&mut state, x, y, Modifiers::default(), 1);
+            f.up(&mut state);
+            let (bx, by) = layout::menu_path(state.list.as_ref().unwrap(), 1)[0];
+            f.hover(&mut state, bx, by);
         }
         "menu" => {
             // FEEL right-clicked: its menu open, the pointer on its item.

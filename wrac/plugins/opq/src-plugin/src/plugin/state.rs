@@ -11,6 +11,7 @@
 use std::sync::Arc;
 
 use opq_engine::params::{Keys, PARAM_COUNT, ParamSchema, Params, STATE_VERSION};
+use opq_engine::HouseFeel;
 use opq_engine::scales::KeyTransform;
 use serde::{Deserialize, Serialize};
 use wrac_clap_adapter::{PluginResult, PluginStateExtension, State};
@@ -30,6 +31,10 @@ struct Product {
     /// which loads with none.
     #[serde(default)]
     transform: Transform,
+    /// HOUSE's Feel law on audition (0.8.13): 0..=3 for A..D. Absent in
+    /// an older document, which loads with A.
+    #[serde(default)]
+    house_feel: u8,
 }
 
 /// The Key Transform's source key and scale and destination key, as the
@@ -50,9 +55,13 @@ impl Default for Transform {
 }
 
 impl Product {
-    fn of(k: Keys) -> Self {
+    fn of(k: Keys, feel: HouseFeel) -> Self {
         let t = k.transform;
-        Self { keys: k.into(), transform: Transform { src_key: t.src_key, src_scale: t.src_scale, dst_key: t.dst_key } }
+        Self {
+            keys: k.into(),
+            transform: Transform { src_key: t.src_key, src_scale: t.src_scale, dst_key: t.dst_key },
+            house_feel: feel.index(),
+        }
     }
 
     fn keys(self) -> Keys {
@@ -96,7 +105,7 @@ impl OpqStateExtension {
 
 impl PluginStateExtension for OpqStateExtension {
     fn save_state(&self) -> PluginResult<State> {
-        let product = Product::of(self.shared.keys());
+        let product = Product::of(self.shared.keys(), self.shared.house_feel());
         Ok(save_document_with(STATE_VERSION, &self.shared.values(), Some(&product)))
     }
 
@@ -104,6 +113,8 @@ impl PluginStateExtension for OpqStateExtension {
         let (values, product) =
             load_document_with::<ParamSchema, Product, PARAM_COUNT>(&state, STATE_VERSION, PRODUCT_BYTES)?;
         self.shared.sync.restore(Params { values });
+        let feel = product.as_ref().map_or(0, |product| product.house_feel);
+        self.shared.set_house_feel(HouseFeel::from_index(feel), false);
         self.shared.set_keys(product.map_or_else(Keys::default, Product::keys), false);
         Ok(())
     }
@@ -127,10 +138,10 @@ mod tests {
         keys.set(KeyState::Target, 60, true, true);
         keys.set(KeyState::Bypass, 127, true, false);
         keys.transform = KeyTransform { src_key: 0, src_scale: 1, dst_key: 5 };
-        let product = Product::of(keys);
+        let product = Product::of(keys, HouseFeel::C);
         let doc = State { bytes: pluginkit::state::save_with(STATE_VERSION, &p.values, Some(&product)) };
         ext.restore_state(doc).unwrap();
-        assert_eq!(shared.keys(), keys);
+        assert_eq!((shared.keys(), shared.house_feel()), (keys, HouseFeel::C));
         let saved = ext.save_state().unwrap();
         assert_eq!(
             std::str::from_utf8(&saved.bytes).unwrap(),
@@ -139,7 +150,7 @@ mod tests {
         let other = OpqStateExtension::new(Arc::new(SharedState::new()));
         other.restore_state(saved).unwrap();
         assert_eq!(other.shared.values(), p.values);
-        assert_eq!(other.shared.keys(), keys);
+        assert_eq!((other.shared.keys(), other.shared.house_feel()), (keys, HouseFeel::C));
 
         // A document from before the transform (0.7.x) loads, with none,
         // and a field out of range loads as that field's default.
@@ -159,7 +170,7 @@ mod tests {
 
         // A document without the section loads with the default keys.
         other.restore_state(State { bytes: pluginkit::state::save(STATE_VERSION, &p.values) }).unwrap();
-        assert_eq!(other.shared.keys(), Keys::default());
+        assert_eq!((other.shared.keys(), other.shared.house_feel()), (Keys::default(), HouseFeel::A));
 
         let before = other.shared.values();
         let mut bad = p.values;
