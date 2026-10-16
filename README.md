@@ -151,6 +151,7 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.11** — nothing changes in the sound: each voice's glide, hold and retarget debounce now come from the family's DSP kit (audiokit), shared with the harmonizer. HOUSE and ORACLE renders are byte-identical.
 - **0.8.10** — the Key Transform's lists are the family's menus: white
   paper set in a serif, the current choice marked and the cursor on it.
   The scales past Chromatic, Major and Minor open from five groups

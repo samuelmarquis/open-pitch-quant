@@ -131,13 +131,15 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.8.10 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.8.11 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
   ports and sample conversion are wrac_shell's. The wrapper build needs
   `nix develop` (cmake).
-- Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f).
+- Engine: HOUSE and ORACLE algorithms plus PURIFY (397de9f); each
+  track's target, glide and debounce are `audiokit::glide::Retune`
+  (0.8.11).
 - Panel: the family-idiom rebuild (0.3.0, catalogue/v07), with Sam's
   first nit round in progress: 0.5.0 (catalogue/v11) has the paper screen,
   infotext and SOURCE control (a switch since 0.5.1); 0.5.2 (v12) the

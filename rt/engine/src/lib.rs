@@ -20,6 +20,7 @@
 pub mod params;
 pub mod scales;
 
+use audiokit::glide::{self, Retune};
 use audiokit::pitch::{self, midi_freq, princarg};
 use audiokit::stft::{Hop, Stft};
 use realfft::num_complex::Complex64;
@@ -180,13 +181,10 @@ struct Track {
     uid: i64,
     f0: f64,
     lema: f64,
-    tgt: f64,
-    r_from: f64,
-    g0: i64,
+    /// The target, its glide and its debounce (audiokit::glide).
+    retune: Retune,
     seen: i64,
     born: i64,
-    cand: f64,
-    cand_n: i64,
     /// per harmonic number: (phase, frame last seen, last output freq)
     phases: [(f64, i64, f64); MAX_H + 1],
 }
@@ -574,7 +572,7 @@ impl Engine {
                 frame.tracks[n] = VizTrack {
                     id: trk.uid,
                     f0: trk.f0 as f32,
-                    tgt: trk.tgt as f32,
+                    tgt: trk.retune.target() as f32,
                     out: (trk.f0 * self.viz_mult.get(ti).copied().unwrap_or(1.0)) as f32,
                     amp: self.viz_amp.get(ti).copied().unwrap_or(0.0) as f32,
                     nh: self.viz_nh.get(ti).copied().unwrap_or(0),
@@ -898,9 +896,9 @@ impl Engine {
         // ---- M3: match objects to tracks ----
         // micro-glide floor (~1.5 frames): even at Glide=0, target changes
         // ramp over ~30 ms so the OLA doesn't tear on a hard retune jump
-        let glide_frames = (p.glide * self.sr / self.hop as f64).max(1.5);
+        let glide_frames = glide::glide_frames(p.glide, self.sr, self.hop);
         let ema_a = 1.0 - (-(self.hop as f64 / self.sr) / 0.25).exp();
-        let hyst = p.hyst_cents / 1200.0 * 2f64.ln();
+        let hyst = glide::cents_ln(p.hyst_cents);
         let match_tol = 2f64.ln() * 100.0 / 1200.0;
         self.obj_mult.clear();
         self.obj_trk.clear();
@@ -922,12 +920,12 @@ impl Engine {
             let mut tgt = self.target_for(f0, p.remap.as_ref());
             if p.rounding == Rounding::Intelligent {
                 if let Some(ti) = best {
-                    let old = self.tracks[ti].tgt;
+                    let old = self.tracks[ti].retune.target();
                     match p.remap.as_ref() {
                         None => {
                             let in_grid =
                                 self.grid.iter().any(|&g| ((g / old).ln()).abs() < 1e-9);
-                            if in_grid && (f0 / old).ln().abs() < (f0 / tgt).ln().abs() + hyst {
+                            if in_grid && glide::keeps(f0, old, tgt, hyst) {
                                 tgt = old;
                             }
                         }
@@ -953,59 +951,25 @@ impl Engine {
                         uid,
                         f0,
                         lema: f0.ln(),
-                        tgt,
-                        r_from: 0.0, // birth: glide starts at SOURCE pitch
-                        g0: t,
+                        retune: Retune::born(tgt, t), // the glide starts at the SOURCE pitch
                         seen: t,
                         born: t,
-                        cand: tgt,
-                        cand_n: 0,
                         phases: [(0.0, -2, 0.0); MAX_H + 1],
                     });
                     self.tracks.len() - 1
                 }
                 Some(ti) => {
                     let trk = &mut self.tracks[ti];
-                    let r_old = (trk.tgt / trk.f0).ln();
-                    let r_now = if glide_frames > 0.0 {
-                        let prog = ((t - trk.g0) as f64 / glide_frames).min(1.0);
-                        trk.r_from + (r_old - trk.r_from) * prog
-                    } else {
-                        r_old
-                    };
-                    if (tgt / trk.tgt).ln().abs() > 1e-6 {
-                        // retarget DEBOUNCE: source-motion-driven target
-                        // changes must persist 3 frames (~64 ms) before
-                        // committing — a singer's portamento no longer
-                        // drags the output through intermediate targets.
-                        // MIDI-driven changes commit instantly.
-                        let grid_changed = self.grid_mask != self.prev_grid_mask;
-                        let same_cand = (tgt / trk.cand).ln().abs() < 1e-6;
-                        if same_cand {
-                            trk.cand_n += 1;
-                        } else {
-                            trk.cand = tgt;
-                            trk.cand_n = 1;
-                        }
-                        if grid_changed || trk.cand_n >= 3 {
-                            trk.r_from = if p.algorithm == Algorithm::Oracle {
-                                // Oracle glide is onset-only portamento
-                                // (measured: j24≡j30) — retargets land
-                                // instantly, births still ramp
-                                (tgt / f0).ln()
-                            } else {
-                                r_now
-                            };
-                            trk.g0 = t;
-                            trk.tgt = tgt;
-                            trk.cand_n = 0;
-                        } else {
-                            tgt = trk.tgt; // hold current target for now
-                        }
-                    } else {
-                        trk.cand = tgt;
-                        trk.cand_n = 0;
-                    }
+                    // Retarget DEBOUNCE: source-motion-driven target
+                    // changes must persist 3 frames (~64 ms) before
+                    // committing, so a singer's portamento no longer drags
+                    // the output through intermediate targets. MIDI-driven
+                    // changes commit instantly. ORACLE's glide is onset-only
+                    // portamento (measured: j24≡j30): retargets land
+                    // instantly, births still ramp.
+                    let grid_changed = self.grid_mask != self.prev_grid_mask;
+                    let onset_only = p.algorithm == Algorithm::Oracle;
+                    trk.retune.propose(tgt, trk.f0, t, glide_frames, grid_changed, 3, onset_only, f0);
                     trk.f0 = f0;
                     trk.lema += ema_a * (f0.ln() - trk.lema);
                     trk.seen = t;
@@ -1021,7 +985,7 @@ impl Engine {
                 let f_chrom =
                     midi_freq((69.0 + 12.0 * (trk.f0 / 440.0).log2()).round());
                 let in_tune = (trk.f0 / f_chrom).ln().abs() * cents < p.threshold_cents;
-                let untransposed = (trk.tgt / f_chrom).ln().abs() * cents < 1.0;
+                let untransposed = (trk.retune.target() / f_chrom).ln().abs() * cents < 1.0;
                 bypass = in_tune && untransposed;
             }
             // Per-key Bypass: the source's own nearest note passes unbent.
@@ -1031,13 +995,7 @@ impl Engine {
                     bypass = true;
                 }
             }
-            let r_to = (trk.tgt / trk.f0).ln();
-            let r_eff = if glide_frames > 0.0 {
-                let prog = ((t - trk.g0) as f64 / glide_frames).min(1.0);
-                trk.r_from + (r_to - trk.r_from) * prog
-            } else {
-                r_to
-            };
+            let r_eff = trk.retune.log_ratio(trk.f0, t, glide_frames);
             let dev = if p.algorithm == Algorithm::Oracle {
                 // belief re-injection (the ORACLE feel law, research 04):
                 // the tracker's whole believed deviation from the source's

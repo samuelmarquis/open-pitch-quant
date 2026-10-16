@@ -36,7 +36,8 @@ messages, and behavior belongs in the README; neither is kept here.
   HOUSE doesn't. HOUSE stays frozen.
 - [x] **Scales into audiokit (open-harmonizer, 2026-10-15); done in
   0.8.9 on open-audiokit 673a980, HOUSE byte-identical; the note-hold
-  primitive is still to come.** The harmonizer will move `Scale`, `SCALES` (append-only: saved
+  primitive (`audiokit::glide::Retune`, 1476c56) in 0.8.11, HOUSE and
+  ORACLE byte-identical on the fence's 56 renders.** The harmonizer will move `Scale`, `SCALES` (append-only: saved
   state stores the index), `CHROMATIC` and `absolute`/`relative`/
   `recognise` from `rt/engine/src/scales.rs` into audiokit and send the
   module path; we switch OPQ over ourselves (HOUSE fence, renders

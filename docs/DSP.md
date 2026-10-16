@@ -121,6 +121,9 @@ Tracks carry the musical state:
 - **Glide**: log-domain ramp of the transposition ratio over the glide
   time, with a floor of ~1.5 frames even at Glide = 0 so a retune never
   tears the overlap-add.
+  (The hysteresis, debounce and glide are `audiokit::glide` since 0.8.11,
+  shared with the family's harmonizer; the hysteresis between source
+  notes under a Key Transform stays here.)
 - **Feel**: each track keeps an EMA (250 ms) of its log-f0; the deviation
   of the instantaneous f0 from that EMA — the vibrato, the scoop, the
   human part — is scaled by Feel and re-added to the mapped ratio.
