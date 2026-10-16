@@ -735,6 +735,7 @@
    ]
   },
   "rack-voices.png": {
+   "columns": 11,
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
    "plate": "capture",
    "receipt": [
@@ -751,7 +752,7 @@
     "397b4e8663d53b754bf6fab290ec6317 672x500 out/capture/voices-8.png",
     "0c5e6075d3d6b2e055b479dc3b432e32 672x500 out/capture/voices-9.png"
    ],
-   "sha256": "17c0f80bd0a1bfcdbbcfd147f9a6747333d5c993635655407b3e83f0baabac22",
+   "sha256": "621ff6c0cf244cde703e4d53cd2464bfe6daed030dac4a81d0c0c80265baf25e",
    "states": [
     "--value=0.000000",
     "--value=0.090909",
