@@ -173,15 +173,18 @@ messages, and behavior belongs in the README; neither is kept here.
              and the housing needed no re-bake (it holds no key cut).
      - [x] The family's screen glass (p211 C, p212 C): 0.8.15, installed;
        catalogue/v23-glass.png. bake.py `--only glass --renders DIR`.
-     - [ ] Dead-on rack (Sam, p210 B, 2026-10-16: "it's gotta be
-       deadon-everything for consistency's sake"). The viewer keys (button-bezel,
-       not orthographic) need a farm re-bake: the job has gone to DESIGN, and
-       the import is `--only keys --renders DIR`. The housing stays (already
-       orthographic).
-     - [ ] Plates and knobs into the rack (open-comp style). Proposed to
-       DESIGN, awaiting Sam's ruling. Order: the plates with their toggles and
-       chickenhead, then Voices' stepped knob, then the continuous knobs once
-       open-cepstrum's atlases move.
+     - [x] Dead-on rack (Sam, p210 B, 2026-10-16: "it's gotta be
+       deadon-everything for consistency's sake"). The viewer keys were
+       re-baked at template 73fa7f3 on DESIGN's farm and imported in 0.8.17
+       (catalogue/v24-deadon-keys.png). The housing stays, since it is
+       already orthographic.
+     - [ ] Plates and knobs into the rack (open-comp style). DESIGN agreed
+       the order: the plates with their toggles and chickenhead, then Voices'
+       stepped knob, then the continuous knobs with open-cepstrum's. The
+       pilot is FINISH (bake.py `finish_pilot_layout`, written by `--jobs`):
+       the plate plus TRANSITIONS in both states, as one rack scene. It is on
+       the farm; DESIGN plates it for Sam next to today's board before
+       anything else moves.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

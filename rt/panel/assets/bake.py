@@ -412,6 +412,29 @@ def bake_glass(record, renders=None):
     print("glass (farm)", flush=True)
 
 
+# The open-comp migration's pilot (Sam, p210 B; DESIGN's order, plates
+# first): FINISH as one rack scene, the plate with its one fixed raised part,
+# the TRANSITIONS bat toggle, baked through both states. The knobs stay
+# per-part sprites drawn over it for now (step c). Rects are layout.rs's:
+# FINISH, and the toggle's drawn rect (layout::TOGGLE at f(2), ROW_2).
+FINISH_RECT = (748, 494, 336, 250)
+TRANSITIONS_TOGGLE = (1000, 650, 44, 44)
+
+
+def finish_pilot_layout():
+    x, y, w, h = FINISH_RECT
+    face = PLATES["plate-finish"][2]
+    common = [f for f in PLATE_COMMON]
+    for flag in ("--ortho-px", "--samples"):  # the rack's camera and samples own these
+        i = common.index(flag)
+        del common[i:i + 2]
+    plate = {"id": "plate-finish", "component": "panel-board", "rect": [x, y, w, h],
+             "flags": ["--w", w / 100, "--h", h / 100, *face, *common]}
+    toggle = {"id": "transitions", "component": "toggle-bat", "rect": list(TRANSITIONS_TOGGLE),
+              "z": "seat", "flags": ["--state", "down"]}
+    return {"px_per_unit": 100, "frame": [x, y, w, h], "elements": [plate, toggle]}
+
+
 def write_jobs(out):
     """Writes the farm's job files into `out`: keys.json,
     which the import steps check the farm baked."""
@@ -419,6 +442,8 @@ def write_jobs(out):
     out.mkdir(parents=True, exist_ok=True)
     (out / "keys.json").write_text(json.dumps(viewer_keys_layout(), indent=1) + "\n")
     print(out / "keys.json", flush=True)
+    (out / "finish-pilot.json").write_text(json.dumps(finish_pilot_layout(), indent=1) + "\n")
+    print(out / "finish-pilot.json", flush=True)
 
 
 def pack_viewer_keys(record, renders=None):

@@ -736,19 +736,19 @@
    },
    "packing": "PIL paste, straight alpha (panelkit Keys draws with paint::ART)",
    "receipts": [
-    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=transect:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/transect-inactive.png",
-    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=transect:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/transect-active.png",
-    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=ladders:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/ladders-inactive.png",
-    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=ladders:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/ladders-active.png",
-    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=scope:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/scope-inactive.png",
-    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=scope:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> design-lab/farm-out/opq/keys/scope-active.png"
+    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=transect:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> keys/transect-inactive.png",
+    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=transect:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> keys/transect-active.png",
+    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=ladders:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> keys/ladders-inactive.png",
+    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=ladders:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> keys/ladders-active.png",
+    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=scope:--state=inactive [0/2] matte=1 span=10.680 [frame:128x32] -> keys/scope-inactive.png",
+    "rack light=rack set={} denoise=on adaptive=on raw=False elements=4 state=scope:--state=active [1/2] matte=1 span=10.680 [frame:128x32] -> keys/scope-active.png"
    ],
-   "sha256": "b969233cdc8079b52fd64fe4bc4ab6ca23a3275274c468120f1302b241c94e6e",
-   "template": "a202a23"
+   "sha256": "52ee931302996c2869f84da2ffb434f8e1216fe6b5c4303668d92a279117397a",
+   "template": "73fa7f3"
   }
  },
  "sources": {
   "open-cepstrum": "5b5d34906924870f023dbd0d29d041cde7e143e4",
-  "open-plugin-template": "72446242b1fe0fba74471eedb5d213fe33c7f132"
+  "open-plugin-template": "73fa7f3161ff419f41c9876c2f3fec86433d22fc"
  }
 }

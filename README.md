@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.17** — the viewer keys are re-baked dead-on, as the family's rack
+  now draws every raised part (catalogue/v24-deadon-keys.png).
 - **0.8.16** — the screen glass from 0.8.15 is now installed (its
   still is catalogue/v23-glass.png). Under the family's dead-on rack
   ruling, the viewer keys are queued for a re-bake.

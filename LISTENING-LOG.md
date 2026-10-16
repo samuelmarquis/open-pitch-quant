@@ -688,3 +688,16 @@ sake"
 in the rack is dead-on), the viewer keys need a farm re-bake. The housing
 doesn't: it is already orthographic. The plan and a proposal to move the
 plates and knobs into the rack went to DESIGN.
+
+## Dead-on viewer keys (0.8.17, 2026-10-16)
+
+**Question:** p210 B ("it's gotta be deadon-everything for consistency's
+sake"). The viewer keys are button-bezel raised parts, so the rack used to
+lean them. The question was how they look drawn dead-on.
+
+**Config:** DESIGN's farm re-baked keys.json (unchanged) at template 73fa7f3.
+Before and after, the cells differ only slightly: the cap's shading and the
+lip.
+
+**Verdict:** Sam's ruling covers this (p210). It's applied, and the still
+is `catalogue/v24-deadon-keys.png`.
