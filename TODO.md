@@ -6,7 +6,10 @@ messages, and behavior belongs in the README; neither is kept here.
 ## Open
 
 - [ ] **HOUSE's Feel reaches too far (Sam, 2026-10-11), waiting on
-  Sam's ear:** "One thing that I think HOUSE should get from ORACLE;
+  Sam's ear.** Sam, 2026-10-16: "The phasing issue with HOUSE has been
+  solved imo". Which open item that closes, this one or ORACLE's phase
+  smear below, is asked; until he says, nothing is shipped or closed.
+  The original note: "One thing that I think HOUSE should get from ORACLE;
   FEEL for ORACLE seems to track small deviations but not large ones,
   but FEEL on HOUSE allows deviations of a semitone or more." The
   cause: ORACLE's deviation is from the voice's own nearest semitone,
@@ -243,8 +246,11 @@ messages, and behavior belongs in the README; neither is kept here.
     themselves, show a * in the second field too, *unless* they happen
     upon a known scale, in which case you can show that one (but all
     bets are off with REPEAT off)."
-    What was built, and the choices that were left to Claude (Sam has
-    not reviewed them):
+    Sam, 2026-10-16, having heard it: "key transform sounds fine, but
+    use a darker lettering and the new house-style dropdowns" (done in
+    0.8.10: panelkit's family menu, the scales grouped into submenus).
+    What was built, and the choices that were left to Claude (heard and
+    passed by Sam as a whole on 2026-10-16; none questioned):
     - Where: inside the screen, at the plot's top right, under the
       viewer keys. "Inside the panel" was read as inside the monitor,
       not a bezel key and not a plate fitting. If Sam meant the LAW

@@ -154,8 +154,6 @@ const SLOT_KEY_W: f32 = 34.0;
 const SLOT_SCALE_W: f32 = 128.0;
 const SLOT_GAP: f32 = 4.0;
 const SLOT_ARROW_W: f32 = 18.0;
-/// A list row's height: 31 scales drop from the row to within the screen.
-pub const SLOT_ROW_H: f32 = 12.0;
 
 impl Slot {
     pub const ALL: [Slot; 4] = [Slot::SrcKey, Slot::SrcScale, Slot::DstKey, Slot::DstScale];
@@ -214,17 +212,6 @@ impl Slot {
             Slot::DstScale => (dst_scale, SLOT_SCALE_W),
         };
         Rect::new(x, PLOT.y + 4.0, w, SLOT_H)
-    }
-
-    /// Its open list's `row`: dropping from it, its own width.
-    pub fn row(self, row: usize) -> Rect {
-        let r = self.rect();
-        Rect::new(r.x, r.y + r.h + 1.0 + row as f32 * SLOT_ROW_H, r.w, SLOT_ROW_H)
-    }
-
-    /// The row of its open list under the pointer.
-    pub fn row_at(self, x: f32, y: f32) -> Option<usize> {
-        (0..self.rows()).find(|&row| self.row(row).contains(x, y))
     }
 }
 
@@ -469,6 +456,106 @@ pub fn note_at(view: f32, y: f32) -> Option<u32> {
     (0.0..128.0).contains(&note).then_some(note as u32)
 }
 
+/// An open Key Transform list: panelkit's family menu (Sam, 2026-10-16:
+/// "the new house-style dropdowns"), for its slot, choosing a row of
+/// [`Slot::label`]'s.
+pub type TransformMenu = panelkit::menu::ContextMenu<Slot, usize>;
+/// The lists open inside the screen.
+pub const MENU_BOUNDS: Rect = SCREEN;
+/// The menus' size: the family's 12 px serif.
+pub const MENU_SIZE: usize = 1;
+
+/// The scales' groups below the three plain ones, by index into
+/// [`opq_engine::scales::SCALES`]: each a submenu, so the list fits the
+/// screen at the family's row height.
+pub const SCALE_GROUPS: [(&str, &[usize]); 5] = [
+    ("Modes", &[3, 4, 5, 6, 7]),
+    ("Harmonic & melodic", &[8, 9, 10, 11, 12, 13]),
+    ("Pentatonic & blues", &[20, 21, 22, 27, 28, 29]),
+    ("Symmetric", &[23, 24, 25, 26]),
+    ("Exotic", &[14, 15, 16, 17, 18, 19, 30]),
+];
+/// The scales listed at the top, ungrouped.
+pub const SCALES_PLAIN: [usize; 3] = [0, 1, 2];
+
+/// The family's serif (panelkit's `menu::SERIF`) for measuring the menus.
+pub fn serif() -> &'static panelkit::canvas::TextMetrics {
+    static SERIF: std::sync::OnceLock<panelkit::canvas::TextMetrics> = std::sync::OnceLock::new();
+    SERIF.get_or_init(|| panelkit::canvas::TextMetrics::new(panelkit::menu::SERIF, &FONT_SIZES).expect("a readable font"))
+}
+
+/// A list label as the menu sets it: words capitalised ("HARMONIC MINOR"
+/// is "Harmonic Minor"), a key and "W-H" as they are.
+pub fn menu_label(label: &str) -> String {
+    label
+        .split(' ')
+        .map(|word| match word.len() > 1 && word.chars().all(|c| c.is_ascii_alphabetic()) {
+            true => word[..1].to_owned() + &word[1..].to_ascii_lowercase(),
+            false => word.to_owned(),
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// `slot`'s list opened, its cursor on `current` (the row the slot shows;
+/// none for a hand-made target set). The current row is marked with a dot,
+/// and a scale group with the current scale shows its name.
+pub fn transform_menu(slot: Slot, current: Option<usize>) -> TransformMenu {
+    use panelkit::menu::Row;
+    const MARK: &str = "\u{2022}";
+    let row = |index: usize| {
+        let row = Row::new(menu_label(slot.label(index)), index);
+        if current == Some(index) { row.value(MARK) } else { row }
+    };
+    let mut rows: Vec<Row<usize>> = Vec::new();
+    let mut cursor = None;
+    if slot.is_key() {
+        rows.extend((0..slot.rows()).map(row));
+        cursor = current;
+    } else {
+        for index in SCALES_PLAIN {
+            if current == Some(index) {
+                cursor = Some(rows.len());
+            }
+            rows.push(row(index));
+        }
+        for (group, (name, members)) in SCALE_GROUPS.iter().enumerate() {
+            let held = current.filter(|index| members.contains(index));
+            if held.is_some() {
+                cursor = Some(rows.len());
+            }
+            // A group row's action names it and is never chosen.
+            let mut item = Row::submenu(*name, usize::MAX - group, members.iter().map(|&index| row(index)).collect());
+            if let Some(index) = held {
+                item = item.value(menu_label(slot.label(index)));
+            }
+            rows.push(if group == 0 { item.separated() } else { item });
+        }
+    }
+    let r = slot.rect();
+    let serif = serif();
+    let menu = TransformMenu::open(slot, (r.x, r.y + r.h + 2.0), rows, |text| serif.width(text, MENU_SIZE));
+    match cursor {
+        Some(cursor) => menu.with_cursor(cursor),
+        None => menu,
+    }
+}
+
+/// Where the pointer goes to choose `row` in an open list: the row, or its
+/// scale group's row (which opens the group) and then the row in the
+/// submenu. For the tests and the offline harness.
+pub fn menu_path(menu: &TransformMenu, row: usize) -> Vec<(f32, f32)> {
+    let rows = menu.rows();
+    if let Some(index) = rows.iter().position(|item| !item.opens() && item.action == row) {
+        return vec![menu.row(index, MENU_BOUNDS).center()];
+    }
+    let group = rows.iter().position(|item| item.children.iter().any(|child| child.action == row)).expect("a listed row");
+    let mut open = menu.clone();
+    open.open_submenu(group);
+    let index = open.submenu_rows().iter().position(|child| child.action == row).unwrap();
+    vec![menu.row(group, MENU_BOUNDS).center(), open.submenu_row(index, MENU_BOUNDS).unwrap().center()]
+}
+
 /// The transect's area for the wheel: anywhere on the screen.
 pub fn scrolls_view(x: f32, y: f32) -> bool {
     SCREEN.contains(x, y)
@@ -494,20 +581,31 @@ mod tests {
             assert!(inside(PLOT, r) && r.x >= right, "{slot:?}");
             right = r.x + r.w;
             assert_eq!(target_at(VIEW_DEFAULT, r.x + 2.0, r.y + 2.0), Some(Control::Transform(slot)));
-            // Every row of its list is on the screen, and found again.
-            for row in 0..slot.rows() {
-                let item = slot.row(row);
-                assert!(inside(SCREEN, item), "{slot:?} row {row}");
-                assert_eq!(slot.row_at(item.x + 2.0, item.y + 2.0), Some(row));
+            // Its menu lists every row once, all on the screen, every
+            // scale group's submenu too.
+            let mut menu = transform_menu(slot, None);
+            assert!(inside(SCREEN, menu.rect(MENU_BOUNDS)), "{slot:?}");
+            let mut listed: Vec<usize> = Vec::new();
+            for index in 0..menu.rows().len() {
+                if menu.rows()[index].opens() {
+                    menu.open_submenu(index);
+                    assert!(inside(SCREEN, menu.submenu_rect(MENU_BOUNDS).unwrap()), "{slot:?} group {index}");
+                    listed.extend(menu.submenu_rows().iter().map(|row| row.action));
+                } else {
+                    listed.push(menu.rows()[index].action);
+                }
             }
+            listed.sort();
+            assert_eq!(listed, (0..slot.rows()).collect::<Vec<_>>(), "{slot:?}");
         }
         // A key list is "*" then C to B.
         assert_eq!((Slot::SrcKey.label(0), Slot::SrcKey.label(1), Slot::DstKey.label(12)), ("*", "C", "B"));
         assert!((0..13).all(|row| Slot::key_row(Slot::row_key(row)) == row));
-        // The widest scale name fits its slot beside the chevron.
-        let bytes = crate::pack::embedded().bytes(crate::pack::FONT).unwrap();
-        let metrics = panelkit::canvas::TextMetrics::new(&bytes, &FONT_SIZES).unwrap();
-        let widest = (0..Slot::DstScale.rows()).map(|row| metrics.width(Slot::DstScale.label(row), 0)).fold(0.0, f32::max);
+        // The widest scale name fits its slot beside the chevron, set as
+        // the slot sets it.
+        let widest = (0..Slot::DstScale.rows())
+            .map(|row| serif().width(&menu_label(Slot::DstScale.label(row)), MENU_SIZE))
+            .fold(0.0, f32::max);
         assert!(widest + 3.0 + 14.0 <= SLOT_SCALE_W, "{widest}");
     }
 

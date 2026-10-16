@@ -175,8 +175,12 @@ fn scenario(name: &str) -> PanelState {
                 let at = slot.rect();
                 f.down(&mut state, at.x + 4.0, at.y + 4.0, Modifiers::default(), 1);
                 f.up(&mut state);
-                let row = slot.row(rows(slot, name));
-                f.down(&mut state, row.x + 4.0, row.y + 4.0, Modifiers::default(), 1);
+                let path = layout::menu_path(state.list.as_ref().unwrap(), rows(slot, name));
+                for &(x, y) in &path {
+                    f.hover(&mut state, x, y);
+                }
+                let (x, y) = *path.last().unwrap();
+                f.down(&mut state, x, y, Modifiers::default(), 1);
                 f.up(&mut state);
             }
             feed(&mut state, &[], 11.0);
@@ -186,8 +190,10 @@ fn scenario(name: &str) -> PanelState {
             if name == "transform-list" {
                 f.down(&mut state, at.x + 20.0, at.y + 8.0, Modifiers::default(), 1);
                 f.up(&mut state);
-                let row = slot.row(rows(slot, "LYDIAN"));
-                f.hover(&mut state, row.x + 20.0, row.y + 6.0);
+                // The pointer down the modes to Lydian.
+                for &(x, y) in &layout::menu_path(state.list.as_ref().unwrap(), rows(slot, "LYDIAN")) {
+                    f.hover(&mut state, x, y);
+                }
             }
         }
         "menu" => {

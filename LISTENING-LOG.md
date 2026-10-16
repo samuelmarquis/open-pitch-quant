@@ -599,5 +599,20 @@ parameters. Stills: `catalogue/v20-transform.png` (A MINOR → * MAJOR
 on the harness's three voices) and `v20-transform-list.png` (the
 destination's scale list open). HOUSE byte-identical with no remap.
 
-**Verdict:** *(pending: not yet heard by Sam, and not yet run in a
-host)*
+**Verdict (Sam, 2026-10-16, in a host):** "The phasing issue with HOUSE
+has been solved imo; key transform sounds fine, but use a darker
+lettering and the new house-style dropdowns"
+
+**Interpretation + action:** the transform's sound and its rules pass
+as built. The look does not: the lists were OPQ's own dark rows in the
+10 px sans, and the closed slots' lettering read grey. 0.8.10 opens
+each list as panelkit's family menu (shaded white paper, the Tinos
+serif, the family's row height, the current choice marked with a
+dot, the cursor starting on it); the 31 scales would not fit the
+screen at that row height, so CHROMATIC, MAJOR and MINOR stand at the
+top and the rest open from five groups (Modes, Harmonic & melodic,
+Pentatonic & blues, Symmetric, Exotic). The slots are set in the same
+serif in full ink (pencil at 85% under MIDI, was 55%). Stills:
+`catalogue/v21-transform.png`, `v21-transform-list.png`. The first
+clause, about HOUSE's phasing, is recorded in TODO with a question:
+which open item it closes.

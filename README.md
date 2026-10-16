@@ -81,7 +81,10 @@ stem separation, ~93 ms latency, live.
   you say what it is in. Each key list is `*` then C to B; each scale
   list has 31 scales (chromatic, major, minor, the modes, harmonic and
   melodic minor, pentatonics, blues, whole tone, diminished, Neapolitan
-  and more). It starts at `* CHROMATIC → * CHROMATIC`, which does
+  and more): Chromatic, Major and Minor at the top, the rest in five
+  groups that open beside it. Click a slot (or Enter, the arrows and a
+  typed first letter once open) to choose; the current choice is
+  dotted. It starts at `* CHROMATIC → * CHROMATIC`, which does
   nothing.
   - The **destination** scale is the targets: choosing one writes it to
     the key ruler in every octave. Edit the keys by hand and it reads
@@ -148,6 +151,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.10** — the Key Transform's lists are the family's menus: white
+  paper set in a serif, the current choice marked and the cursor on it.
+  The scales past Chromatic, Major and Minor open from five groups
+  (Modes, Harmonic & melodic, Pentatonic & blues, Symmetric, Exotic).
+  The four slots are lettered in the same serif, in darker ink.
 - **0.8.9** — nothing changes in the sound or the panel; the scale list now comes from the family's DSP kit (audiokit), shared with the harmonizer. HOUSE renders are byte-identical.
 - **0.8.8** — nothing changes in the plugin; the plan to share the scale list with the family's DSP kit is recorded.
 - **0.8.7** — nothing changes in the plugin; the native test's drag on Voices is sized to cross a step.

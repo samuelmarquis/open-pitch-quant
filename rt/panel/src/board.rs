@@ -31,6 +31,8 @@ const VALUE: usize = 0;
 const CAPTION: usize = 1;
 const TITLE: usize = 2;
 const SMALL: usize = 3;
+/// The family's serif (panelkit's `menu::SERIF`), the lists' face.
+const SERIF_FACE: usize = 1;
 
 // The board's palette (linear): OpenCepstrum's, for text on the black
 // board and the plates.
@@ -150,6 +152,8 @@ impl Board {
     pub fn new(gpu: Gpu, pack: &Pack, scale: u32) -> Result<Self, String> {
         let mut canvas = Canvas::new(gpu, (layout::WIDTH, layout::HEIGHT), scale, VERTEX_CAPACITY)?;
         canvas.add_face("Source Sans", &pack.bytes(pack::FONT)?, &FONT_SIZES, &[false, false, true, false])?;
+        let serif = canvas.add_face("Tinos", panelkit::menu::SERIF, &FONT_SIZES, &[false; 4])?;
+        debug_assert_eq!(serif, SERIF_FACE);
         let mut up = |key: &str| canvas.upload_png(key, &pack.bytes(key)?, true);
         let t = Textures {
             bezel: up(pack::BEZEL)?,
@@ -231,39 +235,32 @@ impl Board {
         for slot in Slot::ALL {
             let r = slot.rect();
             let hovered = state.hover_control == Some(Control::Transform(slot))
-                || state.list.is_some_and(|list| list.slot == slot);
+                || state.list.as_ref().is_some_and(|list| list.target == slot);
+            // Set like the lists, in the family's serif, in full ink
+            // (Sam, 2026-10-16: "use a darker lettering").
             let ink = match (live, hovered) {
                 (_, true) => BLUE,
                 (true, false) => SUMI,
-                (false, false) => opacity(PENCIL, 0.55),
+                (false, false) => opacity(PENCIL, 0.85),
             };
-            let label = fittings::current_row(state, slot).map_or("*", |row| slot.label(row));
-            self.solid(Rect::new(r.x, r.y + r.h - 1.0, r.w, 1.0), opacity(ink, 0.35));
-            self.text(r.x + 3.0, r.y + 2.0, label, VALUE, ink, false);
+            let label = layout::menu_label(fittings::current_row(state, slot).map_or("*", |row| slot.label(row)));
+            self.solid(Rect::new(r.x, r.y + r.h - 1.0, r.w, 1.0), opacity(ink, 0.5));
+            let y = self.canvas.centered_face_text_y(SERIF_FACE, &label, layout::MENU_SIZE, r.y + r.h * 0.5);
+            self.canvas.face_text(SERIF_FACE, r.x + 3.0, y, &label, layout::MENU_SIZE, ink, false);
             widgets::dropdown_arrow(&mut self.canvas, (r.x + r.w - 7.0, r.y + r.h * 0.5), ink, None);
         }
         let (x, y) = layout::transform_arrow();
-        let ink = if live { SUMI } else { opacity(PENCIL, 0.55) };
+        let ink = if live { SUMI } else { opacity(PENCIL, 0.85) };
         self.line(x - 5.0, y, x + 5.0, y, 1.0, ink);
         self.line(x + 2.0, y - 3.0, x + 5.0, y, 1.0, ink);
         self.line(x + 2.0, y + 3.0, x + 5.0, y, 1.0, ink);
     }
 
-    /// An open Key Transform list, over everything: its rows, the one
-    /// highlighted lit, the current one marked.
+    /// An open Key Transform list, over everything: the family's menu,
+    /// white paper set in the serif, a group's row open in blue ink.
     fn list(&mut self, state: &PanelState) {
-        let Some(list) = state.list else { return };
-        let (first, last) = (list.slot.row(0), list.slot.row(list.slot.rows() - 1));
-        self.solid(Rect::new(first.x - 1.0, first.y - 1.0, first.w + 2.0, last.y + last.h - first.y + 2.0), [0.017, 0.022, 0.030, 1.0]);
-        let current = fittings::current_row(state, list.slot);
-        for row in 0..list.slot.rows() {
-            let r = list.slot.row(row);
-            let lit = row == list.index;
-            if lit {
-                self.solid(r, [0.035, 0.050, 0.065, 1.0]);
-            }
-            let ink = if lit || current == Some(row) { MINT } else { INK };
-            self.text(r.x + 3.0, r.y, list.slot.label(row), VALUE, ink, false);
+        if let Some(list) = &state.list {
+            list.draw_in(&mut self.canvas, layout::MENU_BOUNDS, SERIF_FACE, layout::MENU_SIZE, BLUE);
         }
     }
 

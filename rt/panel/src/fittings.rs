@@ -42,9 +42,10 @@
 //! Every value is echoed into `state.params` (and `state.keys`) before it is
 //! returned.
 use crate::layout::{self, Control, Kind, Slot, MENU_ITEMS};
-use crate::{fine, Edit, List, Menu, Modifiers, PanelState, TextEdit};
+use crate::{fine, Edit, Menu, Modifiers, PanelState, TextEdit};
 use opq_engine::params::{KeyState, SOURCE, SPECS};
 use panelkit::entry::EntryKey;
+use panelkit::menu::{Key as MenuKeyed, Press};
 use panelkit::strip::{self, MenuKey};
 use panelkit::{interaction, keys, widgets};
 use std::time::Instant;
@@ -205,9 +206,7 @@ impl Fittings {
             }
         }
         if let Some(list) = state.list.as_mut() {
-            if let Some(row) = list.slot.row_at(x, y) {
-                list.index = row;
-            }
+            list.point(x, y, layout::MENU_BOUNDS);
         }
         if self.capture.is_none() {
             state.hover_control = layout::target_at(state.view, x, y);
@@ -224,10 +223,18 @@ impl Fittings {
             }
             return edits;
         }
-        // An open list likewise: a row chooses, anywhere else closes it.
-        if let Some(list) = state.list.take() {
-            if let Some(row) = list.slot.row_at(x, y) {
-                edits.extend(choose_row(state, list.slot, row));
+        // An open list likewise: a row chooses, a group row opens its
+        // scales, anywhere else closes it.
+        if let Some(mut list) = state.list.take() {
+            match list.press(x, y, layout::MENU_BOUNDS) {
+                Press::Chose(row) => edits.extend(choose_row(state, list.target, row)),
+                Press::Inside => {
+                    if let Some(group) = list.row_at(x, y, layout::MENU_BOUNDS).filter(|&row| list.rows()[row].opens()) {
+                        list.open_submenu(group);
+                    }
+                    state.list = Some(list);
+                }
+                Press::Outside => {}
             }
             return edits;
         }
@@ -261,7 +268,7 @@ impl Fittings {
         }
         if let Control::Transform(slot) = control {
             // Its list opens on what it shows (a hand-made set: the top).
-            state.list = Some(List { slot, index: current_row(state, slot).unwrap_or(0) });
+            state.list = Some(layout::transform_menu(slot, current_row(state, slot)));
             return edits;
         }
         if let Control::Key(note) = control {
@@ -383,7 +390,11 @@ impl Fittings {
     }
 
     /// The mount's timer, each frame: a wheel gesture that has rested ends.
-    pub fn tick(&mut self, _state: &mut PanelState, now: Instant) -> Vec<Edit> {
+    /// An open list's submenu follows a pointer that has rested.
+    pub fn tick(&mut self, state: &mut PanelState, now: Instant) -> Vec<Edit> {
+        if let Some(list) = state.list.as_mut() {
+            list.tick(now);
+        }
         let Some((id, hold)) = self.wheel.as_mut() else { return Vec::new() };
         if !hold.expired(now) {
             return Vec::new();
@@ -581,19 +592,18 @@ impl Fittings {
             return Vec::new();
         }
         if let Some(list) = state.list.as_mut() {
-            if key == "Escape" {
-                state.list = None;
-                return Vec::new();
-            }
-            let slot = list.slot;
-            let label = |row: usize| slot.label(row).to_owned();
-            if let MenuKey::Chose(row) =
-                strip::menu_key(&mut list.index, slot.rows(), 1, key, mods.shift, mods.command, label)
-            {
-                state.list = None;
-                return choose_row(state, slot, row);
-            }
-            return Vec::new();
+            let slot = list.target;
+            return match list.key(key, mods.shift, mods.command) {
+                MenuKeyed::Moved => Vec::new(),
+                MenuKeyed::Closed => {
+                    state.list = None;
+                    Vec::new()
+                }
+                MenuKeyed::Chose(row) => {
+                    state.list = None;
+                    choose_row(state, slot, row)
+                }
+            };
         }
         if let Some(edit) = state.text_edit.as_mut() {
             if key == "Escape" {
@@ -863,9 +873,14 @@ mod tests {
         let r = slot.rect();
         assert!(f.down(s, r.x + 4.0, r.y + 4.0, Modifiers::default(), 1).is_empty());
         f.up(s);
-        assert_eq!(s.list.map(|list| list.slot), Some(slot));
-        let row = slot.row((0..slot.rows()).find(|&row| slot.label(row) == name).unwrap());
-        let edits = f.down(s, row.x + 4.0, row.y + 4.0, Modifiers::default(), 1);
+        assert_eq!(s.list.as_ref().map(|list| list.target), Some(slot));
+        let row = (0..slot.rows()).find(|&row| slot.label(row) == name).unwrap();
+        let path = layout::menu_path(s.list.as_ref().unwrap(), row);
+        for &(x, y) in &path {
+            f.hover(s, x, y);
+        }
+        let (x, y) = *path.last().unwrap();
+        let edits = f.down(s, x, y, Modifiers::default(), 1);
         f.up(s);
         assert!(s.list.is_none());
         edits
@@ -928,9 +943,20 @@ mod tests {
         // Open: the editor takes the list's keys, Space stays the host's.
         assert!(f.wants_key(&s, "ArrowDown", none) && f.wants_key(&s, "Enter", none));
         assert!(!f.wants_key(&s, " ", none));
-        // A typed letter finds the next row starting with it.
-        f.key(&mut s, "w", none);
-        assert_eq!(Slot::SrcScale.label(s.list.unwrap().index), "WHOLE TONE");
+        // It opens on the current scale; a typed letter finds the next
+        // row starting with it, and Right opens a group.
+        let cursor = |s: &PanelState| s.list.as_ref().unwrap().cursor().unwrap();
+        assert_eq!(s.list.as_ref().unwrap().rows()[cursor(&s)].label, "Chromatic");
+        f.key(&mut s, "s", none);
+        assert_eq!(s.list.as_ref().unwrap().rows()[cursor(&s)].label, "Symmetric");
+        f.key(&mut s, "ArrowRight", none);
+        let edits = f.key(&mut s, "Enter", none);
+        assert!(s.list.is_none() && matches!(edits[0], Edit::Keys(_)));
+        assert_eq!(shown(&s)[1], "WHOLE TONE");
+        // Reopened, it starts on the group that holds the current scale.
+        f.down(&mut s, r.x + 4.0, r.y + 4.0, none, 1);
+        f.up(&mut s);
+        assert_eq!(s.list.as_ref().unwrap().rows()[cursor(&s)].label, "Symmetric");
         f.key(&mut s, "Home", none);
         f.key(&mut s, "ArrowDown", none);
         let edits = f.key(&mut s, "Enter", none);
