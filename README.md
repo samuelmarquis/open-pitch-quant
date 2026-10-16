@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.7** — GRIT's catalin knob renders as its true deep amber, not
+  pale peach; the rest of FINISH is re-rendered with it
+  (catalogue/v27-rack-knobs.png, updated).
 - **0.9.6** — every knob is now part of its plate's render: the ten
   continuous knobs turn through 101 rendered positions each, with their real
   shadows and reflections, and LAW is back on the mirror brass. A faint

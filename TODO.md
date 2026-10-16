@@ -204,6 +204,9 @@ messages, and behavior belongs in the README; neither is kept here.
          zero indicator on black knobs. A part mirrored in a neighbour's rim
          (TRANSITIONS in FORMANT and COHERENCE) stays in its first state there;
          provenance records it as mirrored_px. The old knob atlases are gone.
+         0.9.7: FINISH re-run at template 263c15b (rack's fit now scales a knob's
+         material distances, so the fitted catalin GRIT no longer renders pale);
+         farm 20261016-165330-3022, receipts bf75684.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

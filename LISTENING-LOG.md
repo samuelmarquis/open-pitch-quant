@@ -810,3 +810,9 @@ of their plates' renders, and does LAW's mirror brass (p217) hold up?
   THRESHOLD, ROUNDING, and the red MIDI and REPEAT) are low-contrast. This
   is noted for Sam, and their colour is unchanged unless he asks.
 
+**0.9.7:** DESIGN found that rack's fit shrank a knob without scaling its
+world-space AO and subsurface distances, so the catalin GRIT rendered pale
+and pink. That is fixed at template 263c15b. FINISH is re-run (farm
+20261016-165330-3022) and GRIT reads deep amber. `v27-rack-knobs.png` is
+re-rendered in place.
+

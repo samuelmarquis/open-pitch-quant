@@ -558,9 +558,9 @@
     250
    ],
    "receipt": [
-    "33ccba79e1178e90aecbd46bbfa57197 672x500 out/finish/transitions-0.png"
+    "d3d4866296f1123e8c1ea05371b96dd7 672x500 out/finish/transitions-0.png"
    ],
-   "sha256": "6c8af1c7aebe207b1867d136fc91155f0a11b2cc1ddabb6deb716b9a279e2660"
+   "sha256": "232753b7e00cc0bf0e8e7c4a367d14c1027f6bb9d81a1fc0d2dc4a86f5838d80"
   },
   "plate-law.png": {
    "generator": "open-plugin-template/components/_studio/rack.py",
@@ -772,10 +772,10 @@
    "mirrored_px": 1,
    "plate": "finish",
    "receipt": [
-    "15d86bdef5f0d8350a1f4a4e9034f7fc 672x500 out/finish/carry-0.png",
-    "9b8f605beace093d85690fe9baffbc04 672x500 out/finish/carry-1.png"
+    "a85c76110c5361a0ddae0b3284a4b3fc 672x500 out/finish/carry-0.png",
+    "73687794607671b79b8c6df26a223893 672x500 out/finish/carry-1.png"
    ],
-   "sha256": "fbaba9553fd2c703ebcb994ab7ee796e07db6c54831391963b4a486f6609d11b",
+   "sha256": "765f0f9951e152970ce4a532e2fca596975adffa588f993f5d998b479a9d25eb",
    "states": [
     "--value=0.000000",
     "--value=0.010000",
@@ -1014,10 +1014,10 @@
    "mirrored_px": 1,
    "plate": "finish",
    "receipt": [
-    "308f371e844baadc251793d16fb89d56 672x500 out/finish/coherence-0.png",
-    "5451ea40d685caf81b312bc21f3cb990 672x500 out/finish/coherence-1.png"
+    "8bfc9b08e4c6d97f6417bd6b610dfeb0 672x500 out/finish/coherence-0.png",
+    "61850d66b8c5e77bfea8e18f65e5ad1f 672x500 out/finish/coherence-1.png"
    ],
-   "sha256": "77acc5be9adf62c46361d0702f29ef872f8cae2bcb9fc8f09313e0b59caf6b63",
+   "sha256": "878113b9477b2b077388168e976e201f4b63ac8149b2b1dee0d9de0a41fe2b26",
    "states": [
     "--value=0.000000",
     "--value=0.010000",
@@ -1253,13 +1253,13 @@
   "rack-formant.png": {
    "columns": 11,
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
-   "mirrored_px": 0,
+   "mirrored_px": 1,
    "plate": "finish",
    "receipt": [
-    "439b248575f1463fde916b6c6b14215f 672x500 out/finish/formant-0.png",
-    "3c8cc73f5e46aa6fff737536ae45fec3 672x500 out/finish/formant-1.png"
+    "84c8c2f68145a244233161d5b3d60d7f 672x500 out/finish/formant-0.png",
+    "8fe8d0f6483ee0da440ca2922a376a0d 672x500 out/finish/formant-1.png"
    ],
-   "sha256": "26b61a5211ecba083a95b3f7f2e364e39d327d3d312a137f1deef607a93f258c",
+   "sha256": "c1668527e11467020b7fce89245c9ba29d8e92eccec7bca822d694d0191faf34",
    "states": [
     "--value=0.000000",
     "--value=0.010000",
@@ -1517,13 +1517,13 @@
   "rack-grit.png": {
    "columns": 11,
    "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
-   "mirrored_px": 85,
+   "mirrored_px": 72,
    "plate": "finish",
    "receipt": [
-    "e7584495719f3f1eff9041c6a6d0cedb 672x500 out/finish/grit-0.png",
-    "d24b8bb7dcd1a7b481498ec343728c65 672x500 out/finish/grit-1.png"
+    "d27ccd6f57394089b4d090107e19d214 672x500 out/finish/grit-0.png",
+    "536317cbf24aac5fa09ee4e44689ebfb 672x500 out/finish/grit-1.png"
    ],
-   "sha256": "0bc0392ae5cd082b4a9b1249e447e63da8b7b9178b08ea33a8f4815d68c7d231",
+   "sha256": "ec65d9145749e0ea3da5f61aec39be6fbc923848ec05c8e73329dc31adb0cb9e",
    "states": [
     "--value=0.000000",
     "--value=0.010000",
@@ -1641,10 +1641,10 @@
    "mirrored_px": 2,
    "plate": "finish",
    "receipt": [
-    "76c82d5f210195397ce28550b26aa893 672x500 out/finish/purify-0.png",
-    "9adf0e5960dbfbfc2e3c892005c6e188 672x500 out/finish/purify-1.png"
+    "00c6222dc22b00ff8eac6f5931c8aa1d 672x500 out/finish/purify-0.png",
+    "3f9145aca3c57f6cc27441af4193123e 672x500 out/finish/purify-1.png"
    ],
-   "sha256": "8498a4d1b4b814d6faf485bfa8ebec44c1b3c9315822e5229eca564fdcadc4eb",
+   "sha256": "ec1fb6d39b452a9caf47b7e97a9ed916b6cab8a4dc682d11c5793388d5deda80",
    "states": [
     "--value=0.000000",
     "--value=0.010000",
@@ -2092,10 +2092,10 @@
    "mirrored_px": 138,
    "plate": "finish",
    "receipt": [
-    "33ccba79e1178e90aecbd46bbfa57197 672x500 out/finish/transitions-0.png",
-    "f2964c2ed2958fd8c8bd5f1adf033e50 672x500 out/finish/transitions-1.png"
+    "d3d4866296f1123e8c1ea05371b96dd7 672x500 out/finish/transitions-0.png",
+    "1e42888a899a6202ce771885342b2b72 672x500 out/finish/transitions-1.png"
    ],
-   "sha256": "6b0dd1996f802f92a826cbe6d0fec1d90adc48d24a44645a8044a27df6361125",
+   "sha256": "21809d8c38e31f3f83bbde37cc86e3d6ca23fefda5f76e5b4239a49449d541a5",
    "states": [
     "--state=down",
     "--state=up"
@@ -2357,6 +2357,6 @@
  },
  "sources": {
   "open-cepstrum": "5b5d34906924870f023dbd0d29d041cde7e143e4",
-  "open-plugin-template": "a05cb9a885faaf9e8e6f903da44423bea8ad4111"
+  "open-plugin-template": "bf75684a2caf5a6ac5029fd4a65c022ffe6f8bb9"
  }
 }
