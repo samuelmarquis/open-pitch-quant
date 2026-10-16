@@ -616,3 +616,41 @@ serif in full ink (pencil at 85% under MIDI, was 55%). Stills:
 `catalogue/v21-transform.png`, `v21-transform-list.png`. The first
 clause, about HOUSE's phasing, is recorded in TODO with a question:
 which open item it closes.
+
+## HOUSE's Feel, second round (2026-10-16)
+
+**Sam, first:** "The phasing issue with HOUSE has been solved imo",
+then, correcting it: "I meant ORACLE's phase smear; HOUSE's feel still
+has the same problem (on phylovox, you can hear--literally, the second
+note--that it warbles up and down on HOUSE with feel at 40% but does
+not on oracle)--sorry, got those two mixed up!"
+
+**Interpretation:** ORACLE's phase smear is closed. HOUSE's Feel
+deviation (from a 250 ms average of the voice's pitch, unbounded) lags
+a note change and swings the output while it catches up.
+
+**Question:** which fix takes the warble out of phylovox's second note
+at Feel 40% while changing HOUSE least?
+
+**Config:** phylovox, its MIDI at 0.75, ROUNDING Smart, Feel 0.40,
+0.8.11 engine. A: HOUSE now. B: the deviation capped at ±50 c
+(ORACLE's bound). C: the average restarts when a voice commits to a new
+note. D: B and C. REF: ORACLE. Renders: `out/feel-ab-2/` (gitignored).
+Output pitch by YIN at 10 ms, in cents (6000 = C4):
+
+| t (s) | A | B | C | D | ORACLE |
+|---|---|---|---|---|---|
+| 0.80 | 5555 | 5515 | 5555 | 5515 | 5508 |
+| 0.95 | 6101 | 6006 | 6037 | 6006 | 6016 |
+| 1.00 | 6090 | 6027 | 6027 | 6027 | 5996 |
+| 1.05 | 6037 | 6006 | 5985 | 5985 | - |
+
+Frozen renders each fix changes: B 30 of 56, C 37, D 40. Every fix
+retunes HOUSE broadly, because the champion settings run Feel at 0.35.
+
+**Recommendation:** B. It is ORACLE's own bound, takes the overshoot out
+of the second note, and changes the fewest renders. C barely helps: by
+the time a note change commits, the lag has already played.
+
+**Verdict:** *(pending: Sam to hear `out/feel-ab-2/` and give the go to
+re-record HOUSE-BASELINE.json with B)*

@@ -6,10 +6,15 @@ messages, and behavior belongs in the README; neither is kept here.
 ## Open
 
 - [ ] **HOUSE's Feel reaches too far (Sam, 2026-10-11), waiting on
-  Sam's ear.** Sam, 2026-10-16: "The phasing issue with HOUSE has been
-  solved imo". Which open item that closes, this one or ORACLE's phase
-  smear below, is asked; until he says, nothing is shipped or closed.
-  The original note: "One thing that I think HOUSE should get from ORACLE;
+  Sam's go to re-freeze HOUSE.** Sam, 2026-10-16: "HOUSE's feel still
+  has the same problem (on phylovox, you can hear--literally, the second
+  note--that it warbles up and down on HOUSE with feel at 40% but does
+  not on oracle)". Measured (LISTENING-LOG "HOUSE's Feel, second
+  round"): on that note HOUSE overshoots ~90 c sharp and comes back;
+  capping the deviation at ±50 c (ORACLE's bound) lands it within
+  ~10-30 c of ORACLE; restarting the average on a note change barely
+  helps. The cap is recommended; it changes 30 of the 56 frozen renders,
+  so it needs Sam's go to re-record the baseline. The original note: "One thing that I think HOUSE should get from ORACLE;
   FEEL for ORACLE seems to track small deviations but not large ones,
   but FEEL on HOUSE allows deviations of a semitone or more." The
   cause: ORACLE's deviation is from the voice's own nearest semitone,
@@ -28,7 +33,11 @@ messages, and behavior belongs in the README; neither is kept here.
   check could pass without testing the change in front of it. It did
   once, for 0.8.0; rechecked with a fresh build, 0.8.0 and 0.8.1 are
   byte-identical to the manifest.
-- [ ] **ORACLE needs more work (Sam, 2026-10-11):** "I think 'ORACLE'
+- [x] **ORACLE's phase smear, closed by Sam's ear (2026-10-16):** "The
+  phasing issue with HOUSE has been solved imo", corrected the same
+  day: "I meant ORACLE's phase smear". Nothing was changed for it
+  directly; it went sometime between 0.7.14 and 0.8.10. The original
+  note, Sam, 2026-10-11: "I think 'ORACLE'
   needs a little more work; the phase sounds much smearier than HOUSE,
   and much smearier than I remember pitchmap sounding." Not started.
   First step: an A/B of ORACLE against HOUSE and the PITCHMAP refpack on
