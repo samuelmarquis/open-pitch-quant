@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.24** — no visible change: the ALGORITHM knob's rack render is
+  sized to match today's knob.
 - **0.8.23** — the plates' rack bake is set up and on DESIGN's farm. You
   picked the tab switch (p214 D) for all seven switches, and it goes in
   with the plates.

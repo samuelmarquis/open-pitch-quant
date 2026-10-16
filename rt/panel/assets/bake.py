@@ -362,10 +362,11 @@ TABS = {          # id -> (plate, centre)
     "transitions": ("finish", (1022, 672)),
 }
 TAB_STATES = ["down", "up"]
-# The ALGORITHM chickenhead: today's sprite is 88 logical px round, at
-# (436, 576) since the tabs (0.8.23); its 5-detent throw puts HOUSE at 0.25
-# and ORACLE at 0.75.
-SELECTOR = ("law", (436, 576), 88)
+# The ALGORITHM chickenhead at (436, 576) since the tabs (0.8.23), fitted by
+# diameter at 102 px so its drum is the 43 px the sprite board drew
+# (DESIGN's refit, pass 54: 88 gave 37); its 5-detent throw puts HOUSE at
+# 0.25 and ORACLE at 0.75.
+SELECTOR = ("law", (436, 576), 102)
 SELECTOR_VALUES = ["0.25", "0.75"]
 # The windows the import crops round each part (layout.rs TAB_WINDOW,
 # SELECTOR_WINDOW): dx, dy, w, h from its centre, logical px. Under the rack
