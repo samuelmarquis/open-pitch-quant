@@ -66,6 +66,8 @@ const KNOB_SHADOW: [(f32, f32, f32, f32); 4] = [
     (3.0, 5.2, 1.12, 0.04),
 ];
 const KNOB_FILL: f32 = 1.03;
+/// The rack bakes' density: 2 image px per logical px.
+const RACK_DENSITY: f32 = 2.0;
 
 /// The ladders: a second of frames per column (47 a second at 48 kHz),
 /// the rungs the tracker reads (audiokit's 20 harmonics), and a column's
@@ -705,11 +707,13 @@ impl Board {
             _ => usize::from(value >= 0.5),
         };
         let texture = self.t.parts[index];
-        // The strip is at the bake's density: a cell is the window scaled
-        // as the strip's height is.
-        let h = self.textures[texture].height;
-        let cell = rect.w * h / rect.h;
-        self.sprite(texture, rect, Rect::new(state as f32 * cell, 0.0, cell, h), WHITE, paint::ART, 0);
+        // The atlas is at the bake's density, its cells in rows of up to
+        // bake.py's ATLAS_COLUMNS.
+        let (cw, ch) = (rect.w * RACK_DENSITY, rect.h * RACK_DENSITY);
+        let columns = (self.textures[texture].width / cw).round().max(1.0) as usize;
+        let (row, column) = (state / columns, state % columns);
+        let source = Rect::new(column as f32 * cw, row as f32 * ch, cw, ch);
+        self.sprite(texture, rect, source, WHITE, paint::ART, 0);
     }
 
     fn widget(&mut self, state: &PanelState, widget: &Widget) {

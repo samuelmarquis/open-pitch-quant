@@ -191,7 +191,10 @@ messages, and behavior belongs in the README; neither is kept here.
        - [x] (b) Voices in CAPTURE's scene, 0.9.2 (catalogue/v26-rack-voices.png):
          the boss and its ring step together (template e82dedd), and the stepped
          bake is retired. All rack windows are drawn before any ink.
-       - [ ] (c) The six continuous knobs into their plates' scenes.
+       - [ ] (c) The ten continuous knobs (six skins) into their plates' scenes:
+         bake.py KNOB_PARTS, 101 frames each, and every part re-run (19 jobs, 1038
+         frames). Sent to DESIGN; awaiting their refit of the knob rects and the
+         run. The import streams frames and wraps parts into 11-column atlases.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

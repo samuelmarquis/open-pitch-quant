@@ -317,6 +317,29 @@ VOICES_ELEMENTS = [
 ]
 VOICES_WINDOW = (-72, -68, 160, 150)
 
+# The continuous knobs (step c), each in its plate's scene through 101
+# positions (value i/100), as open-cepstrum's knob-preview atlases were
+# rendered (their receipts give the presets). Centres are layout.rs's; the
+# rect is the knob's 58 px draw, fitted by diameter (DESIGN refits each to
+# today's drawn size, as for the chickenhead).
+KNOB_FRAMES = 101
+KNOB_WINDOW = (-60, -60, 140, 140)
+KNOB_PARTS = {   # key -> (plate, centre, component, preset)
+    "tonality": ("capture", (184, 560), "knob-hifi", "black"),
+    "ceiling": ("capture", (290, 560), "knob-hifi", "black"),
+    "feel": ("law", (580, 560), "knob-hifi", "black"),
+    "glide": ("law", (672, 560), "knob-hifi", "black"),
+    "threshold": ("law", (580, 672), "knob-hifi", "black"),
+    "purify": ("finish", (810, 560), "knob-heady", "implosion"),
+    "grit": ("finish", (916, 560), "knob-catalin", "butterscotch"),
+    "formant": ("finish", (1022, 560), "knob-leather", "oxblood"),
+    "carry": ("finish", (810, 672), "knob-wood", "ebony"),
+    "coherence": ("finish", (916, 672), "knob-chrome", "heat-tint"),
+}
+KNOB_RECT = 58
+# Strips longer than this many cells wrap into rows (a texture's width).
+ATLAS_COLUMNS = 11
+
 
 def rack_plate_layout(plate):
     x, y, w, h = RACK_PLATES[plate]
@@ -334,6 +357,13 @@ def rack_plate_layout(plate):
                              "fit": "width", "z": "seat", "flags": ["--state", TAB_STATES[0]]})
     if VOICES[0] == plate:
         elements.extend(json.loads(json.dumps(VOICES_ELEMENTS)))
+    for key, (home, (cx, cy), component, preset) in KNOB_PARTS.items():
+        if home == plate:
+            elements.append({"id": key, "component": component,
+                             "rect": [cx - KNOB_RECT / 2, cy - KNOB_RECT / 2, KNOB_RECT, KNOB_RECT],
+                             "fit": "diameter", "z": "seat",
+                             "flags": ["--preset", preset, "--start-deg", "-135", "--end-deg", "-45",
+                                       "--value", "0"]})
     home, (cx, cy), d = SELECTOR
     if home == plate:
         elements.append({"id": "algorithm", "component": "knob-chickenhead",
@@ -353,7 +383,23 @@ def rack_parts(plate):
     if SELECTOR[0] == plate:
         parts.append(("algorithm", "--value", SELECTOR_VALUES,
                       f"algorithm:--value={','.join(SELECTOR_VALUES)}"))
+    n = KNOB_FRAMES
+    for key, (home, *_) in KNOB_PARTS.items():
+        if home == plate:
+            parts.append((key, "--value", [f"{k / (n - 1):.6f}" for k in range(n)],
+                          f"{key}:--value=0..1/{n}"))
     return parts
+
+
+def rack_window(key):
+    """A part's centre and window (dx, dy, w, h), logical px."""
+    if key == "algorithm":
+        return SELECTOR[1], SELECTOR_WINDOW
+    if key == "voices":
+        return VOICES[1], VOICES_WINDOW
+    if key in KNOB_PARTS:
+        return KNOB_PARTS[key][1], KNOB_WINDOW
+    return TABS[key][1], TAB_WINDOW
 
 
 def rack_jobs(base):
@@ -375,10 +421,12 @@ def bake_rack(record, renders=None):
     """Takes the farm's plate frames in (RACK_BASE's out/<plate>/<part>-<i>.png
     and receipts.txt). Each plate's first frame becomes plate-<plate>.png.
     Each part's window is cropped from its frames into rack-<part>.png, one
-    cell per state side by side, its alpha the feathered region its states
-    change. Refuses a plate whose first-state frames disagree, or a part
-    whose change outside its window is more than a few stray pixels (a far
-    rivet catching the part's reflection). No Blender."""
+    cell per state, ATLAS_COLUMNS to a row, its alpha the feathered region
+    its states change most. Refuses a plate whose first-state frames
+    disagree beyond a few stray pixels, or a part whose change outside its
+    window is more than a few stray pixels (a far rivet catching the part's
+    reflection). Streams frames: a plate with knobs holds hundreds. No
+    Blender."""
     import numpy as np
     from PIL import Image, ImageFilter
 
@@ -389,25 +437,32 @@ def bake_rack(record, renders=None):
     noise = 3     # frames of one plate share the seed: max difference far off
     stray = 40    # changed pixels allowed outside a window (2x px)
 
+    def load(path):
+        return np.asarray(Image.open(path).convert("RGBA"), dtype=np.int16)
+
     for plate, (px, py, pw, ph) in RACK_PLATES.items():
         parts = rack_parts(plate)
-        frames = {}
+        paths = {}
         for key, _, values, _ in parts:
-            frames[key] = []
-            for i in range(len(values)):
-                path = farm / "out" / plate / f"{key}-{i}.png"
+            paths[key] = [farm / "out" / plate / f"{key}-{i}.png" for i in range(len(values))]
+            for i, path in enumerate(paths[key]):
                 if not path.exists() or not any(r.endswith(f"{plate}/{key}-{i}.png") for r in receipts):
                     sys.exit(f"rack: {plate}/{key}-{i}.png or its receipt is missing")
-                frames[key].append(np.asarray(Image.open(path).convert("RGBA"), dtype=np.int16))
-        base = frames[parts[0][0]][0]
+        base = load(paths[parts[0][0]][0])
         if base.shape[:2] != (ph * 2, pw * 2):
             sys.exit(f"rack: {plate} frames are {base.shape[1::-1]}, not {(pw * 2, ph * 2)}")
-        for key, *_ in parts:
+        # Each changed pixel belongs to the part that changes it most: a
+        # glossy neighbour mirrors a part's state (the chickenhead shows the
+        # tabs), and a part must never repaint its neighbour.
+        change = np.zeros((len(parts),) + base.shape[:2], np.int16)
+        for n, (key, *_) in enumerate(parts):
             # A few speckled pixels may differ between runs (sampling at an
             # edge: 4 px by 9 in CAPTURE's pass-54 re-run); a scene does not.
-            off = int((np.abs(frames[key][0] - base).max(axis=2) > noise).sum())
+            off = int((np.abs(load(paths[key][0]) - base).max(axis=2) > noise).sum())
             if off > stray:
                 sys.exit(f"rack: {plate}'s first-state frames disagree ({key}, {off} px)")
+            for path in paths[key][1:]:
+                np.maximum(change[n], np.abs(load(path) - base).max(axis=2), out=change[n])
         Image.fromarray(base.astype(np.uint8)).save(VENDOR / f"plate-{plate}.png")
         record[f"plate-{plate}.png"] = {
             "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",
@@ -416,16 +471,10 @@ def bake_rack(record, renders=None):
             "logical": [pw, ph],
             "receipt": [r for r in receipts if f"{plate}/{parts[0][0]}-0.png" in r][-1:],
         }
-        # Each changed pixel belongs to the part that changes it most: a
-        # glossy neighbour mirrors a part's state (the chickenhead shows the
-        # tabs), and a part must never repaint its neighbour.
-        change = np.stack([np.max([np.abs(f - base).max(axis=2) for f in frames[key][1:]], axis=0)
-                           for key, *_ in parts])
         owner = np.where(change.max(axis=0) > noise, change.argmax(axis=0), -1)
+        del change
         for n, (key, flag, values, _) in enumerate(parts):
-            (cx, cy), (dx, dy, w, h) = {"algorithm": (SELECTOR[1], SELECTOR_WINDOW),
-                                        "voices": (VOICES[1], VOICES_WINDOW)}.get(
-                                            key, (TABS.get(key, (None, None))[1], TAB_WINDOW))
+            (cx, cy), (dx, dy, w, h) = rack_window(key)
             x0, y0 = round((cx + dx - px) * 2), round((cy + dy - py) * 2)
             x1, y1 = x0 + w * 2, y0 + h * 2
             changed = owner == n
@@ -441,18 +490,21 @@ def bake_rack(record, renders=None):
             grown = np.asarray(grown) * ~np.pad(theirs, pad)
             alpha = np.asarray(Image.fromarray(grown.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2)),
                                dtype=np.int16)
-            strip = np.zeros((h * 2, w * 2 * len(values), 4), np.uint8)
-            for i, frame in enumerate(frames[key]):
-                cell = np.pad(frame[window], pad + ((0, 0),))
+            columns = min(len(values), ATLAS_COLUMNS)
+            rows = -(-len(values) // columns)
+            atlas = np.zeros((h * 2 * rows, w * 2 * columns, 4), np.uint8)
+            for i, path in enumerate(paths[key]):
+                cell = np.pad(load(path)[window], pad + ((0, 0),))
                 cell[..., 3] = cell[..., 3] * alpha // 255
-                strip[:, i * w * 2:(i + 1) * w * 2] = cell.astype(np.uint8)
-            Image.fromarray(strip).save(VENDOR / f"rack-{key}.png")
+                r, c = divmod(i, columns)
+                atlas[r * h * 2:(r + 1) * h * 2, c * w * 2:(c + 1) * w * 2] = cell.astype(np.uint8)
+            Image.fromarray(atlas).save(VENDOR / f"rack-{key}.png")
             record[f"rack-{key}.png"] = {
                 "kind": "rack part's window per state, cropped from its plate's frames, "
                         "alpha the feathered region its states change most",
-                "plate": plate, "states": [f"{flag}={v}" for v in values],
+                "plate": plate, "states": [f"{flag}={v}" for v in values], "columns": columns,
                 "window_2x": [x0, y0, x1, y1], "stray_px": int(outside.sum()),
-                "receipt": [r for r in receipts if f"{plate}/{key}-" in r],
+                "receipt": [r for r in receipts if f"{plate}/{key}-" in r][:2],
             }
         print("rack", plate, flush=True)
 

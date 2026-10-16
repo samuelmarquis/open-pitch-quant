@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.3** — no visible change: the ten knobs' rack renders are set up
+  and sent to DESIGN's farm.
 - **0.9.2** — LAW's plate is a satin brass, an even gold, in place of
   the mirror brass that read cream with a dark band. Voices' knob and its
   amber ring are part of CAPTURE's render, with real shadows, stepping
