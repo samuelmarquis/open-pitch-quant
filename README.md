@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.1** — no visible change yet: LAW's brass face switches to a satin
+  brass, and the Voices knob is being rendered into CAPTURE's scene. Both
+  arrive in the next build.
 - **0.9.0** — the plates are rendered as one lit scene each: CAPTURE, LAW
   and FINISH, each with its switches and the ALGORITHM selector, under the
   family's shared studio lighting with real shadows. Every two-way switch is

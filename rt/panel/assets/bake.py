@@ -16,7 +16,7 @@ Run from anywhere:
 
 Needs Blender 5.2 (BLENDER, default ~/Applications/Blender.app) for the
 plates, components and housing, ffmpeg for resampling component renders to
-their 2x draw size, and PIL (the dev shell's) for the stepped knob's strip.
+their 2x draw size, and PIL (the dev shell's) for the rack and key imports.
 Paths: TEMPLATE and CEPSTRUM override the sibling checkouts.
 """
 import argparse
@@ -47,7 +47,9 @@ PLATES = {
     # Sam, 2026-10-10: "switch the capture panel to anodized-blue".
     # Three plates fill the rack (Sam: "nix the output panel").
     "plate-capture": (336, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
-    "plate-law": (380, 250, ["--face", "brass", "--fasteners", "screws"]),
+    # Under the rack light the mirror "brass" read cream with a room band;
+    # DESIGN's house call (p217, 27ce85b): brass-bare, an even gold.
+    "plate-law": (380, 250, ["--face", "brass-bare", "--fasteners", "screws"]),
     # Sam on DESIGN's p181: "let's go catalin jade" (the polished plate key).
     "plate-finish": (336, 250, ["--face", "catalin-jade-polished", "--fasteners", "rivets"]),
 }
@@ -61,40 +63,13 @@ PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
 KNOBS = ["hifi-black-turned", "heady", "catalin", "leather-oxblood", "wood-ebony",
          "chrome-heat-tint"]
 
-# Controls rendered here under the family's footprint contract (the knobs'
-# own, extended to the button family by DESIGN, template 6796dcc): render
-# `--footprint 0.5` square, crop the centre [68, 68, 252, 252] of a 320 px
-# frame (here [136, 136, 504, 504] of 640, for density), scale the crop to
-# the slot. One framing for every state, so states swap in register.
-# name -> (generator, flags, 2x slot px). Slots must match layout.rs.
-CONTRACT_RES = 640
-CONTRACT_CROP = (136, 136, 368, 368)  # x, y, w, h
-# (The toggles and the chickenhead were footprint-contract renders here
-# until 0.8.23; they are rack-baked with their plates now: RACK_PLATES.)
-
 # Component renders resampled to their 2x draw size: name -> (source, w, h,
 # crop).
 SPRITES = {}
 
-# Stepped knobs: one footprint-contract render per detent, the knob over
-# its lens ring, cropped and scaled into one cell each of a strip (cell i
-# is step i). Straight alpha. name -> (steps, 2x cell px, crop, knob,
-# ring). The ring straddles the knob beyond its footprint (alpha bounds
-# 105..535 of 640 against the footprint's 136..504), so the crop is wider
-# than the contract's: 440 px, scaled so the knob body keeps the
-# contract's scale (368 px -> 120 px cell), 144 px, 72 logical.
-# Voices: Sam on DESIGN's p180, "Maybe boss-ivory with the knob-ring";
-# DESIGN's recipe (2026-10-10); the ring registers pixel-for-pixel with
-# the boss at its default geometry. Amber lenses against CAPTURE's blue.
-STEPPED = {
-    "knob-voices": (12, 144, (100, 100, 440, 440),
-                    ("knob-boss/generator/knob_scene.py",
-                     ["--body", "pom-white", "--cap", "aluminium-spun", "--detents", "12",
-                      "--start-deg", "-135", "--end-deg", "-45", "--footprint", "0.5"]),
-                    ("knob-ring/generator/knob_scene.py",
-                     ["--segments", "12", "--from", "0", "--start-deg", "-135", "--end-deg", "-45",
-                      "--hue", "amber"])),
-}
+# The toggles and the chickenhead (until 0.9.0) and Voices' stepped knob
+# (until 0.9.1) were footprint-contract renders here; they are rack-baked
+# with their plates now (RACK_PLATES).
 
 # The monitor housing, baked through the template's composer (rack.py) at
 # this board's monitor (layout.rs MONITOR, SCREEN), DESIGN's recipe for
@@ -145,60 +120,6 @@ def blender_render(generator, out, flags):
         if Path(out).exists() and receipt:
             return args[5:], receipt[-1]
     sys.exit(f"{generator}: render failed (exit {run.returncode})\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
-
-
-def bake_stepped(record, renders=None):
-    """With `renders` (a directory of the farm's NAME-knob-K.png and
-    NAME-ring-K.png and their receipts, receipts.txt), only composites; no
-    Blender. Without it, renders here, which only a farm host may."""
-    from PIL import Image  # the dev shell's; only this step needs it
-
-    if renders is None:
-        no_local_blender()
-    (VENDOR / "knobs").mkdir(exist_ok=True)
-    farm_receipts = (Path(renders) / "receipts.txt").read_text().splitlines() if renders else []
-    with tempfile.TemporaryDirectory() as temp:
-        for name, (steps, cell, crop, (knob_gen, knob_flags), (ring_gen, ring_flags)) in STEPPED.items():
-            cx, cy, cw, ch = crop
-            strip = Image.new("RGBA", (cell * steps, cell))
-            receipts = []
-            for k in range(steps):
-                value = f"{k / (steps - 1):.6f}"
-                knob_flags_k = [*knob_flags, "--value", value, "--res", str(CONTRACT_RES)]
-                ring_flags_k = [*ring_flags, "--value", value, "--res", str(CONTRACT_RES)]
-                if renders:
-                    knob = Path(renders) / f"{name}-knob-{k}.png"
-                    ring = Path(renders) / f"{name}-ring-{k}.png"
-                    knob_args, ring_args = knob_flags_k, ring_flags_k
-                    knob_receipt = next((r for r in farm_receipts if knob.name in r), None)
-                    ring_receipt = next((r for r in farm_receipts if ring.name in r), None)
-                    if not (knob.exists() and ring.exists() and knob_receipt and ring_receipt):
-                        sys.exit(f"{name} step {k}: the farm's renders or receipts are missing")
-                else:
-                    knob = Path(temp) / f"{name}-knob-{k}.png"
-                    ring = Path(temp) / f"{name}-ring-{k}.png"
-                    knob_args, knob_receipt = blender_render(knob_gen, knob, knob_flags_k)
-                    ring_args, ring_receipt = blender_render(ring_gen, ring, ring_flags_k)
-                # The knob over its ring, then the contract's crop.
-                frame = Image.alpha_composite(Image.open(ring).convert("RGBA"),
-                                              Image.open(knob).convert("RGBA"))
-                frame = frame.crop((cx, cy, cx + cw, cy + ch)).resize((cell, cell), Image.LANCZOS)
-                strip.paste(frame, (k * cell, 0))
-                receipts.append([knob_receipt, ring_receipt])
-                print("stepped", name, k, flush=True)
-            target = VENDOR / "knobs" / f"{name}.png"
-            strip.save(target)
-            record[f"knobs/{target.name}"] = {
-                "kind": "stepped knob strip: knob over ring, one cell per step",
-                "knob": {"generator": f"open-plugin-template/components/{knob_gen}", "args": knob_args},
-                "ring": {"generator": f"open-plugin-template/components/{ring_gen}", "args": ring_args},
-                "values": "k / (steps - 1), k = 0..steps-1 (the receipts' --value)",
-                "crop": list(crop),
-                "cell": [cell, cell],
-                "steps": steps,
-                "resample": "PIL lanczos, straight alpha",
-                "receipts": receipts,
-            }
 
 
 def bake_housing(record, renders=None):
@@ -381,6 +302,22 @@ SELECTOR_WINDOW = (-70, -70, 160, 160)
 RACK_BASE = "design-lab/passes/54-opq-rack"
 
 
+# Voices (step b): knob-boss over knob-ring, stepping together through its
+# 12 detents (rack drives both from one state list, template e82dedd). Fits
+# are DESIGN's, measured against v25: boss 55 px, ring 70, both seated.
+VOICES = ("capture", (78, 560))
+VOICES_STEPS = 12
+VOICES_ELEMENTS = [
+    {"id": "voices-ring", "component": "knob-ring", "rect": [43, 525, 70, 70], "fit": "diameter",
+     "z": "seat", "flags": ["--segments", "12", "--from", "0", "--start-deg", "-135",
+                            "--end-deg", "-45", "--hue", "amber", "--value", "0"]},
+    {"id": "voices", "component": "knob-boss", "rect": [50.5, 532.5, 55, 55], "fit": "diameter",
+     "z": "seat", "flags": ["--body", "pom-white", "--cap", "aluminium-spun", "--detents", "12",
+                            "--start-deg", "-135", "--end-deg", "-45", "--value", "0"]},
+]
+VOICES_WINDOW = (-72, -68, 160, 150)
+
+
 def rack_plate_layout(plate):
     x, y, w, h = RACK_PLATES[plate]
     face = PLATES[f"plate-{plate}"][2]
@@ -395,6 +332,8 @@ def rack_plate_layout(plate):
             elements.append({"id": key, "component": "toggle-tab",
                              "rect": [cx - TAB / 2, cy - TAB / 2, TAB, TAB],
                              "fit": "width", "z": "seat", "flags": ["--state", TAB_STATES[0]]})
+    if VOICES[0] == plate:
+        elements.extend(json.loads(json.dumps(VOICES_ELEMENTS)))
     home, (cx, cy), d = SELECTOR
     if home == plate:
         elements.append({"id": "algorithm", "component": "knob-chickenhead",
@@ -404,10 +343,16 @@ def rack_plate_layout(plate):
 
 
 def rack_parts(plate):
-    """A plate's stateful parts: (id, flag, values)."""
-    parts = [(key, "--state", TAB_STATES) for key, (home, _) in TABS.items() if home == plate]
+    """A plate's stateful parts: (id, flag, values, the --states argument)."""
+    parts = [(key, "--state", TAB_STATES, f"{key}:--state={','.join(TAB_STATES)}")
+             for key, (home, _) in TABS.items() if home == plate]
+    if VOICES[0] == plate:
+        n = VOICES_STEPS
+        parts.append(("voices", "--value", [f"{k / (n - 1):.6f}" for k in range(n)],
+                      f"voices,voices-ring:--value=0..1/{n}"))
     if SELECTOR[0] == plate:
-        parts.append(("algorithm", "--value", SELECTOR_VALUES))
+        parts.append(("algorithm", "--value", SELECTOR_VALUES,
+                      f"algorithm:--value={','.join(SELECTOR_VALUES)}"))
     return parts
 
 
@@ -416,12 +361,12 @@ def rack_jobs(base):
     under `base` (relative to the template root)."""
     jobs = []
     for plate in RACK_PLATES:
-        for key, flag, values in rack_parts(plate):
+        for key, flag, values, states in rack_parts(plate):
             outs = [f"{base}/out/{plate}/{key}-{i}.png" for i in range(len(values))]
             jobs.append({"argv": ["BLENDER", "-b", "-P", "components/_studio/rack.py", "--",
                                   f"{base}/layouts/{plate}.json",
                                   f"{base}/out/{plate}/{key}-{{i}}.png", "--density", "2",
-                                  "--states", f"{key}:{flag}={','.join(values)}"],
+                                  "--states", states],
                          "outputs": outs})
     return {"root": str(TEMPLATE), "sync": ["components", f"{base}/layouts"], "jobs": jobs}
 
@@ -447,7 +392,7 @@ def bake_rack(record, renders=None):
     for plate, (px, py, pw, ph) in RACK_PLATES.items():
         parts = rack_parts(plate)
         frames = {}
-        for key, _, values in parts:
+        for key, _, values, _ in parts:
             frames[key] = []
             for i in range(len(values)):
                 path = farm / "out" / plate / f"{key}-{i}.png"
@@ -457,7 +402,7 @@ def bake_rack(record, renders=None):
         base = frames[parts[0][0]][0]
         if base.shape[:2] != (ph * 2, pw * 2):
             sys.exit(f"rack: {plate} frames are {base.shape[1::-1]}, not {(pw * 2, ph * 2)}")
-        for key, _, _ in parts:
+        for key, *_ in parts:
             if np.abs(frames[key][0] - base).max() > noise:
                 sys.exit(f"rack: {plate}'s first-state frames disagree ({key})")
         Image.fromarray(base.astype(np.uint8)).save(VENDOR / f"plate-{plate}.png")
@@ -472,11 +417,12 @@ def bake_rack(record, renders=None):
         # glossy neighbour mirrors a part's state (the chickenhead shows the
         # tabs), and a part must never repaint its neighbour.
         change = np.stack([np.max([np.abs(f - base).max(axis=2) for f in frames[key][1:]], axis=0)
-                           for key, _, _ in parts])
+                           for key, *_ in parts])
         owner = np.where(change.max(axis=0) > noise, change.argmax(axis=0), -1)
-        for n, (key, flag, values) in enumerate(parts):
-            (cx, cy), (dx, dy, w, h) = ((SELECTOR[1], SELECTOR_WINDOW) if key == "algorithm"
-                                        else (TABS[key][1], TAB_WINDOW))
+        for n, (key, flag, values, _) in enumerate(parts):
+            (cx, cy), (dx, dy, w, h) = {"algorithm": (SELECTOR[1], SELECTOR_WINDOW),
+                                        "voices": (VOICES[1], VOICES_WINDOW)}.get(
+                                            key, (TABS.get(key, (None, None))[1], TAB_WINDOW))
             x0, y0 = round((cx + dx - px) * 2), round((cy + dy - py) * 2)
             x1, y1 = x0 + w * 2, y0 + h * 2
             changed = owner == n
@@ -612,10 +558,10 @@ def copy_files(record):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", nargs="*", default=["rack", "stepped", "housing",
+    parser.add_argument("--only", nargs="*", default=["rack", "housing",
                                                       "keys", "glass", "knobs", "sprites", "copies"])
     parser.add_argument("--renders",
-                        help="the farm's renders (plates, stepped knob, housing): take them in, no Blender")
+                        help="the farm's renders (rack plates, housing, keys, glass): take them in, no Blender")
     parser.add_argument("--jobs", metavar="DIR",
                         help="write the farm's job files (keys.json) into DIR and stop")
     args = parser.parse_args()
@@ -627,7 +573,6 @@ def main():
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     record = manifest.setdefault("files", {})
     steps = {"rack": lambda record: bake_rack(record, args.renders),
-             "stepped": lambda record: bake_stepped(record, args.renders),
              "housing": lambda record: bake_housing(record, args.renders),
              "keys": lambda record: pack_viewer_keys(record, args.renders),
              "glass": lambda record: bake_glass(record, args.renders),
@@ -645,7 +590,7 @@ def main():
     # A source's commit is the one this run drew from: only a step that took
     # files from it moves it (a housing import leaves cep's knobs dated).
     sources = manifest.setdefault("sources", {})
-    if {"rack", "stepped", "housing", "keys", "glass", "sprites"} & set(args.only):
+    if {"rack", "housing", "keys", "glass", "sprites"} & set(args.only):
         sources["open-plugin-template"] = git_head(TEMPLATE)
     if {"knobs", "copies"} & set(args.only):
         sources["open-cepstrum"] = git_head(CEPSTRUM)

@@ -185,11 +185,14 @@ messages, and behavior belongs in the README; neither is kept here.
          pass 54 (template 754a813). The import gives each changed pixel to the
          part that changes it most, because the glossy chickenhead mirrors the
          tabs.
-       - [ ] LAW's polished brass (matlib "brass", finish mirror) reads as cream
-         with a dark band under the rack light, and the dark legends lose contrast
-         on the band. That's a new look, so it's been asked for as a plate: brass
-         against brass-bare (satin).
-       - [ ] (b) Voices' stepped knob into the CAPTURE scene.
+       - [ ] LAW's face is brass-bare (DESIGN's house call under the standing
+         ruling, p217, 27ce85b). The mirror brass read cream with a room band.
+         Re-baked and mirrored in bake.py; it ships with (b).
+       - [ ] (b) Voices' stepped knob into the CAPTURE scene: the boss and
+         its ring step together (rack drives several elements from one state list,
+         template e82dedd). The CAPTURE jobs re-run on the farm with Voices in the
+         scene. The panel side (RACK_PARTS gains Voices, the stepped bake retires)
+         is written but uncommitted until the frames land.
        - [ ] (c) The six continuous knobs into their plates' scenes.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
