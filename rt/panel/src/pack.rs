@@ -10,7 +10,8 @@ panelkit::pack! {
     /// Voices' stepped knob, the boss over its lens ring: one cell per
     /// step (bake.py STEPPED).
     KNOB_VOICES = "assets/vendor/knobs/knob-voices.png";
-    /// The rack plates, panel-board bakes at exactly their 2x size.
+    /// The rack plates: each plate's rack scene (its switches and LAW's
+    /// chickenhead in their first state) at exactly 2x.
     PLATE_CAPTURE = "assets/vendor/plate-capture.png";
     PLATE_LAW = "assets/vendor/plate-law.png";
     PLATE_FINISH = "assets/vendor/plate-finish.png";
@@ -21,11 +22,17 @@ panelkit::pack! {
     KNOB_LEATHER = "assets/vendor/knobs/knob-leather-oxblood.png";
     KNOB_EBONY = "assets/vendor/knobs/knob-wood-ebony.png";
     KNOB_HEAT_TINT = "assets/vendor/knobs/knob-chrome-heat-tint.png";
-    /// The algorithm's chickenhead at its two positions.
-    SELECTOR_HOUSE = "assets/vendor/selector-house.png";
-    SELECTOR_ORACLE = "assets/vendor/selector-oracle.png";
-    TOGGLE_UP = "assets/vendor/toggle-up.png";
-    TOGGLE_DOWN = "assets/vendor/toggle-down.png";
+    /// The parts baked with the plates (bake.py RACK_PLATES): each one's
+    /// cell, cropped from its plate's frames, one cell per state, side by
+    /// side (down then up; HOUSE then ORACLE).
+    RACK_GATE_MODE = "assets/vendor/rack-gate-mode.png";
+    RACK_UNOWNED = "assets/vendor/rack-unowned.png";
+    RACK_TRANSIENTS = "assets/vendor/rack-transients.png";
+    RACK_SOURCE = "assets/vendor/rack-source.png";
+    RACK_SCOPE = "assets/vendor/rack-scope.png";
+    RACK_ROUNDING = "assets/vendor/rack-rounding.png";
+    RACK_TRANSITIONS = "assets/vendor/rack-transitions.png";
+    RACK_ALGORITHM = "assets/vendor/rack-algorithm.png";
     /// The viewer keys, one straight-alpha row in layout::Viewer::ALL order,
     /// each key's inactive then active 128x32 cell (bake.py VIEWER_KEYS).
     VIEWER_KEYS = "assets/vendor/viewer-keys.png";
@@ -38,3 +45,9 @@ panelkit::pack! {
 
 /// The knob atlases in layout::Skin order.
 pub const KNOBS: [&str; 6] = [KNOB_HIFI, KNOB_HEADY, KNOB_CATALIN, KNOB_LEATHER, KNOB_EBONY, KNOB_HEAT_TINT];
+
+/// The rack-baked parts in layout::RACK_PARTS order.
+pub const RACK_PARTS: [&str; 8] = [
+    RACK_GATE_MODE, RACK_UNOWNED, RACK_TRANSIENTS, RACK_SOURCE, RACK_SCOPE, RACK_ROUNDING,
+    RACK_TRANSITIONS, RACK_ALGORITHM,
+];

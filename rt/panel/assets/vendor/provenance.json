@@ -348,210 +348,445 @@
    "template": "bd863d6"
   },
   "plate-capture.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.ftGjLN/tmpvxts1tqn/plate-capture.png",
-    "--w",
-    "3.36",
-    "--h",
-    "2.5",
-    "--face",
-    "anodized-blue",
-    "--fasteners",
-    "screws",
-    "--edge",
-    "flat",
-    "--corner",
-    ".015",
-    "--bevel",
-    ".04",
-    "--bevel-segments",
-    "4",
-    "--ortho-px",
-    "200",
-    "--samples",
-    "160"
-   ],
-   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
-   "kind": "plate",
+   "generator": "open-plugin-template/components/_studio/rack.py",
+   "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",
+   "layout": {
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       3.36,
+       "--h",
+       2.5,
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16,
+       494,
+       336,
+       250
+      ]
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "gate-mode",
+      "rect": [
+       63.0,
+       657.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "unowned",
+      "rect": [
+       169.0,
+       657.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "transients",
+      "rect": [
+       275.0,
+       657.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     }
+    ],
+    "frame": [
+     16,
+     494,
+     336,
+     250
+    ],
+    "px_per_unit": 100
+   },
    "logical": [
     336,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=anodized-blue fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=3.36 [ortho:672x500 200px/unit] -> /Users/servo-critter/farm/open-plugin-template/design-lab/farm-out/opq/plate-capture.png",
-   "sha256": "baba874c59933bc15ac0508ecef31e8dfac8c1aa761d19cff2024f346ee7b384"
+   "receipt": [
+    "461e58a5d6cee61cfc1978cd0c8a6fb5 672x500 out/capture/gate-mode-0.png"
+   ],
+   "sha256": "b25431aa7af581f1fb25246f25d24ba63038d00b8cff01529a462b4be4fdf1ed"
   },
   "plate-finish.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.ftGjLN/tmpvxts1tqn/plate-finish.png",
-    "--w",
-    "3.36",
-    "--h",
-    "2.5",
-    "--face",
-    "catalin-jade-polished",
-    "--fasteners",
-    "rivets",
-    "--edge",
-    "flat",
-    "--corner",
-    ".015",
-    "--bevel",
-    ".04",
-    "--bevel-segments",
-    "4",
-    "--ortho-px",
-    "200",
-    "--samples",
-    "160"
-   ],
-   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
-   "kind": "plate",
+   "generator": "open-plugin-template/components/_studio/rack.py",
+   "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",
+   "layout": {
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       3.36,
+       "--h",
+       2.5,
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748,
+       494,
+       336,
+       250
+      ]
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "transitions",
+      "rect": [
+       1007.0,
+       657.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     }
+    ],
+    "frame": [
+     748,
+     494,
+     336,
+     250
+    ],
+    "px_per_unit": 100
+   },
    "logical": [
     336,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=catalin-jade-polished fastener=steel-hw fasteners=rivets h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=3.36 [bound:face.pointer_w=0.130431] [bound:face.pointer_r0=0.268535] [bound:face.pointer_zmin=-0.0448] [ortho:672x500 200px/unit] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/plate-finish.png",
-   "sha256": "52984c08f8831f4416673ee0cffce685fec46822759fcaf2c4f95217e60bc3e3"
+   "receipt": [
+    "2237e7d5668d0bd2bb75270ab65e35eb 672x500 out/finish/transitions-0.png"
+   ],
+   "sha256": "455364710c9ae782bf6e589533e99af30f66ae191827a397385fed09d21dd3ee"
   },
   "plate-law.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/nix-shell.ftGjLN/tmpvxts1tqn/plate-law.png",
-    "--w",
-    "3.8",
-    "--h",
-    "2.5",
-    "--face",
-    "brass",
-    "--fasteners",
-    "screws",
-    "--edge",
-    "flat",
-    "--corner",
-    ".015",
-    "--bevel",
-    ".04",
-    "--bevel-segments",
-    "4",
-    "--ortho-px",
-    "200",
-    "--samples",
-    "160"
-   ],
-   "generator": "open-plugin-template/components/panel-board/generator/panel_scene.py",
-   "kind": "plate",
+   "generator": "open-plugin-template/components/_studio/rack.py",
+   "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",
+   "layout": {
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       3.8,
+       "--h",
+       2.5,
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360,
+       494,
+       380,
+       250
+      ]
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "source",
+      "rect": [
+       397.0,
+       661.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "scope",
+      "rect": [
+       477.0,
+       661.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "rounding",
+      "rect": [
+       657.0,
+       657.0,
+       30,
+       30
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "knob-chickenhead",
+      "fit": "diameter",
+      "flags": [
+       "--color",
+       "black",
+       "--value",
+       "0.25"
+      ],
+      "id": "algorithm",
+      "rect": [
+       385.0,
+       525.0,
+       102,
+       102
+      ]
+     }
+    ],
+    "frame": [
+     360,
+     494,
+     380,
+     250
+    ],
+    "px_per_unit": 100
+   },
    "logical": [
     380,
     250
    ],
-   "receipt": "panel-board adaptive=on bevel=0.04 bevel-segments=4 bezel=same corner=0.015 corner-n=4 dark=off denoise=on edge=flat face=brass fastener=steel-hw fasteners=screws h=2.5 handled=0 insert=acrylic-smoke ortho-px=200 oxidization=-1 preset=none raw=off res=512 samples=160 scale=1 scratches=0 seed=0 stitch=none stitch-inset=0.14 stitch-pitch=0.11 tab=0 tab-depth=0.22 tab-edge=top tab-pos=0.5 tarnish=0 thread=thread-waxed-cream tilt=0 title='' title-cap=0.1 title-emit=1 title-font=mono-bold title-gap=0.026 title-lit=all title-top=0.23 undulate=0 w=3.8 [ortho:760x500 200px/unit] -> /Users/programchild/farm/open-plugin-template/design-lab/farm-out/opq/plate-law.png",
-   "sha256": "0386a217bdcff02fd37ef0935f60885f1574f10b233cc93338f7405406624cd3"
+   "receipt": [
+    "99708cf07feb83e8bc0ee3cfa6ca84ed 760x500 out/law/source-0.png"
+   ],
+   "sha256": "0ece8d59471a1d638b7bf334de3bad651edfe693ee877b4df9f4e98e7240aac6"
   },
-  "selector-house.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-house.png",
-    "--color",
-    "black",
-    "--value",
-    "0.25",
-    "--footprint",
-    "0.5",
-    "--res",
-    "640"
+  "rack-algorithm.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "law",
+   "receipt": [
+    "211d96585ab8ab79b7912ee46bcc04e4 760x500 out/law/algorithm-0.png",
+    "f66f2a9420d38c8b672d198ca8eaa07c 760x500 out/law/algorithm-1.png"
    ],
-   "crop": [
-    136,
-    136,
-    368,
-    368
+   "sha256": "e6815a1815768c032ea8a2c6bc7738b287362e65347ccbbe61b75bba1509134b",
+   "states": [
+    "--value=0.25",
+    "--value=0.75"
    ],
-   "generator": "open-plugin-template/components/knob-chickenhead/generator/knob_scene.py",
-   "kind": "component render, footprint contract",
-   "receipt": "knob-chickenhead adaptive=on angle=none body=bakelite-solid denoise=on detents=5 end-deg=30 footprint=0.5 indicator=same preset=black raw=off res=640 samples=220 scale=1 seed=0 start-deg=150 value=0.25 [alias --color as --preset] [footprint:native=0.581095,factor=0.860444] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-house.png",
-   "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "7ffe01f4a950a7f29cd2a648909a4c9b9b78316fa2e45c01894d9d0cc72c74c9",
-   "size": [
-    176,
-    176
+   "stray_px": 0,
+   "window_2x": [
+    12,
+    24,
+    332,
+    344
    ]
   },
-  "selector-oracle.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-oracle.png",
-    "--color",
-    "black",
-    "--value",
-    "0.75",
-    "--footprint",
-    "0.5",
-    "--res",
-    "640"
+  "rack-gate-mode.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "capture",
+   "receipt": [
+    "461e58a5d6cee61cfc1978cd0c8a6fb5 672x500 out/capture/gate-mode-0.png",
+    "381bf356ee038c88141387f7647b62dd 672x500 out/capture/gate-mode-1.png"
    ],
-   "crop": [
-    136,
-    136,
-    368,
-    368
+   "sha256": "25e6a7dae0144d38fda2222b7a5f0408b5f13be18e3b128a1274cc957afb59b3",
+   "states": [
+    "--state=down",
+    "--state=up"
    ],
-   "generator": "open-plugin-template/components/knob-chickenhead/generator/knob_scene.py",
-   "kind": "component render, footprint contract",
-   "receipt": "knob-chickenhead adaptive=on angle=none body=bakelite-solid denoise=on detents=5 end-deg=30 footprint=0.5 indicator=same preset=black raw=off res=640 samples=220 scale=1 seed=0 start-deg=150 value=0.75 [alias --color as --preset] [footprint:native=0.581095,factor=0.860444] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/selector-oracle.png",
-   "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "0f4fb04d4f2419783d7501fe59eb2f6174bcba6933bcfb66683250cc44497e85",
-   "size": [
-    176,
-    176
+   "stray_px": 0,
+   "window_2x": [
+    -4,
+    244,
+    284,
+    516
    ]
   },
-  "toggle-down.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-down.png",
-    "--state",
-    "down",
-    "--footprint",
-    "0.5",
-    "--res",
-    "640"
+  "rack-rounding.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "law",
+   "receipt": [
+    "1cb95e897af7d87f85831ae43c818812 760x500 out/law/rounding-0.png",
+    "cda95f583ae2d2b67a9cdaddba59c5d0 760x500 out/law/rounding-1.png"
    ],
-   "crop": [
-    136,
-    136,
-    368,
-    368
+   "sha256": "6914e5f72adf48adc3692834997a6e0be99f2816a98dca70d49d420018314fb0",
+   "states": [
+    "--state=down",
+    "--state=up"
    ],
-   "generator": "open-plugin-template/components/toggle-bat/generator/toggle_scene.py",
-   "kind": "component render, footprint contract",
-   "receipt": "toggle-bat adaptive=on body=steel-dark denoise=on footprint=0.5 lever=chrome-plain nut=steel-bare preset=none raw=off res=640 samples=240 scale=1 seed=0 state=down washer=steel-black-oxide [frame:640x640] [footprint:native=0.224969,factor=2.22253] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-down.png",
-   "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "76f3a50662be7dbbdf59e2ffc5a796c159dca89962ac23fdb46f482481a6bc68",
-   "size": [
-    88,
-    88
+   "stray_px": 0,
+   "window_2x": [
+    496,
+    244,
+    784,
+    516
    ]
   },
-  "toggle-up.png": {
-   "args": [
-    "/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-up.png",
-    "--state",
-    "up",
-    "--footprint",
-    "0.5",
-    "--res",
-    "640"
+  "rack-scope.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "law",
+   "receipt": [
+    "ecd46713865b618f2b7198bb1aa059d5 760x500 out/law/scope-0.png",
+    "6223c6439247639e5b05233f56f42c28 760x500 out/law/scope-1.png"
    ],
-   "crop": [
-    136,
-    136,
-    368,
-    368
+   "sha256": "1325fefafbcb40501fd87f4abbe19584b18452e282402417089a6ab6d476dfaa",
+   "states": [
+    "--state=down",
+    "--state=up"
    ],
-   "generator": "open-plugin-template/components/toggle-bat/generator/toggle_scene.py",
-   "kind": "component render, footprint contract",
-   "receipt": "toggle-bat adaptive=on body=steel-dark denoise=on footprint=0.5 lever=chrome-plain nut=steel-bare preset=none raw=off res=640 samples=240 scale=1 seed=0 state=up washer=steel-black-oxide [frame:640x640] [footprint:native=0.224969,factor=2.22253] -> /private/var/folders/fm/qr1c781d34s3l5hbjy5j0lb00000gn/T/tmpuqzze4w_/toggle-up.png",
-   "resample": "ffmpeg lanczos, straight alpha",
-   "sha256": "bd9e138fba45e00c06f757ebac6b2ac80fc020b39a9c336a665619a86ea8c718",
-   "size": [
-    88,
-    88
+   "stray_px": 1,
+   "window_2x": [
+    136,
+    252,
+    424,
+    524
+   ]
+  },
+  "rack-source.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "law",
+   "receipt": [
+    "99708cf07feb83e8bc0ee3cfa6ca84ed 760x500 out/law/source-0.png",
+    "3b61515d708974fbfb13d117ec7f7fb7 760x500 out/law/source-1.png"
+   ],
+   "sha256": "413a608dabf9a47b0c375817c89496d14bd2cd5d0a654ed515305fea634926db",
+   "states": [
+    "--state=down",
+    "--state=up"
+   ],
+   "stray_px": 39,
+   "window_2x": [
+    -24,
+    252,
+    264,
+    524
+   ]
+  },
+  "rack-transients.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "capture",
+   "receipt": [
+    "1502a4edbd3f6c87917d0d6f9f92820b 672x500 out/capture/transients-0.png",
+    "c58cb28bc464136e8b67a069de760d5a 672x500 out/capture/transients-1.png"
+   ],
+   "sha256": "e31c03c94d1145f4964df8c3b9c8642a6e0122237296c3a6839a60012d44ce73",
+   "states": [
+    "--state=down",
+    "--state=up"
+   ],
+   "stray_px": 1,
+   "window_2x": [
+    420,
+    244,
+    708,
+    516
+   ]
+  },
+  "rack-transitions.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "finish",
+   "receipt": [
+    "2237e7d5668d0bd2bb75270ab65e35eb 672x500 out/finish/transitions-0.png",
+    "2297e5f4526956fc10dfa940d5836924 672x500 out/finish/transitions-1.png"
+   ],
+   "sha256": "5d6e335379d8b4cb91fa22af4ec88e09581318b1917d62c21dc24b4681b3543a",
+   "states": [
+    "--state=down",
+    "--state=up"
+   ],
+   "stray_px": 11,
+   "window_2x": [
+    420,
+    244,
+    708,
+    516
+   ]
+  },
+  "rack-unowned.png": {
+   "kind": "rack part's window per state, cropped from its plate's frames, alpha the feathered region its states change most",
+   "plate": "capture",
+   "receipt": [
+    "e701f6903643ea7aa8764dae590da2ff 672x500 out/capture/unowned-0.png",
+    "f93aed19b6327c931b609fceb2535cc5 672x500 out/capture/unowned-1.png"
+   ],
+   "sha256": "7a2f464268ccde637bbfd2f63831cc6be60bf62fc2392f6ed1ab33f6126f6167",
+   "states": [
+    "--state=down",
+    "--state=up"
+   ],
+   "stray_px": 0,
+   "window_2x": [
+    208,
+    244,
+    496,
+    516
    ]
   },
   "viewer-keys.png": {
@@ -749,6 +984,6 @@
  },
  "sources": {
   "open-cepstrum": "5b5d34906924870f023dbd0d29d041cde7e143e4",
-  "open-plugin-template": "73fa7f3161ff419f41c9876c2f3fec86433d22fc"
+  "open-plugin-template": "754a813ca2ab6f6f8b5b1fb1fe5e87f348426bbc"
  }
 }

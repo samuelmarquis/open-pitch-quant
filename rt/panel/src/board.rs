@@ -66,7 +66,6 @@ const KNOB_SHADOW: [(f32, f32, f32, f32); 4] = [
     (3.0, 5.2, 1.12, 0.04),
 ];
 const KNOB_FILL: f32 = 1.03;
-const SWITCH_SHADOW: [(f32, f32, f32, f32); 2] = [(0.8, 1.6, 1.0, 0.30), (1.8, 3.2, 1.06, 0.12)];
 
 /// The ladders: a second of frames per column (47 a second at 48 kHz),
 /// the rungs the tracker reads (audiokit's 20 harmonics), and a column's
@@ -103,8 +102,8 @@ struct Textures {
     knobs: [usize; 6],
     /// Voices' stepped strip, one cell per step.
     voices: usize,
-    selector: [usize; 2],
-    toggle: [usize; 2],
+    /// The rack-baked parts' cell strips, in layout::RACK_PARTS order.
+    parts: [usize; 8],
     /// The viewer keys' row: each key up, then lit.
     viewer_keys: usize,
     /// The screen's glass: the vignette's mask, then the reflection.
@@ -170,8 +169,13 @@ impl Board {
                 knobs
             },
             voices: up(pack::KNOB_VOICES)?,
-            selector: [up(pack::SELECTOR_HOUSE)?, up(pack::SELECTOR_ORACLE)?],
-            toggle: [up(pack::TOGGLE_DOWN)?, up(pack::TOGGLE_UP)?],
+            parts: {
+                let mut parts = [0; 8];
+                for (slot, key) in parts.iter_mut().zip(pack::RACK_PARTS) {
+                    *slot = up(key)?;
+                }
+                parts
+            },
             viewer_keys: up(pack::VIEWER_KEYS)?,
             glass: [vig, up(pack::GLASS_REFL)?],
         };
@@ -685,6 +689,16 @@ impl Board {
         }
     }
 
+    /// A rack-baked part at one state: its cell, cut from its plate's
+    /// frame at that state, laid over the plate (which holds the first).
+    fn rack_part(&mut self, widget: &Widget, state: usize) {
+        let Some((index, rect)) = layout::rack_cell(widget) else { return };
+        let texture = self.t.parts[index];
+        let (w, h) = (self.textures[texture].width, self.textures[texture].height);
+        let cell = w / 2.0;
+        self.sprite(texture, rect, Rect::new(state as f32 * cell, 0.0, cell, h), WHITE, paint::ART, 0);
+    }
+
     fn widget(&mut self, state: &PanelState, widget: &Widget) {
         let id = widget.id();
         let value = state.params.get(id);
@@ -718,27 +732,19 @@ impl Board {
             }
             Kind::Toggle(down, up) => {
                 let on = value >= 0.5;
-                let texture = self.t.toggle[usize::from(on)];
-                let (w, h) = layout::TOGGLE;
-                let rect = Rect::new(cx - w * 0.5, cy - h * 0.5, w, h);
-                let source = Rect::new(0.0, 0.0, self.textures[texture].width, self.textures[texture].height);
-                widgets::cast_shadow(self, texture, rect, source, &SWITCH_SHADOW);
-                self.sprite(texture, rect, source, WHITE, paint::ART, 0);
-                // The two positions, the live one lit in the value ink.
+                self.rack_part(widget, usize::from(on));
+                // The two positions, clear of the tab's reach, the live one
+                // lit in the value ink.
+                let h = layout::TOGGLE.1;
                 let lit = value_ink(widget.plate);
                 let (up_ink, down_ink) = if on { (lit, opacity(ink, 0.45)) } else { (opacity(ink, 0.45), lit) };
-                self.text(cx, cy - h * 0.5 - 11.0, up, VALUE, up_ink, true);
-                self.text(cx, cy + h * 0.5 - 1.0, down, VALUE, down_ink, true);
+                self.text(cx, cy - h * 0.5 - 12.0, up, VALUE, up_ink, true);
+                self.text(cx, cy + h * 0.5, down, VALUE, down_ink, true);
                 self.caption(widget, ink, hovered);
             }
             Kind::Selector => {
                 let oracle = value >= 0.5;
-                let texture = self.t.selector[usize::from(oracle)];
-                let s = layout::SELECTOR_DRAW;
-                let rect = Rect::new(cx - s * 0.5, cy - s * 0.5, s, s);
-                let source = Rect::new(0.0, 0.0, self.textures[texture].width, self.textures[texture].height);
-                widgets::cast_shadow(self, texture, rect, source, &SWITCH_SHADOW);
-                self.sprite(texture, rect, source, WHITE, paint::ART, 0);
+                self.rack_part(widget, usize::from(oracle));
                 let lit = value_ink(widget.plate);
                 let dim = opacity(ink, 0.45);
                 // Each name sits where the pointer stands for it, clear of

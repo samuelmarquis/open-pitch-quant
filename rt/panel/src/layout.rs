@@ -121,12 +121,23 @@ pub fn house_feel_text(feel: opq_engine::HouseFeel) -> String {
 
 /// Knob, toggle and selector draw sizes.
 pub const KNOB: f32 = 58.0;
-/// Slots under the family's footprint contract (bake.py's
-/// COMPONENT_RENDERS): the bat toggle fills about 87% x 92% of its square
-/// slot, the chickenhead 51% x 91%.
-pub const TOGGLE: (f32, f32) = (44.0, 44.0);
+/// A switch's extent: toggle-tab fitted at 30 px wide, its lever reaching
+/// 31 px either side of centre (Sam, p214 D; measured in pass 51).
+pub const TOGGLE: (f32, f32) = (30.0, 62.0);
 pub const SELECTOR: f32 = 96.0;
+/// The chickenhead's drawn box, which its legends clear.
 pub const SELECTOR_DRAW: f32 = 88.0;
+/// The rack-baked parts' windows (bake.py TAB_WINDOW, SELECTOR_WINDOW):
+/// dx, dy, w, h from the part's centre. A part's change between its states
+/// runs well past it under the rack light (its shadow streaks down and
+/// right); inside its window it keeps only what its states change, as
+/// alpha, so windows may overlap. The import checks nothing spills out.
+pub const TAB_WINDOW: (f32, f32, f32, f32) = (-64.0, -56.0, 144.0, 136.0);
+pub const SELECTOR_WINDOW: (f32, f32, f32, f32) = (-70.0, -70.0, 160.0, 160.0);
+/// The parts baked into the plates through their states, in pack::RACK_PARTS
+/// order.
+pub const RACK_PARTS: [usize; 8] =
+    [p::GATE_MODE, p::UNOWNED, p::TRANSIENT, p::SOURCE, p::SCOPE, p::ROUNDING, p::TRANSITIONS, p::ALGORITHM];
 /// A stepped knob's drawn cell: its knob at the knobs' scale, its ring
 /// round it (bake.py STEPPED: 144 px at 2x).
 pub const STEPPED: f32 = 72.0;
@@ -327,7 +338,7 @@ impl Widget {
         let (w, h) = match self.kind {
             Kind::Knob(_) => (KNOB, KNOB),
             Kind::Stepped => (STEPPED, STEPPED),
-            Kind::Toggle(..) => (TOGGLE.0 + 18.0, TOGGLE.1 + 8.0),
+            Kind::Toggle(..) => (TOGGLE.0 + 18.0, TOGGLE.1 + 4.0),
             Kind::Selector => (SELECTOR, SELECTOR),
             Kind::Text => (MIX_TEXT.w, MIX_TEXT.h),
         };
@@ -355,8 +366,8 @@ impl Widget {
         let half = match self.kind {
             Kind::Knob(_) => KNOB * 0.5,
             Kind::Stepped => STEPPED * 0.5 - 6.0,
-            Kind::Toggle(..) => TOGGLE.1 * 0.5 + 10.0,
-            Kind::Selector => SELECTOR * 0.5 - 4.0,
+            Kind::Toggle(..) => TOGGLE.1 * 0.5 + 9.0,
+            Kind::Selector => SELECTOR * 0.5 - 7.0,
             Kind::Text => MIX_TEXT.h * 0.5,
         };
         self.at.1 + half + 2.0
@@ -397,12 +408,12 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
         w(p::TRANSIENT, Toggle("BEND", "PASS"), (c(2.0), ROW_2), "TRANSIENTS", Capture),
         // LAW: where it goes and how it gets there. The grid's source and
         // its scope sit together on the lower row.
-        w(p::ALGORITHM, Selector, (LAW.x + 76.0, ROW_1 + 22.0), "ALGORITHM", Law),
+        w(p::ALGORITHM, Selector, (LAW.x + 76.0, ROW_1 + 16.0), "ALGORITHM", Law),
         w(p::FEEL, Knob(Hifi), (LAW.x + 220.0, ROW_1), "FEEL", Law),
         w(p::GLIDE, Knob(Hifi), (LAW.x + 312.0, ROW_1), "GLIDE", Law),
         // A two-position control is a switch (Sam, 2026-10-10).
-        w(p::SOURCE, Toggle("MIDI", "KEYS"), (LAW.x + 44.0, ROW_2 + 4.0), "SOURCE", Law),
-        w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 124.0, ROW_2 + 4.0), "SCOPE", Law),
+        w(p::SOURCE, Toggle("MIDI", "KEYS"), (LAW.x + 52.0, ROW_2 + 4.0), "SOURCE", Law),
+        w(p::SCOPE, Toggle("REPEAT", "CUSTOM"), (LAW.x + 132.0, ROW_2 + 4.0), "SCOPE", Law),
         w(p::THRESHOLD, Knob(Hifi), (LAW.x + 220.0, ROW_2), "THRESHOLD", Law),
         w(p::ROUNDING, Toggle("SMART", "NEAREST"), (LAW.x + 312.0, ROW_2), "ROUNDING", Law),
         // FINISH: what the sung result is made of.
@@ -416,6 +427,17 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
         w(p::MIX, Text, centre(MIX_TEXT), "MIX", Bottom),
     ]
 };
+
+/// A rack-baked part's index in RACK_PARTS and its window.
+pub fn rack_cell(widget: &Widget) -> Option<(usize, Rect)> {
+    let index = RACK_PARTS.iter().position(|&id| id == widget.id())?;
+    let (dx, dy, w, h) = match widget.kind {
+        Kind::Selector => SELECTOR_WINDOW,
+        _ => TAB_WINDOW,
+    };
+    let (cx, cy) = widget.at;
+    Some((index, Rect::new(cx + dx, cy + dy, w, h)))
+}
 
 pub fn widget(control: Control) -> Option<&'static Widget> {
     WIDGETS.iter().find(|w| w.control == control)

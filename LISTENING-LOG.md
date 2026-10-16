@@ -769,3 +769,10 @@ bring everybody/everything into the new render idioms and don't block on
 me--if I dislike it, I'll point it out from the plugin interface later".
 From here, migrating into the house idioms ships without a plate. Claude
 picks the house default and logs it here.
+
+**0.9.0 (installed):** the three plates are rack scenes (pass 54), still
+`catalogue/v25-rack-plates.png`. Two new looks surfaced:
+- LAW's mirror brass reads as cream with a dark band under the rack light.
+  It's asked for as a plate (brass against brass-bare), and LAW ships as ruled
+  until Sam picks.
+- CAPTURE's anodized blue and FINISH's jade read as in the pilot.

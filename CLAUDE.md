@@ -131,7 +131,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.8.17 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.9.0 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -157,6 +157,8 @@ convention existed.
   state beside the keys; `rt/engine/src/scales.rs` holds the remap (the scale
   list is `audiokit::scales` since 0.8.9), heard and passed by Sam
   (2026-10-16); 0.8.10 (v21-transform*) opens the lists as panelkit's
-  family menu. The Live
+  family menu. 0.9.0 (v25-rack-plates) bakes the plates as rack scenes
+  (bake.py RACK_PLATES, `--only rack`): toggle-tab switches and the
+  chickenhead in them, drawn as masked per-state windows. The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

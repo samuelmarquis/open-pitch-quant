@@ -181,12 +181,14 @@ messages, and behavior belongs in the README; neither is kept here.
      - [ ] Plates and knobs into the rack (open-comp style). Sam ruled
        p213 B (the rack plate) and p214 D (toggle-tab for all seven switches).
        Since 05a5502 the migration doesn't wait for plates. In order:
-       - [ ] (a) The plates (pass 54 on DESIGN's farm): bake.py RACK_PLATES,
-         `--jobs` writes layouts/ and jobs.json, and `--only rack --renders
-         DIR` imports them. The panel side (layout TAB_WINDOW and
-         SELECTOR_WINDOW, pack RACK_PARTS, board `rack_part`, the legends
-         clear of the tab) is written but uncommitted, because it builds
-         only against the imported frames.
+       - [x] (a) The plates: 0.9.0 (catalogue/v25-rack-plates.png), from
+         pass 54 (template 754a813). The import gives each changed pixel to the
+         part that changes it most, because the glossy chickenhead mirrors the
+         tabs.
+       - [ ] LAW's polished brass (matlib "brass", finish mirror) reads as cream
+         with a dark band under the rack light, and the dark legends lose contrast
+         on the band. That's a new look, so it's been asked for as a plate: brass
+         against brass-bare (satin).
        - [ ] (b) Voices' stepped knob into the CAPTURE scene.
        - [ ] (c) The six continuous knobs into their plates' scenes.
      - [ ] Still known: plate titles are drawn text, not the

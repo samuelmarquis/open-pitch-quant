@@ -468,14 +468,18 @@ def bake_rack(record, renders=None):
             "logical": [pw, ph],
             "receipt": [r for r in receipts if f"{plate}/{parts[0][0]}-0.png" in r][-1:],
         }
-        for key, flag, values in parts:
+        # Each changed pixel belongs to the part that changes it most: a
+        # glossy neighbour mirrors a part's state (the chickenhead shows the
+        # tabs), and a part must never repaint its neighbour.
+        change = np.stack([np.max([np.abs(f - base).max(axis=2) for f in frames[key][1:]], axis=0)
+                           for key, _, _ in parts])
+        owner = np.where(change.max(axis=0) > noise, change.argmax(axis=0), -1)
+        for n, (key, flag, values) in enumerate(parts):
             (cx, cy), (dx, dy, w, h) = ((SELECTOR[1], SELECTOR_WINDOW) if key == "algorithm"
                                         else (TABS[key][1], TAB_WINDOW))
             x0, y0 = round((cx + dx - px) * 2), round((cy + dy - py) * 2)
             x1, y1 = x0 + w * 2, y0 + h * 2
-            changed = np.zeros(base.shape[:2], bool)
-            for frame in frames[key][1:]:
-                changed |= np.abs(frame - base).max(axis=2) > noise
+            changed = owner == n
             outside = changed.copy()
             outside[max(y0, 0):y1, max(x0, 0):x1] = False
             if outside.sum() > stray:
@@ -483,9 +487,11 @@ def bake_rack(record, renders=None):
             # The window, padded where it runs off the plate (transparent).
             pad = ((max(-y0, 0), max(y1 - base.shape[0], 0)), (max(-x0, 0), max(x1 - base.shape[1], 0)))
             window = (slice(max(y0, 0), y1), slice(max(x0, 0), x1))
-            mask = np.pad(changed[window], pad).astype(np.uint8) * 255
-            mask = Image.fromarray(mask).filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(2))
-            alpha = np.asarray(mask, dtype=np.int16)
+            theirs = ((owner >= 0) & ~changed)[window]
+            grown = Image.fromarray(np.pad(changed[window], pad).astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(9))
+            grown = np.asarray(grown) * ~np.pad(theirs, pad)
+            alpha = np.asarray(Image.fromarray(grown.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2)),
+                               dtype=np.int16)
             strip = np.zeros((h * 2, w * 2 * len(values), 4), np.uint8)
             for i, frame in enumerate(frames[key]):
                 cell = np.pad(frame[window], pad + ((0, 0),))
@@ -494,7 +500,7 @@ def bake_rack(record, renders=None):
             Image.fromarray(strip).save(VENDOR / f"rack-{key}.png")
             record[f"rack-{key}.png"] = {
                 "kind": "rack part's window per state, cropped from its plate's frames, "
-                        "alpha the feathered region its states change",
+                        "alpha the feathered region its states change most",
                 "plate": plate, "states": [f"{flag}={v}" for v in values],
                 "window_2x": [x0, y0, x1, y1], "stray_px": int(outside.sum()),
                 "receipt": [r for r in receipts if f"{plate}/{key}-" in r],

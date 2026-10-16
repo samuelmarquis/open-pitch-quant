@@ -151,6 +151,13 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.0** — the plates are rendered as one lit scene each: CAPTURE, LAW
+  and FINISH, each with its switches and the ALGORITHM selector, under the
+  family's shared studio lighting with real shadows. Every two-way switch is
+  now a tab switch (your p214 pick). Each tab's position labels sit
+  further out to clear it. On LAW, SOURCE and SCOPE move right and the
+  selector moves up. The knobs are unchanged for now (still
+  catalogue/v25-rack-plates.png).
 - **0.8.24** — no visible change: the ALGORITHM knob's rack render is
   sized to match today's knob.
 - **0.8.23** — the plates' rack bake is set up and on DESIGN's farm. You
