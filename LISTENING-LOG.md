@@ -701,3 +701,35 @@ lip.
 
 **Verdict:** Sam's ruling covers this (p210). It's applied, and the still
 is `catalogue/v24-deadon-keys.png`.
+
+## The FINISH rack pilot (p213, 2026-10-16)
+
+**Question:** FINISH as one rack scene: the plate with its TRANSITIONS
+bat switch, dead-on under the rack light (pass 50, template 73fa7f3),
+compared with today's per-part plate. The rack light reads brighter and
+greener on the jade.
+
+**Sam, verbatim:** "B is way better, so no need to change anything on
+DESIGN's end. Well, actually there is something that has to change there;
+if you zoom way in on the bat switch you can see that right around the
+base we can get a good look at the panel material. No good! Fix that
+geometry; and also there's like a dozen new switches so go see if you
+like any of the other ones"
+
+**Interpretation:** the rack bake wins as it is, light included.
+
+**The bat flaw, measured:** toggle-bat's lathes are open rings with no
+floor. The bushing starts at z=0.072, its bore (r 0.085) is open, and
+there's a 0.105–0.115 gap to the nut's bore over the washer's hole. So the
+host shows round the lever's base and inside the nut. That's template
+geometry, so the fix went to DESIGN: a bushing from the panel up, filling
+the nut, and a dark bore floor under the pivot.
+
+**The switches:** the template's canon has six: bat, rocker, slide, key,
+tab and guard. Claude's picks for this board are slide and key, with tab
+as a long shot. The rocker is out: its states barely differ at 1x, and
+its I/O marks clash with the legends. The guard is out too: it has three
+states, made for a protected action, and we have none.
+DESIGN is asked to plate them on the FINISH pilot: A the fixed bat, B
+slide, C key, D tab. Our 44 px-tall slot is the size limit. The FINISH
+import, and the CAPTURE and LAW pilots, wait on the switch.

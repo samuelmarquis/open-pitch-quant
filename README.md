@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.20** — records only: you passed the FINISH plate as one rack
+  scene. The bat switch's base is being fixed, and other switches are being
+  tried for the board.
 - **0.8.19** — records only: how the trial FINISH plate's jade would
   be adjusted, if wanted.
 - **0.8.18** — no visible change: the FINISH plate's trial render

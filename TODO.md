@@ -186,10 +186,12 @@ messages, and behavior belongs in the README; neither is kept here.
        the farm (pass 50, template 73fa7f3). The toggle is now fitted by width to
        its 38 px ring (DESIGN). It is plated for Sam as p213: today's board next
        to the pilot. The rack light reads brighter and greener on the jade.
-       The import waits on his ruling. If he wants the jade nearer today's,
-       the fix is on our side: a darker catalin-jade-polished param or another
-       face key. The rack light is shared by the family (DESIGN), and DESIGN
-       plates face options if asked.
+       Sam ruled p213: B, the rack bake (LISTENING-LOG). Two things come
+       first. One is the bat's open bore, which shows the plate: template
+       geometry, so DESIGN fixes it. The other is the switch: candidates
+       (fixed bat, slide, key, tab) are to be plated on the FINISH pilot.
+       The pick goes into every plate's bake (seven switches), so the FINISH
+       import and the CAPTURE and LAW pilots wait on it.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`
