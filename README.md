@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.8.16** — the screen glass from 0.8.15 is now installed (its
+  still is catalogue/v23-glass.png). Under the family's dead-on rack
+  ruling, the viewer keys are queued for a re-bake.
 - **0.8.15** — the screen gets the family's glass: the housing's
   vignette and its reflection (at 1/3), laid over the paper screen and
   under the menus. Built but not installed yet: it's waiting on a design

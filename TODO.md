@@ -171,16 +171,17 @@ messages, and behavior belongs in the README; neither is kept here.
              20261010-233347-54679); imported in 0.7.12 (catalogue/v18*).
              Each key fills its cell. layout.rs's rects are unchanged,
              and the housing needed no re-bake (it holds no key cut).
-     - [ ] The family's screen glass (Sam via DESIGN, p211 C, 2026-10-16:
-       "reduce the glass reflection intensity to 1/3 and make that the
-       default, then tell everyone to pick it up"). Wired in 0.8.15, but not
-       installed yet. DESIGN's farm baked the layers (sid opq-screen, at
-       HOUSING_FLAGS). `bake.py --only glass --renders DIR` imports them,
-       cropped to SCREEN, and board.rs `glass()` draws vig then refl over
-       the content, under the menus. The first vig read 0.81 on clear glass:
-       a template bug (AgX view), fixed in 7244624 and re-baked. DESIGN is
-       asking Sam (p212: the dimmed look vs the fixed one), so the catalogue
-       still and the install wait on his answer.
+     - [x] The family's screen glass (p211 C, p212 C): 0.8.15, installed;
+       catalogue/v23-glass.png. bake.py `--only glass --renders DIR`.
+     - [ ] Dead-on rack (Sam, p210 B, 2026-10-16: "it's gotta be
+       deadon-everything for consistency's sake"). The viewer keys (button-bezel,
+       not orthographic) need a farm re-bake: the job has gone to DESIGN, and
+       the import is `--only keys --renders DIR`. The housing stays (already
+       orthographic).
+     - [ ] Plates and knobs into the rack (open-comp style). Proposed to
+       DESIGN, awaiting Sam's ruling. Order: the plates with their toggles and
+       chickenhead, then Voices' stepped knob, then the continuous knobs once
+       open-cepstrum's atlases move.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

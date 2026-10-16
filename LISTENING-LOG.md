@@ -663,3 +663,28 @@ byte-identical to this round's renders. The CLI takes `--house-feel
 a|b|c|d`. Still: `catalogue/v22-house-feel.png`.
 
 **Verdict:** *(pending: Sam trying the four on his own material)*
+
+## The family's screen glass (0.8.15, 2026-10-16)
+
+**Question:** should OPQ's paper screen carry the family's glass (the
+screen-monitor vignette, plus the reflection at 1/3)? Sam's family ruling,
+relayed by DESIGN (p211 C): "reduce the glass reflection intensity to 1/3
+and make that the default, then tell everyone to pick it up".
+
+**Config:** DESIGN's farm baked screen_scene.py at our HOUSING_FLAGS (sid
+opq-screen). The board draws col × vig, then + refl, in linear light over
+the screen's content and under the menus. The first vig read 0.81 on
+clear glass, a template bug (AgX view), which dimmed the paper about 19%.
+DESIGN fixed it (template 7244624) and re-baked ours. On the fixed layer,
+clear paper reads 234–238 sRGB against 237 before; only the lip darkens.
+
+**Sam (p212, via DESIGN), verbatim:** "212, Yeah, sure, C is fine, it
+looks a little better. Make sure everyone's on that & canonize / 210,
+hate everything-lean. it's gotta be deadon-everything for consistency's
+sake"
+
+**Action:** C is the fixed vig. 0.8.15 is installed, and validate passes
+11 ok. Still: `catalogue/v23-glass.png`. Under p210 B (every raised part
+in the rack is dead-on), the viewer keys need a farm re-bake. The housing
+doesn't: it is already orthographic. The plan and a proposal to move the
+plates and knobs into the rack went to DESIGN.
