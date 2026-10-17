@@ -642,6 +642,7 @@ def seat(layout, roots, ids):
 
 
 def _seat(roots, els, ids):
+    import numpy as np
     from mathutils.bvhtree import BVHTree
 
     for _ in range(8):
@@ -653,10 +654,20 @@ def _seat(roots, els, ids):
             ov, ot = triangles(rendered(root), dg)
             if not len(ot):
                 raise SystemExit(f"rack: {eid} has no geometry to seat")
-            (x0, y0), (x1, y1) = ov[:, :2].min(0), ov[:, :2].max(0)
+            # "down" for a sheared part is along its camera ray (the line its
+            # axis stands on), not -z: far from the window centre the shear
+            # leans a part's height over its neighbours' plans
+            c = Vector((*el["_xy"], 0.0)) if root.get("rack_sheared") else Vector((0, 0, 0))
+            view = el["_view"]
+            down = Vector((c.x, c.y, -view)).normalized()
+            plan = ov[:, :2] + ov[:, 2:3] * np.array([c.x, c.y]) / view
+            (x0, y0), (x1, y1) = plan.min(0), plan.max(0)
+            reach = c.length * (float(ov[:, 2].max()) + 1.0) / view
+            box = (min(x0, ov[:, 0].min()) - reach, max(x1, ov[:, 0].max()) + reach,
+                   min(y0, ov[:, 1].min()) - reach, max(y1, ov[:, 1].max()) + reach)
             # another element's "rack_hole" is a cut to be made, not a surface
             near = [ob for r in roots.values() if r is not root for ob in rendered(r)
-                    if not ob.get("rack_hole") and overlaps(xy_box(ob), (x0, x1, y0, y1))]
+                    if not ob.get("rack_hole") and overlaps(xy_box(ob), box)]
             uv, ut = triangles(near, dg)
             if not len(ut):
                 raise SystemExit(f"rack: {eid} is seated but nothing lies under it")
@@ -666,10 +677,11 @@ def _seat(roots, els, ids):
             hits = []
             for i in range(9):
                 for j in range(9):
-                    p = Vector((x0 + (x1 - x0) * (i + 0.5) / 9, y0 + (y1 - y0) * (j + 0.5) / 9, top))
-                    if own.ray_cast(p, Vector((0, 0, -1)))[0] is None:
+                    q = Vector((x0 + (x1 - x0) * (i + 0.5) / 9, y0 + (y1 - y0) * (j + 0.5) / 9, 0.0))
+                    p = q - down * (top / -down.z)
+                    if own.ray_cast(p, down)[0] is None:
                         continue
-                    hit = under.ray_cast(p, Vector((0, 0, -1)))[0]
+                    hit = under.ray_cast(p, down)[0]
                     if hit is not None:
                         hits.append(hit.z)
             if not hits:

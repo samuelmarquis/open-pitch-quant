@@ -217,8 +217,8 @@ messages, and behavior belongs in the README; neither is kept here.
          - assets/bake_rack.py is the template's rack_bake.Product shim.
          - retain.py keeps the template's components in assets/source/rack.
          Next:
-         - re-retain at DESIGN's next revision (it fixes CAPTURE's seating), then
-           `--plan rack-plan` (26 bakes, 1048 frames) for the farm;
+         - [x] retained at template 327f743 (seating along each part's camera
+           ray), planned (26 bakes, 1048 frames) and sent to DESIGN's farm, 0.9.10;
          - `--pack`, then switch board.rs to the packed atlases (premultiplied
            parts and plates, straight housing and keys);
          - retire bake.py's rack, housing and keys steps and provenance.json's

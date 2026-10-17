@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.10** — no visible change yet: the panel's parts are being
+  rendered in the shared scene, with a template fix for how parts sit on
+  their plates.
 - **0.9.9** — no visible change yet: the panel's rendered parts move to
   the family's shared pipeline, where the whole board is one lit scene and
   each part is rendered in it over its plate. This replaces three separate
