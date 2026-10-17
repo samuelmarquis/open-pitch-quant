@@ -223,9 +223,10 @@ messages, and behavior belongs in the README; neither is kept here.
            monitor and keys straight, the plates and parts premultiplied over
            their regions; bake.py's rack, housing and keys steps, the old
            windows/rack_cell and their vendor files and records are gone.
-         - [ ] the glass: the template's glass bake kind on the monitor
-           (retain fc349a7 first), farmed, drawn by panelkit::glass; then
-           bake.py and GLASS_VIG/REFL go.
+         - [ ] the glass: the template's glass bake kind on the monitor,
+           retained at 9c7b401 (components as fc349a7) and planned
+           (`--only screen-glass`, 1 job) for DESIGN's farm, 0.10.1; then
+           pack, draw by panelkit::glass, and bake.py and GLASS_VIG/REFL go.
          - [ ] FINISH's plate bake has a pale fleck at its lower-right edge
            (in the farm frame); ask DESIGN.
          bake.py no longer copies anything from open-cepstrum (DESIGN).

@@ -1,7 +1,7 @@
 """`title-bake/1` — the additive layer bake for a panel's backlit `--title`.
 
   python3 components/panel-board/generator/title_bake.py OUTDIR \
-      [--scene SCENE.py] [--px-per-unit N] [--samples N] -- [scene flags, --title ...]
+      [--scene SCENE.py] [--px-per-unit N] [--samples N] [--blender PATH] -- [scene flags, --title ...]
 
 A title of N letters has 2^N lit sets and any RGB per letter, so it ships as
 N+1 layers. A lit letter differs from an unlit one ONLY in its insert's
@@ -81,6 +81,7 @@ def main(argv=None):
     p.add_argument("--scene", type=Path, default=HERE / "panel_scene.py")
     p.add_argument("--px-per-unit", type=float, default=200.0)
     p.add_argument("--samples", type=int, default=1024)
+    p.add_argument("--blender", type=Path, default=BL, help="this machine's Blender (the farm's)")
     a = p.parse_args(argv[:cut])
     flags = argv[cut + 1:]
     if "--title" not in flags:
@@ -96,7 +97,7 @@ def main(argv=None):
         jobs += [(f"L{i}", ["--title-lit", str(i), "--dark"]) for i in range(1, n + 1)]
         for name, extra in jobs:
             out = tmp / f"{name}.exr"
-            bakelib.run([BL, "-b", "-P", a.scene, "--", out, *common, *extra], out)
+            bakelib.run([a.blender, "-b", "-P", a.scene, "--", out, *common, *extra], out)
             print(f"  rendered {name}", flush=True)
         base = bakelib.read_exr(tmp / "base.exr").astype(np.float64)
         truth = bakelib.read_exr(tmp / "truth.exr")[..., :3].astype(np.float64)
@@ -131,7 +132,7 @@ def main(argv=None):
     np.savez_compressed(npz, **arrays)
     job = a.outdir / "_write.json"
     job.write_text(json.dumps({"npz": str(npz), "outputs": outputs}))
-    bakelib.run([BL, "-b", "-P", BL_HALF, "--", "write", job], outputs[f"letter_{n}"])
+    bakelib.run([a.blender, "-b", "-P", BL_HALF, "--", "write", job], outputs[f"letter_{n}"])
     npz.unlink()
     job.unlink()
 

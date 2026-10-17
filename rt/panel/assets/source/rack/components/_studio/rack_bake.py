@@ -19,10 +19,10 @@ A product calls it from a short script of its own (rt/panel/assets/bake_rack.py)
         export=['cargo', 'run', '--release', '-q', '-p', 'open-comp-panel', '--bin',
                 'panel-render', '--', '--rack-layout', '{out}']))
 
-then:
+then, with any python3 that has numpy and Pillow (the design-lab venv):
 
-    python3 -I rt/panel/assets/bake_rack.py --plan DIR [--template PATH] [--only STEM ...]
-    python3 -I rt/panel/assets/bake_rack.py --pack DIR [--only STEM ...]
+    python3 rt/panel/assets/bake_rack.py --plan DIR [--template PATH] [--only STEM ...]
+    python3 rt/panel/assets/bake_rack.py --pack DIR [--only STEM ...]
 
 Export: Product.export is the board's command; '{view}' is replaced by each
 of Product.views (one export per board state whose layout differs, e.g. a
@@ -44,6 +44,22 @@ Plan: DIR/<stem>/layout.json per bake, DIR/jobs.json (each job's command with
 {RACK}) and DIR/farm.json, the same jobs in the farm's own format (farm.py
 run DIR/farm.json), so a plan goes to the farm as written.
 
+Glass: a screen-monitor bake {"kind": "glass", "out": ".../<id>.json"} is
+the screen's glass (p211/p212 C: reflection at 1/3 added, vignette
+multiplied), a standalone screen_scene.py run with the element's flags (the
+bake's over them) so its layers register with the housing. Pack ships it as
+panelkit's housing treatment loads it, the one runtime path for screen glass:
+the manifest at <id>.json and the full-size raw <id>_refl.png (sRGB RGB,
+adds) and <id>_vig.png (one grey data channel, multiplies) beside it, refusing a vignette that does
+not reach 1 on clear glass.
+
+Title: a panel-board bake {"kind": "title", "out": ".../<name>.json"} on a
+plate whose flags carry --title is its backlit cut title (title-bake/1: the
+unlit face and one light layer per letter), rendered by title_bake.py through
+rack_title.py in the same rack scene as the plate, over the plate's rect.
+Pack writes the plate-title/1 package: <name>-linear.png (half-float bits,
+face then the letters) and <name>.json.
+
 Pack: the frames (DIR/<stem>/NNN.png, or frame.png) feathered over the
 region's outer "feather" px, packed row-major into the bake's grid,
 premultiplied in linear light (or kept straight, "alpha": "straight") at the
@@ -55,6 +71,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
@@ -181,20 +198,138 @@ def plan_one(doc, el, bake, work, samples, rack='{RACK}', repo=None):
     return layout, command
 
 
+def glass_one(el, bake, work, repo):
+    """One glass bake's command (screen_scene.py's {SCREEN} token) and outputs."""
+    flags = bake_layout({'elements': [el], **{k: None for k in SCENE_KEYS}},
+                        el, {'flags': bake.get('flags', [])}, work, repo)['elements'][-1]['flags']
+    stem = work.name
+    command = ['blender', '-b', '-P', '{SCREEN}', '--', *[str(f) for f in flags],
+               '--outdir', stem, '--sid', stem]
+    return command, [f'{stem}/{stem}{s}' for s in ('_refl.png', '_vig.png', '.json')]
+
+
+def pack_glass(product, out, el, src, command):
+    """Ships one glass bake from `src` for panelkit's treatment; returns its record."""
+    sid = src.name
+    manifest = json.loads((src / f'{sid}.json').read_text())
+    a = manifest['aperture']
+    box = (a['x'], a['y'], a['x'] + a['w'], a['y'] + a['h'])
+    vig = np.asarray(Image.open(src / f'{sid}_vig.png').convert('RGB').crop(box))[..., 0] / 255.0
+    peak = float(vig.max())
+    if peak < 254 / 255:
+        raise SystemExit(f'{sid}: vig peaks at {peak:.3f}, not 1 on clear glass')
+    dest = product.panel / out
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    names = {'_refl.png': f'{dest.stem}_refl.png', '_vig.png': f'{dest.stem}_vig.png'}
+    # refl as RGB, vig as one grey channel (data): the same pixels, small
+    # enough to vendor (the full-size RGBA layers pass 1 MiB)
+    Image.open(src / f'{sid}_refl.png').convert('RGB').save(dest.parent / names['_refl.png'], optimize=True)
+    grey = np.asarray(Image.open(src / f'{sid}_vig.png').convert('RGB'))[..., 0]
+    Image.fromarray(grey).save(dest.parent / names['_vig.png'], optimize=True)
+    dest.write_text(json.dumps(manifest, indent=1) + '\n')
+    return {'contract': 'screen glass/1 (p211/p212 C), panelkit housing treatment',
+            'element': el['id'], 'command': command, 'vig_peak': round(peak, 4),
+            'outputs': {n: digest(dest.parent / n) for n in [dest.name, *names.values()]}}
+
+
+TITLE_FLAGS = ('--title', '--title-cap', '--title-top', '--title-lit')
+
+
+def flag(flags, name):
+    flags = [str(f) for f in flags]
+    return flags[flags.index(name) + 1] if name in flags else None
+
+
+def title_one(doc, el, bake, work, repo):
+    """One title bake: writes its layout (the plate's title flags left to the
+    driver) under `work`; returns (command, outputs)."""
+    work.mkdir(parents=True, exist_ok=True)
+    layout = bake_layout(doc, el, bake, work, repo)
+    plate = layout['elements'][-1]
+    kept, pairs = [], iter(str(f) for f in plate['flags'])
+    for f in pairs:
+        if f in TITLE_FLAGS:
+            next(pairs, None)
+        else:
+            kept.append(f)
+    plate['flags'] = kept
+    (work / 'layout.json').write_text(json.dumps(layout, indent=1))
+    stem, title = work.name, flag(el['flags'], '--title')
+    x, y, w, h = el['rect']
+    command = ['python3', '{TITLE}', stem, '--blender', 'blender', '--scene', '{TITLE_SCENE}',
+               '--px-per-unit', str(100 * DENSITY), '--', '--layout', f'{stem}/layout.json',
+               '--region', f'{x},{y},{w},{h}', '--title', title]
+    for name in ('--title-cap', '--title-top'):
+        if flag(el['flags'], name) is not None:
+            command += [name, flag(el['flags'], name)]
+    outputs = [f'{stem}/{n}' for n in ('title.json', 'face.exr',
+                                       *[f'letter_{i}.exr' for i in range(1, len(title) + 1)])]
+    return command, outputs
+
+
+def pack_title(product, out, el, src, command):
+    """The plate-title/1 package from the driver's output `src`; returns its record."""
+    import bakelib
+    from halfpng import half_png
+    title = flag(el['flags'], '--title')
+    made = json.loads((src / 'title.json').read_text())
+    crop = made['crop']
+    letters = [bakelib.read_exr(src / f) for f in made['layers']['letters']]
+    face = bakelib.read_exr(src / made['layers']['face'])
+    h, w = crop['h'], crop['w']
+    if len(letters) != len(title) or face.shape[:2] != (h, w):
+        raise RuntimeError(f'{src.name}: layers do not match the {w}x{h} crop')
+    atlas = np.zeros((2 * h, len(letters) * w, 4), dtype=np.float32)
+    atlas[:h, :w, :3] = face[..., :3]
+    atlas[:h, :w, 3] = face[..., 3] if face.shape[-1] == 4 else 1.0
+    for i, letter in enumerate(letters):
+        atlas[h:, i * w:(i + 1) * w, :3] = letter[..., :3]
+        atlas[h:, i * w:(i + 1) * w, 3] = 1.0
+    dest = product.panel / out
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    linear = dest.parent / f'{dest.stem}-linear.png'
+    half_png(linear, atlas)
+    x, y = el['rect'][:2]
+    package = {
+        'contract': 'plate-title/1 over title-bake/1', 'title': title, 'letters': len(letters),
+        'crop_pixels': crop,
+        'logical_rect': [x + crop['x'] / DENSITY, y + crop['y'] / DENSITY, w / DENSITY, h / DENSITY],
+        'atlas': {'path': os.path.relpath(linear, product.assets), 'sha256': digest(linear),
+                  'layout': 'face (unlit band, RGBA) at the origin; letters left to right in one row below, RGB',
+                  'encoding': 'PNG16 RGBA stores IEEE float16 bit patterns, NOT image values'},
+        **{k: made[k] for k in ('unit', 'composite', 'glow', 'view_transform', 'residual', 'samples')},
+    }
+    dest.write_text(json.dumps(package, indent=2) + '\n')
+    return {'contract': package['contract'], 'element': el['id'], 'command': command,
+            'sha256': digest(dest), 'bytes': dest.stat().st_size}
+
+
 def write_plan(product, plan, found, chosen, samples, revision):
     if not plan.resolve().is_relative_to(product.repo):
         raise SystemExit(f'--plan {plan}: the farm syncs the product repo, so the plan goes inside it')
     rack = product.assets / 'source/rack/components/_studio/rack.py'
     rel_rack = os.path.relpath(rack, plan.resolve())
+    screen = product.assets / 'source/rack/components/screen-monitor/generator/screen_scene.py'
+    studio = product.assets / 'source/rack/components'
+    tokens = {'blender': 'BLENDER', 'python3': 'PYTHON', '{RACK}': rel_rack,
+              '{SCREEN}': os.path.relpath(screen, plan.resolve()),
+              '{TITLE}': os.path.relpath(studio / 'panel-board/generator/title_bake.py', plan.resolve()),
+              '{TITLE_SCENE}': os.path.relpath(studio / '_studio/rack_title.py', plan.resolve())}
     jobs, farm = [], []
     for stem, out in chosen:
         doc, el, bake = found[out]
-        _, command = plan_one(doc, el, bake, plan / stem, samples, repo=product.repo)
-        jobs.append({'stem': stem, 'out': out, 'frames': frame_count(el), 'command': command})
+        if bake.get('kind') == 'glass':
+            command, outputs = glass_one(el, bake, plan / stem, product.repo)
+            frames = 1
+        elif bake.get('kind') == 'title':
+            command, outputs = title_one(doc, el, bake, plan / stem, product.repo)
+            frames = 1
+        else:
+            _, command = plan_one(doc, el, bake, plan / stem, samples, repo=product.repo)
+            outputs, frames = [f'{stem}/{n}' for n in frame_names(el)], frame_count(el)
+        jobs.append({'stem': stem, 'out': out, 'frames': frames, 'command': command})
         farm.append({'cwd': str(plan.resolve().relative_to(product.repo)),
-                     'argv': ['BLENDER' if c == 'blender' else rel_rack if c == '{RACK}' else c
-                              for c in command],
-                     'outputs': [f'{stem}/{n}' for n in frame_names(el)]})
+                     'argv': [tokens.get(c, c) for c in command], 'outputs': outputs})
     (plan / 'jobs.json').write_text(json.dumps({
         'product': product.name, 'template_revision': revision, 'samples': samples,
         'density': DENSITY, 'jobs': jobs}, indent=1) + '\n')
@@ -283,6 +418,19 @@ def main(product, argv=None):
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     if args.template:
         manifest['template_revision'] = product.retain(args.template)
+        vendor.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(json.dumps(manifest, indent=1) + '\n')
+        # this process runs the driver retained before the refresh: run the
+        # new one, the same arguments without --template
+        rest, skip = [], False
+        for a in (sys.argv[1:] if argv is None else argv):
+            if skip:
+                skip = False
+            elif a == '--template':
+                skip = True
+            elif not a.startswith('--template='):
+                rest.append(a)
+        os.execv(sys.executable, [sys.executable, sys.argv[0], *rest])
     if 'template_revision' not in manifest:
         raise SystemExit('No template revision on record: run with --template')
     if product.check:
@@ -296,9 +444,6 @@ def main(product, argv=None):
     if args.plan:
         args.plan.mkdir(parents=True, exist_ok=True)
         write_plan(product, args.plan, found, chosen, args.samples, manifest['template_revision'])
-        if args.template:
-            # the retained revision, on record for the pack that follows
-            manifest_path.write_text(json.dumps(manifest, indent=1) + '\n')
         return
     vendor.mkdir(parents=True, exist_ok=True)
     products = manifest.setdefault('products', {})
@@ -307,6 +452,15 @@ def main(product, argv=None):
     for stem, out in chosen:
         doc, el, bake = found[out]
         work = args.pack / stem
+        if bake.get('kind') == 'glass':
+            products[out] = pack_glass(product, out, el, work, glass_one(el, bake, work, product.repo)[0])
+            print(f"PACKED {stem} glass", flush=True)
+            continue
+        if bake.get('kind') == 'title':
+            command = title_one(doc, el, bake, work / '_check', product.repo)[0]
+            products[out] = pack_title(product, out, el, work, command)
+            print(f"PACKED {stem} title", flush=True)
+            continue
         layout, command = plan_one(doc, el, bake, work / '_check', args.samples, repo=product.repo)
         record = pack_one(product, out, el, bake, [work / n for n in frame_names(el)], layout, command)
         products[out] = record

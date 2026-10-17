@@ -127,7 +127,13 @@ pub fn rack_layout() -> String {
         "orthographic": true,
         "region": rect(L::HOUSING),
         "mattes": [],
-        "bakes": [bake("rack-monitor.png", (1, 1), true)],
+        // The housing, then its screen glass (the template's glass bake
+        // kind: screen-glass.json with its raw _refl and _vig layers, which
+        // panelkit's glass::Glass loads and draws over SCREEN).
+        "bakes": [
+            bake("rack-monitor.png", (1, 1), true),
+            json!({"kind": "glass", "out": "assets/vendor/screen-glass.json"}),
+        ],
     }));
 
     // The viewer keys, named by their place in the monitor's right key row
@@ -287,7 +293,8 @@ const NOTES: &[&str] = &[
     "z: seat rests each part on its plate's face. fit: diameter sizes a knob to its rect's circle; fit: width builds a part to its rect's width.",
     "region: where the board draws the element's bakes, rendered at 2x through the composer over its mattes, every state packed row-major into grid; out is the path under rt/panel.",
     "The housing is drawn orthographically so its bezel registers with the runtime screen.",
-    "Not included: the screen's content and glass, the infotext, the bottom row, and all type.",
+    "The monitor also bakes the screen glass (drawn by panelkit::glass over the screen's content).",
+    "Not included: the screen's content, the infotext, the bottom row, and all type.",
 ];
 
 #[cfg(test)]
@@ -304,6 +311,10 @@ mod tests {
                 assert!(ids.contains(&m.as_str().unwrap()), "{} names {m}", el["id"]);
             }
             for b in el["bakes"].as_array().into_iter().flatten() {
+                // The glass kind is one still, no grid.
+                if b["kind"] == "glass" {
+                    continue;
+                }
                 let states = el["states"].as_str().map_or(1, |s| {
                     let spec = s.split_once('=').unwrap().1;
                     spec.rsplit_once('/').map_or_else(|| spec.split(',').count(), |(_, n)| n.parse().unwrap())
@@ -312,7 +323,10 @@ mod tests {
                 assert!(states <= (grid[0].as_u64().unwrap() * grid[1].as_u64().unwrap()) as usize, "{}", el["id"]);
             }
         }
-        // Every plate control and every viewer key has a bake.
+        // Every plate control and every viewer key has a bake; the monitor
+        // bakes its glass too.
         assert_eq!(els.iter().filter(|e| e.get("bakes").is_some()).count(), 1 + 3 + 3 + 19);
+        let glass = els.iter().flat_map(|e| e["bakes"].as_array().into_iter().flatten()).filter(|b| b["kind"] == "glass");
+        assert_eq!(glass.count(), 1);
     }
 }

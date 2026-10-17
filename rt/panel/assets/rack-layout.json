@@ -10,6 +10,10 @@
             1
           ],
           "out": "assets/vendor/rack-monitor.png"
+        },
+        {
+          "kind": "glass",
+          "out": "assets/vendor/screen-glass.json"
         }
       ],
       "component": "screen-monitor",
@@ -1205,7 +1209,8 @@
     "z: seat rests each part on its plate's face. fit: diameter sizes a knob to its rect's circle; fit: width builds a part to its rect's width.",
     "region: where the board draws the element's bakes, rendered at 2x through the composer over its mattes, every state packed row-major into grid; out is the path under rt/panel.",
     "The housing is drawn orthographically so its bezel registers with the runtime screen.",
-    "Not included: the screen's content and glass, the infotext, the bottom row, and all type."
+    "The monitor also bakes the screen glass (drawn by panelkit::glass over the screen's content).",
+    "Not included: the screen's content, the infotext, the bottom row, and all type."
   ],
   "px_per_unit": 100.0,
   "schema": "opq-rack-layout/1",

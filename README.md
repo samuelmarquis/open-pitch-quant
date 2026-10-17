@@ -151,6 +151,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.10.1** — no visible change: the screen glass is queued to be
+  rendered in the shared pipeline too.
 - **0.10.0** — the panel is rendered the family's way: one lit scene for
   the whole window, the same light as the other plugins. The monitor, the
   viewer keys, the three plates and every knob and switch were rendered
