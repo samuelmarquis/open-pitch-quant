@@ -1,0 +1,25 @@
+{
+  "component": "knob-chrome",
+  "status": "canon",
+  "accepted": "2026-07-22",
+  "renderer": "Blender 5.2.0 LTS / Cycles (Metal GPU), headless",
+  "geometry": "procedural lathe profile (bmesh spin), boolean divet; authored in generator/knob_scene.py",
+  "maps": "computed (numpy/PIL) in generator/make_maps.py \u2014 no photographic textures",
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "secondary_env_tested": {
+    "file": "studio_small_09 (2k/8k)",
+    "source": "https://polyhaven.com/a/studio_small_09",
+    "license": "CC0",
+    "status": "rejected (dark blobby ceiling reads as mottle on the dome)"
+  },
+  "detent_standard": "renders/f000.png..f100.png; frame index == integer percent; value = 270deg of physical object rotation; scale 1.0; 900x900; 220 samples  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "physical_scale": "--scale is a positive coherent geometry, rig, and framing multiplier; generator/render_strip.py reproduces other scales",
+  "alpha": "straight RGBA; strip driver preserves alpha and visible pixels while extending RGB 8 px underneath zero alpha",
+  "view_transform": "AgX (AgX - Medium High Contrast)",
+  "no_ai_generation": "this component is fully procedural + PBR; diffusion was evaluated (FLUX knobs 'a little too ornamental') and not used"
+}

@@ -140,6 +140,71 @@ pub const VOICES_WINDOW: (f32, f32, f32, f32) = (-72.0, -68.0, 160.0, 150.0);
 /// A continuous knob's window, through its 101 positions (bake.py
 /// KNOB_WINDOW).
 pub const KNOB_WINDOW: (f32, f32, f32, f32) = (-60.0, -60.0, 140.0, 140.0);
+/// The rack bakes (rack_layout.rs, the template's rack_bake.py): a bake
+/// region is its rect grown by a pad; a part's fades out over its outer
+/// BAKE_FEATHER px (open-conv's and open-spectrum's values). A part's region
+/// is its window above.
+pub const fn bake_region(r: Rect, pad: f32) -> Rect {
+    Rect::new(r.x - pad, r.y - pad, r.w + 2.0 * pad, r.h + 2.0 * pad)
+}
+pub const PLATE_PAD: f32 = 6.0;
+pub const KEY_PAD: f32 = 8.0;
+pub const BAKE_FEATHER: f32 = 6.0;
+/// A continuous knob's positions (frame i at value i/100), 11 to a row.
+pub const KNOB_FRAMES: usize = 101;
+pub const KNOB_GRID: (usize, usize) = (11, 10);
+/// Voices' detents.
+pub const VOICES_STEPS: usize = 12;
+/// The chickenhead's fitted diameter: its drum is the 43 px the sprite
+/// board drew (DESIGN's refit, pass 54).
+pub const SELECTOR_FIT: f32 = 102.0;
+
+/// A plate's rect.
+pub const fn plate_rect(plate: Plate) -> Rect {
+    match plate {
+        Plate::Capture => CAPTURE,
+        Plate::Law => LAW,
+        Plate::Finish => FINISH,
+        Plate::Bottom => BOTTOM,
+    }
+}
+
+/// A viewer key's bake region: its rect grown by KEY_PAD, out to whole
+/// logical px so the 2x cells are whole pixels on the board's grid.
+pub fn viewer_key_region(viewer: Viewer) -> Rect {
+    let r = bake_region(viewer_key(viewer), KEY_PAD);
+    let (x, y) = (r.x.floor(), r.y.floor());
+    Rect::new(x, y, (r.x + r.w).ceil() - x, (r.y + r.h).ceil() - y)
+}
+
+/// A plate control's rack rect: what the composer fits it to (a knob's
+/// circle, the tab's width, the boss inside Voices' ring).
+pub fn rack_rect(widget: &Widget) -> Rect {
+    let d = match widget.kind {
+        Kind::Knob(_) => KNOB,
+        Kind::Stepped => VOICES_BOSS,
+        Kind::Selector => SELECTOR_FIT,
+        _ => TOGGLE.0,
+    };
+    let (cx, cy) = widget.at;
+    Rect::new(cx - d * 0.5, cy - d * 0.5, d, d)
+}
+/// Voices' boss and its lens ring, fitted by diameter (DESIGN's fits).
+pub const VOICES_BOSS: f32 = 55.0;
+pub const VOICES_RING: f32 = 70.0;
+
+/// A plate control's bake region: its rack rect grown by its pad (open-
+/// conv's and open-spectrum's: a knob's shadow, a lever's throw).
+pub fn part_region(widget: &Widget) -> Rect {
+    let pad = match widget.kind {
+        Kind::Toggle(..) => LEVER_PAD,
+        _ => PART_PAD,
+    };
+    bake_region(rack_rect(widget), pad)
+}
+pub const PART_PAD: f32 = 32.0;
+pub const LEVER_PAD: f32 = 40.0;
+
 /// The parts baked into the plates through their states, in pack::RACK_PARTS
 /// order.
 pub const RACK_PARTS: [usize; 19] = [

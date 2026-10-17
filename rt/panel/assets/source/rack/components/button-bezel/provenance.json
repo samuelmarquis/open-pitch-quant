@@ -1,0 +1,44 @@
+{
+  "component": "button-bezel",
+  "class": "Control primitive (discrete screen-bezel push button with integrated status LED and label)",
+  "status": "CANONIZED 2026-08-03 (p84 r3)",
+  "accepted": "2026-08-03",
+  "ratification_plate": "design-lab/plates/p84-screen-bevel-buttons-r3.png",
+  "verdict": "Sam Marquis: \"This is fine for now. Re-canonize.\"",
+  "created": "2026-08-03",
+  "reference": {
+    "file": "design-lab/refs/button-mock.png",
+    "use": "Commissioned layout reference: rectangular black key, end-mounted horizontal LED bar, and a high-contrast label occupying the remaining face. Compact keeps that end strip; wide rearranges the text laterally beside a tall vertical end bar.",
+    "license": "project-local commissioned reference"
+  },
+  "renderer": "Blender 5.2.0 LTS / Cycles; fully procedural geometry and materials; transparent RGBA; active-state emission-pass-only bloom confined to the opaque key",
+  "construction": "Bevelled mounting receiver, continuous dark rubber reveal, separately raised matte-black key, recessed dark LED socket, flush tinted polycarbonate lens, and flush bold-monospace screen-printed label. Compact and wide variants share the same physical stack.",
+  "parameters": {
+    "layout": "--variant compact|wide; --led-end top|bottom or left|right; compact lens 8.6x3.4 mm; current wide defaults are 2.5x10.4 mm with 2.4 mm label clearance and 1.6 mm opposite-side margin",
+    "content": "--text; --text-color; --font sans|mono; --font-weight regular|bold; --font-file; --ink-style deposited|painted",
+    "state": "--state active|inactive; --led-color; --led-level; --led-glow 0..2",
+    "dimensions": "--width/--height in mm, variant defaults 13x24 and 42x16; --scale is coherent",
+    "material": "--material black-paint|sleek-black|matte-black-plastic|blackened-metal|white-plastic|beige-plastic|brushed|worn-steel|custom; --body-color for custom",
+    "render": "--res height or WIDTHxHEIGHT; --samples"
+  },
+  "environment": {
+    "file": "../_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0",
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake); glossy visibility disabled because the key and lens are flat/near-flat and take authored panel-facing reflections",
+    "view": "AgX Medium High Contrast; dead-on 85 mm perspective; no ground or cast-shadow layer; active LEDs alone receive a restrained thresholded Bloom pass over the opaque key"
+  },
+  "materials": {
+    "shared": "../_studio/matlib.py — shared and live, consumed unchanged here",
+    "local": "custom-color and matte-black moulded finishes, blackened-metal alternate, rubber reveal, screen-print label paint, and tinted emissive polycarbonate LED lens with saturation-preserving radiance, local colored spill, and LED-only bloom"
+  },
+  "renders": {
+    "compact-{1,2,3,4}-{active,inactive}.png": "compact 13x24 mm four-number bank, matte-black-plastic, bold monospace painted labels, top LED roster red/green/blue/purple, paired explicit states",
+    "wide-bank-{1,2,3,4}-{active,inactive}.png": "wide 42x16 mm four-number bank, matte-black-plastic, bold monospace painted labels, left LED roster red/green/blue/purple, paired explicit states",
+    "wide-left-{active,inactive}.png": "wide 42x16 mm, text SOURCE, 10.4 mm tall left cyan LED, matte-black-plastic, bold monospace painted label, paired explicit states",
+    "wide-right-{active,inactive}.png": "wide 42x16 mm, text BYPASS, 10.4 mm tall right red LED, matte-black-plastic, bold monospace painted label, paired explicit states"
+  },
+  "canon_baseline": "p84 r3 is the current consumable canon",
+  "author": "OpenAI Sol under Sam Marquis's commission",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/."
+}

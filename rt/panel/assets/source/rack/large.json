@@ -1,0 +1,14 @@
+{
+ "components/_studio/studio_kominka_03_4k.hdr": {
+  "bytes": 24297900,
+  "sha256": "b6b726b24e86cad1d0d29d9848e8b1e1b7ba23cf96b97bd84f59c874002a3e52"
+ },
+ "components/knob-chrome/generator/bump.png": {
+  "bytes": 20628440,
+  "sha256": "2bb09b480f2931ffa9c2e25f2e00e088d7ad802a6aea17904699b0e1bf31c95e"
+ },
+ "components/knob-chrome/generator/rough.png": {
+  "bytes": 10981993,
+  "sha256": "b74b96daca25130c5c36e2006b86a2510b2d2db67daa2523f3c81da621aabc59"
+ }
+}

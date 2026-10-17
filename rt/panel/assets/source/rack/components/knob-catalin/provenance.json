@@ -1,0 +1,30 @@
+{
+  "component": "knob-catalin",
+  "class": "Control primitive (continuous)",
+  "status": "CANONIZED 2026-09-14",
+  "accepted": "2026-09-14",
+  "ratification_plate": "design-lab/plates/p95-knob-spree-r1.png",
+  "verdict": "Sam Marquis: \"really into catalin.\"",
+  "created": "2026-09-13",
+  "renderer": "Blender 5.2.0 LTS / Cycles",
+  "strip": "renders/f000.png..f100.png; value=i/100; scale 1.0; 640x640; 220 samples; straight RGBA with 8 px invisible RGB edge bleed; default variant color=butterscotch  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "variants": [
+    "renders/variants/color-cherry.png",
+    "renders/variants/color-jade.png"
+  ],
+  "construction": "A 1930s-40s cast Catalin (marbled phenolic) radio knob: a skirt tier, a 12-flute rosette whose flutes roll from a near-vertical grip wall onto a 50\u00b0 shoulder and end in round arches, a bead step, and a low dome with a raised centre boss. The pointer is an engraved, paint-filled line along the +X lobe crest from the dome centre to the skirt, in a contrasting resin colour. The body is translucent random-walk subsurface resin: colour runs from deep (thick) through base to glow (thin rims and fins), driven by an inside-AO path-length proxy, with a folded domain-warped 3D marbling field, a softer second layer sampled below the skin, sparse crazing hairlines and slight surface yellowing. The whole object, marbling included, rotates through 270\u00b0 under a fixed studio and dead-on 85 mm camera.",
+  "reference": {
+    "file": "design-lab/passes/30-knob-spree/catalin/refs/",
+    "use": "Proportion, flute/rosette geometry and marbled-colourway reference for period Catalin radio knobs",
+    "redistributed_in_component": false
+  },
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "materials": "Procedural Blender node graphs authored in the generator; matlib helpers consumed, not modified",
+  "shadow": "none \u2014 transparent RGBA component render; composite-time responsibility",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/"
+}

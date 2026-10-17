@@ -207,13 +207,23 @@ messages, and behavior belongs in the README; neither is kept here.
          0.9.7: FINISH re-run at template 263c15b (rack's fit now scales a knob's
          material distances, so the fitted catalin GRIT no longer renders pale);
          farm 20261016-165330-3022, receipts bf75684.
-       - [ ] The window rig (template 229a80c, Sam's ruling): rack.py's rig is
-         the product window's, so every layout gives "window": [0, 0, 1100, 768]
-         and nothing else, and each job frames its old cut with --region.
-         bake.py has WINDOW and region(). DESIGN is re-farming pass 54's 19 jobs.
-         The keys job (--region 8,2,1084,474) went to DESIGN to farm. The housing
-         layout is converted too, but it hasn't been re-farmed. On delivery,
-         re-import the rack and the keys, and check the light.
+       - [ ] The family's one pipeline (Sam, 2026-10-17: "EVERY plugin has the
+         SAME lighting and scene idioms and rendering pipelines... switch to the
+         modern convention"). The per-plate scenes, window crops and owner map
+         are retired. The front half is in 0.9.9:
+         - src/rack_layout.rs, exported by `panel-render --rack-layout`, gives one
+           whole-window doc: the housing, the viewer keys, three plates, and every
+           part over its plate as a matte, with open-spectrum's pads and feather.
+         - assets/bake_rack.py is the template's rack_bake.Product shim.
+         - retain.py keeps the template's components in assets/source/rack.
+         Next:
+         - re-retain at DESIGN's next revision (it fixes CAPTURE's seating), then
+           `--plan rack-plan` (26 bakes, 1048 frames) for the farm;
+         - `--pack`, then switch board.rs to the packed atlases (premultiplied
+           parts and plates, straight housing and keys);
+         - retire bake.py's rack, housing and keys steps and provenance.json's
+           records for them.
+         bake.py no longer copies anything from open-cepstrum (DESIGN).
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

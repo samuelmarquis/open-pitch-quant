@@ -1,0 +1,14 @@
+{"recipes": [
+  {"outputs": ["renders/variants/leather-black.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--leather", "black"]},
+  {"outputs": ["renders/variants/leather-oxblood.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--leather", "oxblood"]},
+  {"outputs": ["renders/variants/thread-black.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--thread", "black"]},
+  {"outputs": ["renders/variants/thread-orange.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--thread", "orange"]}
+]}

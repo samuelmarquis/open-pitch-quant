@@ -1,0 +1,91 @@
+{
+ "component": "panel-board",
+ "class": "HOST furniture — the parametric mounting panel (substrate primitive)",
+ "status": "CANONIZED 2026-07-28 (r9); tactile slate + folder tab canonized 2026-09-12 (pass 28) and re-canonized the same day at r4 (\"Lit. Re-canonize!\"); RE-CANONIZED 2026-09-24 under the one-panel rig (pass 38: knob_studio at -1.3 stops, rounded 0.04/6 edge, split-finish brushed, cloth sheen fix, glossy leather v3)",
+ "accepted": "2026-07-28",
+ "ratification_plate": "design-lab/plates/p44-panels-r9.png",
+ "verdict_loop": "design-lab/passes/16-panels-screens/NOTES.md (pass 16 — panels & screens, r1-r9, 2026-07-22 .. 2026-07-28)",
+ "generator": "components/panel-board/generator/panel_scene.py",
+ "renderer": "Blender 5.2.0 LTS / Cycles (Metal GPU), headless; 512², 240 samples, film_transparent (RGBA)",
+ "geometry": "fully procedural (bmesh extruded superellipse loops, EXACT-solver booleans for the bezel window / screw slot / rivet halving, bevel + auto-smooth); authored in generator/panel_scene.py — no photographic textures, no scanned or modelled assets; a FOLDER TAB (--tab/--tab-edge/--tab-pos/--tab-depth, pass 28) is spliced into the outline loop rather than unioned as a second solid, so the profile stays one closed CCW polygon and the extrude, bevel and brush UV are unchanged. The chosen edge is brought to the top by quarter-turns, the tab spliced into the straight top run, and the loop turned back, so side tabs are the same code as top tabs; on a bezel it belongs to the outer frame only. Camera extent and aim both account for it. The tab's sides leave the base STRAIGHT at their taper angle and only the top corners are rounded.",
+ "view_transform": "AgX (AgX - Medium High Contrast)",
+ "parts": {
+  "flat panel": "single plate, --material, optional superellipse corners",
+  "bezel": "FRAME + recessed FIELD — two objects, two independently assignable materials; the same decomposition components/screen-monitor/ reuses (bezel frame + glass field)",
+  "fasteners": "none | screws (slotted steel heads) | rivets (domes), steel_hw() material",
+  "title": "--title WORD cut through the face, optically spaced (textkit.optical_word), smoked acrylic inserts (--insert) with a light per letter; shipped as title-bake/1 additive layers with a linear soft glow (generator/title_bake.py, bake/title-mutation). Canonized 2026-09-24, pass 41 (p126-p130); Sam: the letterforms cut into the METAL with lights behind each letter that radiate outwards, mono bold spacing (p127 bottom row), p129's saturation, soft glow"
+ },
+ "materials": {
+  "library": "components/_studio/matlib.py (MATS)",
+  "shared_with": "components/screen-monitor/ — matlib is a SHARED family library; a change there moves both components",
+  "roster": "57 keys — see components/_studio/README.md for the per-key table. Ten MACHINED originals plus the 47-key TACTILE SLATE (pass 28).",
+  "note": "all nine are procedural node graphs; every one passes through imperfect() (roughness mottling + micro-bump) per the family 'no perfect surfaces' law",
+  "reflective_exception": "brass, copper, gold and both titanium keys join chrome/sleek-black in the glossy-room exception (env 0.55, titanium 0.30). A polished metal plate with the world hidden from glossy rays has nothing in it but base colour and one gradient and renders as pastel plastic — measured std 3.8/255 across the face, against ~15 for a texture that reads. verdigris deliberately stays OUT: its surface is mostly matte dielectric crust and the room floods it to pale mint. THE TRIANGLE still holds for every non-mirror material.",
+  "scalar_knob": "--oxidization drives any material registered in matlib.MATS_SCALAR; on verdigris it sweeps copper -> exposed -> weathered -> fully oxidised. Omitted, each key keeps its own preset."
+ },
+ "environment": {
+  "default": "rigs.knob_studio at scale max(w, h), light gain rigs.PANEL_STOPS = -1.3 stops, framed by rigs.panel_camera (pass 38; Sam on p116: \"imo p116 middle column is the best\"), with the rig's zenith scrim at R 0.275 (pass 40, p125: \".275's the winner here\"). One rig for every material, toward one rig for a whole composed panel. Everything below (and authored_lights) records the former `--studio panel` rig, removed 2026-10-03 (one rig).",
+  "model": "TWO WORLDS, split by material family (RATIFIED pass 16, plates p41/p42)",
+  "glossy": {
+   "applies_to": "chrome + sleek-black, as field OR frame",
+   "file": "components/_studio/studio_small_09_4k.hdr",
+   "source": "https://polyhaven.com/a/studio_small_09",
+   "license": "CC0",
+   "aim": "pitch 20°, APPLIED yaw 180° (GLOSSY_PITCH_DEG / GLOSSY_YAW_DEG in panel_scene.py)",
+   "exposure": "GLOSSY_SCALE 12.8274, locked by the p41 sweep for exactly this aim; ×0.9 for chrome (bright room), ×0.32 for sleek-black (dim room, so the body stays black)",
+   "ratified_by": "Sam on p41-env-angles-r2, verbatim: \"studio_small_09, pitch 20° - yaw 180°. That's the pick to my eye (the most neutral of the bunch).\""
+  },
+  "matte": {
+   "applies_to": "the other seven materials",
+   "file": "components/_studio/photostudio4k.hdr",
+   "identity": "the incumbent family HDRI — byte-identical to Poly Haven brown_photostudio_02 (4k)",
+   "source": "https://polyhaven.com/a/brown_photostudio_02",
+   "license": "CC0",
+   "aim": "untouched (no rotation offsets applied)",
+   "constraint": "the matte looks were canonized under this world and MUST NOT shift — hard constraint on future env work"
+  },
+  "glossy_visibility": "matte materials run world.cycles_visibility.glossy = False (THE TRIANGLE — flat/near-flat gloss hides the world from glossy rays and takes its gloss from authored lights only; see components/button-console/README.md)"
+ },
+ "authored_lights": {
+  "rig_default": "overhead — one big centred softbox, reflection reads as a clean band across the top half, no corner wedge",
+  "applies_to": "the two REFLECTIVE materials only; matte materials keep the classic overhead fill under every rig",
+  "ratified_by": "Sam on p42-light-rigs, verbatim: \"Overhead is my favorite here, let's run with that one! Curious to see how it renders on the curved CRT screen.\"",
+  "alternatives_retained": [
+   "classic (the old top-left bar, kept for the record and for A/B)",
+   "mirror",
+   "twin-rails",
+   "kicker-only",
+   "window-card",
+   "none"
+  ],
+  "field_note": "a dead-on panel (TILT 0, 85mm) mirrors a fixture at (Lx, Ly, Lz) to panel point (Lx, Ly)/(1 + Lz/cam_dist) — check the image point before authoring a new rig; two rigs first rendered as empty tiles because their fixtures imaged outside the panel"
+ },
+ "fastener_placement": "bezel screws sit at the midpoint of the rim along the diagonal; the 45° point of a superellipse-n corner is r·2^(-1/n) from the arc centre, so the midpoint constant is k = 1 - 2^(-1/n) (the circle constant drags the midpoint inland on a squircle — bug caught on the screen housings, screens r5)",
+ "shadow": "none — composite-time responsibility (family ruling)",
+ "renders": {
+  "provenance": "renders/*.png are the EXACT tile cache behind the canonization plate p44-panels-r9.png, copied (not re-baked) at packaging time; slugs derive from the plate captions; the pass-28 tiles (tactile slate + tab, and the three regenerated brass tiles) were baked fresh at canonization from this generator at 512/240, flags recorded in README.md",
+  "manifest": {
+   "black-painted-metal.png": "t00 — black painted metal",
+   "brushed-aluminium.png": "t01 — brushed aluminium",
+   "chrome.png": "t02 — chrome",
+   "worn-steel-gunmetal.png": "t03 — worn steel (gunmetal)",
+   "painted-steel-chipping.png": "t04 — painted steel (chipping)",
+   "white-plastic.png": "t05 — white plastic",
+   "beige-housing-plastic.png": "t06 — beige housing plastic",
+   "sleek-black-plastic.png": "t07 — sleek black plastic",
+   "styrofoam.png": "t08 — styrofoam (--fasteners none)",
+   "squircle-flat-n4.png": "t09 — squircle flat (n4)",
+   "circular-round-n2.png": "t10 — circular round (n2)",
+   "squircle-bezel-sleek-black-frame-brushed-field.png": "t11 — squircle bezel · sleek-black + brushed",
+   "squircle-bezel-beige-frame-black-field-retro.png": "t12 — squircle bezel · beige + black (retro)",
+   "bezel-black-frame-brushed-field.png": "t13 — black frame + brushed field",
+   "bezel-beige-frame-sleek-black-field.png": "t14 — beige frame + sleek-black field",
+   "bezel-painted-steel-frame-black-field.png": "t15 — painted-steel frame + black field",
+   "bezel-brushed-frame-styrofoam-field.png": "t16 — brushed frame + styrofoam field"
+  },
+  "plate_driver": "design-lab/passes/16-panels-screens/render_panel_matrix.py (MATRIX table maps tile index → caption/args; tile name is the cache key)"
+ },
+ "author": "Claude (design-lab pass 16, panel-board direction, r1-r9) under Sam Marquis's verdicts",
+ "no_ai_generation": "this component is fully procedural + PBR — no diffusion/generative model produced any geometry, texture, or pixel in renders/",
+ "licenses": "original work (generator + procedural materials); the one HDRI is Poly Haven CC0 (studio_kominka_03) and is the only third-party assets involved"
+}

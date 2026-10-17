@@ -4,6 +4,7 @@
 //!
 //! Usage: panel-render [--out DIR] [--scale N] [SCENARIO...]
 //!        panel-render --geometry   (the family probe's geometry, JSON)
+//!        panel-render --rack-layout PATH   (the board's rack layout, rack_layout.rs)
 //! Scenarios: house, oracle, keys, empty, drag, typing, menu, ladders,
 //! scope, transform, transform-list, house-feel (default: all).
 use opq_engine::params::{self as p, KeyState, Keys, Params};
@@ -299,6 +300,12 @@ fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "--geometry") {
         println!("{}", family_geometry());
+        return;
+    }
+    // The board's layout for the template's rack composer (assets/bake_rack.py).
+    if let Some(i) = args.iter().position(|a| a == "--rack-layout") {
+        let path = PathBuf::from(args.get(i + 1).expect("--rack-layout needs a path"));
+        std::fs::write(&path, opq_panel::rack_layout::rack_layout()).expect("rack layout");
         return;
     }
     let mut out = PathBuf::from("../out/panel");

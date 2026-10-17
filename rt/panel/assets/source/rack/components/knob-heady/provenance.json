@@ -1,0 +1,29 @@
+{
+  "component": "knob-heady",
+  "class": "Control primitive (continuous)",
+  "status": "CANONIZED 2026-09-11",
+  "accepted": "2026-09-11",
+  "created": "2026-09-11",
+  "ratification_plate": "design-lab/plates/p85-heady-knob-r1.png",
+  "verdict": "Sam Marquis: \"I gotta admit I was kind of trolling when I sent that first message but these are legitimately great. Canonize all four as one family\"",
+  "renderer": "Blender 5.2.0 LTS / Cycles",
+  "strip": "renders/strip-{implosion,fumed,linework,crushed}/f000.png..f100.png; value=i/100; scale 1.0; 320x320; 256 samples; straight RGBA with 8 px invisible RGB edge bleed  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "seeds": {
+    "formula": "random.Random(STYLES.index(style) * 7919 + 26)",
+    "implosion": 26,
+    "fumed": 7945,
+    "linework": 15864,
+    "crushed": 23783
+  },
+  "construction": "Black collar (r 0.635) overhanging a clear borosilicate dome (IOR 1.47, girdle r 0.566 at z 0.228, apex z 0.540) over an opaque jet backing, with all style colour \u2014 petals, fume sheets, canes, opal, dichroic shards \u2014 real geometry at r <= 0.525 inside the glass, never paint on the dome",
+  "reference": "none; no reference imagery used",
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "materials": "Local procedural glass/collar graphs plus frozen matlib helpers, no matlib change",
+  "shadow": "none \u2014 transparent RGBA component render; composite-time responsibility",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/"
+}

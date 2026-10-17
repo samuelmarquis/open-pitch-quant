@@ -1,0 +1,107 @@
+{
+  "component": "knob-ring",
+  "class": "Indicator \u2014 modulation level collar that straddles a knob (panel-mounted)",
+  "status": "CANONIZED 2026-09-12 (r3)",
+  "accepted": "2026-09-12",
+  "ratification_plate": "design-lab/plates/p94-knob-ring-r3.png",
+  "verdict_loop": "design-lab/passes/29-knob-ring/ (pass 29 \u2014 knob rings, three rounds r1-r3)",
+  "generator": "components/knob-ring/generator/knob_scene.py",
+  "demo": "design-lab/passes/29-knob-ring/render_demo.py \u2014 the in-vivo animation on knob-boss; plate.py builds the review plate",
+  "renderer": "Blender 5.2.0 LTS / Cycles (Metal GPU), headless; 640\u00b2, 256 samples, film_transparent (RGBA), PERSPECTIVE camera (85mm / 36mm sensor)",
+  "view_transform": "AgX (AgX - Medium High Contrast)",
+  "purpose": "MODULATION. The knob's pointer shows what the user set; the ring shows where the value actually is. The arc runs FROM the set point TO the live value, so it can grow either way around and the disagreement is the information. `--from` and `--value` are separate for exactly this reason.",
+  "geometry": "fully procedural, and built as its own COMPLEMENT. The lights are cut-outs in a solid plate \u2014 an inner ring, an outer ring, and one web per gap between apertures \u2014 so where no solid was placed there is an aperture. Nothing is booleaned, and the apertures cannot drift because nothing cuts them. Each lens is an annular-sector block built OVERSIZE and sunk into its aperture, so its overlap with the plate is buried inside the solid rather than abutting it (abutting faces z-fight against a different material). --relief raised is the same plate made thick and flat-bottomed, with the same cuts going into it all around. No photographic textures.",
+  "registration": {
+    "contract": "knob-boss's camera, studio, resolution and view transform VERBATIM, so a ring frame and a knob frame composite pixel-for-pixel with no transform",
+    "camera": "target + (0, 0, 4.0 * frame_scale), target (0, 0, 0.29 * SCALE), 85mm lens / 36mm sensor",
+    "throw": "angles run CLOCKWISE from --start-deg. --end-deg places value 1 directly (knob-boss's own throw is -135 -> -45); EQUAL start and end mean a full 360, which is what a continuously-rotating phase control needs. --sweep is the older spelling and applies only when --end-deg is absent.",
+    "radii": "--inner defaults from the knob footprint standard: every knob at its default --footprint has apparent radius 0.500 at the panel plane z = 0 (knob-boss's native mesh measures 0.510, its rendered silhouette 179.5 px = 0.510), and the plate's inner top corner (--inner + chamfer, at z = --height) projects 2.5 px inside that silhouette at 640 px, so the knob always covers the ring's inner edge and one ring fits every knob. Flat: --inner 0.48742, --outer 0.60403; raised: 0.46784 / 0.57977. The ring sits at panel height while a knob's rim stands above it, so under this perspective camera a knob's apparent edge exceeds its world radius; the standard is defined on the apparent edge for that reason. --outer is INFERRED from --inner when unspecified, preserving the canon band ratio 0.663 / 0.535, which keeps the ring's proportions when it is moved out to clear a bigger knob.",
+    "stacking": "ring UNDER knob \u2014 the knob's bezel overlaps the ring's inner edge, never the reverse"
+  },
+  "materials": {
+    "library": "components/_studio/matlib.py \u2014 CONSUMED, NOT MODIFIED: base_material / own_material / imperfect, plus any MATS key via --housing. matlib is SHARED and LIVE: improving a material here improves every consumer automatically.",
+    "authored_here": "the pigmented diffusant lens, in one routine that differs between lit and unlit in EMISSION STRENGTH ALONE \u2014 that is what makes the bake exact rather than approximate \u2014 and the dark plate field it is inlaid into (0.021 albedo, deliberately not a true black: display-segment's finding holds here, a 0.00 field makes an unlit segment vanish and takes the ghost with it).",
+    "emission": "led-indicator's ratified glow roster CONSUMED rather than re-derived (green / amber / red / mcblue / white), so a red ring and a red lamp on the same panel are the same red."
+  },
+  "measured_against_reference": {
+    "reference": "design-lab/refs/knob-ring.webp \u2014 INNER ring only (the outer arc in that image is a separate part and out of scope)",
+    "method": "sampled numerically rather than described: angular scan at the band radius, FFT for segment pitch, threshold duty cycle, mean RGB of the unlit lenses",
+    "segment_pitch": "reference 5.54\u00b0 \u00b7 ours 5.625\u00b0 (48 segments over 270\u00b0)",
+    "duty_cycle": "reference 0.65 lens / pitch \u00b7 ours 0.66 (--gap 0.34)",
+    "ghost_rgb": "reference 76 / 6 / 7 \u00b7 ours 68 / 7 / 6",
+    "sweep": "reference ~280\u00b0 \u00b7 ours 270\u00b0 (knob-boss's throw takes precedence \u2014 the ring must agree with the pointer it sits beside)"
+  },
+  "render_parameters": {
+    "resolution": "640x640",
+    "samples": 256,
+    "engine": "Cycles, Metal GPU",
+    "view_transform": "AgX - Medium High Contrast",
+    "segments": 48,
+    "sweep_deg": 270.0,
+    "start_deg": -135.0,
+    "gap": 0.34,
+    "emit": 1.45,
+    "ghost": 0.036,
+    "aperture": "0.12,0.92",
+    "relief": "flat",
+    "height": 0.026,
+    "housing": "plate (authored) | none (cut-in) | any matlib key"
+  },
+  "renders": {
+    "states": "rest.png (every segment a ghost), bar.png (0 -> 0.68), mod-up.png (set 0.35 live 0.78), mod-down.png (set 0.62 live 0.22), dot.png (dot mode 0.62), raised.png (--relief raised), phase.png (full 360), cut-in.png (--housing none, for compositing onto any panel material)",
+    "colourways": "amber.png, green.png, mcblue.png \u2014 the roster, at 0.55",
+    "flags": "--res 640 --samples 256, AgX Medium High Contrast, RGBA shadowless, scale 1.0"
+  },
+  "traps_this_pass_paid_for": [
+    "AgX LIFTS SHADOWS HARD \u2014 effective gamma ~3.7 in the ghost's range. An albedo ratio of 11:1 red-to-green arrives on screen as barely 2:1, so a lens tinted (1.0, 0.09, 0.05) renders PINK, not maroon. The tint has to be steepened (deep(col, 3)) before it is used. This masquerades as a lighting problem and is not one.",
+    "A GLOSSY COAT IS THE ENEMY under knob-boss's key (a 2.8x0.52 bar at power 125, aimed at metal). The lens face is horizontal and stares straight into it, so a tight coat returns a white specular across a 5\u00b0-wide segment. Measured, the coat alone was over HALF the green in an unlit lens \u2014 darkening the albedo made the ring brighter, which is the tell that albedo was never the term that mattered.",
+    "EMISSION IS A SATURATION CONTROL, not a brightness one. Past ~6 the lens loses its hue and the ring reads as chrome segments. A brighter-looking LED is a LOWER emission plus a darker surround.",
+    "imperfect() LINKS a MapRange into Roughness, so any Roughness default_value set before calling it is silently discarded. The range passed to imperfect() is the roughness that ships.",
+    "A LENS FLUSH WITH THE PLATE FACE catches the full key. The aperture has to be deep enough that its walls shadow the lens from the off-axis lights; the camera is dead overhead, so depth costs no visibility.",
+    "SHELL WORD-SPLITTING silently rendered eight 'different' states identically at the generator's defaults. Blender exits 0 regardless, so the files all landed and all had different hashes (render noise) while being the same state. Echo the generator's own parsed-arguments line back per render \u2014 file existence is not evidence the flags arrived.",
+    "ADAPTIVE SAMPLING IS DATA-DEPENDENT, so two renders of one unchanged scene are not equal to each other \u2014 a fixed seed buys nothing while it is on. Measured: max |a-b| = 0.123 on an identical re-render. Every bake residual is meaningless until it is off, and this is invisible until something downstream needs two renders to agree.",
+    "A DELTA TAKEN AS A DIFFERENCE OF TWO RENDERS carries both renders' noise, and in a k-layer composite the base's noise is amplified (k-1) times. The tell is negative values in a quantity that can only be positive. Isolating the emitter costs the same renders and removes the whole problem.",
+    "A WEB SPANNING THE FULL RADIAL WIDTH protrudes past the rings' chamfer at each rim as a square tab whose vertical face points away from the key and renders BLACK. The webs only ever needed to fill the aperture band; the two rings already cover every radius outside it for the whole 360.",
+    "TWO OPAQUE FACES AT EXACTLY THE SAME Z z-fight, and the resolution is view- and sample-dependent, so it is noise as well as an artefact. The webs overlap the rings by 2*EPS radially with both tops at HEIGHT; lifting the web 4e-4 decides the winner. This also cut the BAKE residual (AgX peak 61 -> 5 bytes), because a z-fight does not resolve the same way in two different renders."
+  ],
+  "bake_provenance": {
+    "contract": "ring-bake/1",
+    "manifest": "components/knob-ring/bake/ring-bake.json",
+    "why": "2^48 states, 49 renders. Radiance is linear in the set of emitters and a lit lens differs from an unlit one in Emission Strength alone, so per-segment contributions span the state space. The cursor is a scalar on a contribution, so it is free too.",
+    "isolate_not_subtract": "a layer is segment i as the ONLY light in the scene, not render(i lit) - render(none lit). Both have the same expectation; the difference form composes as SUM(seg) - (k-1)*base, so the base's Monte-Carlo noise enters once per lit segment. MEASURED over 22 lit segments: 28% relative error and negative pixels in a physically non-negative quantity, against 1.2% and exactly non-negative for isolation, at the same 49 renders. Footprint 0.73% of a frame rather than 55%.",
+    "residual": {
+      "linear_additivity": {
+        "mean": 4.224473950065052e-05,
+        "peak": 0.026526212692260742,
+        "rel_mean": 0.0018315554279903943
+      },
+      "display_bytes": {
+        "mean": 0.0182861328125,
+        "peak": 5.0,
+        "over_1_lsb_frac": 0.0008536783854166666
+      },
+      "measured_on": "bar 0.35 -> 0.78, 22 segments lit"
+    },
+    "view_transform": "components/display-segment/bake/agx-mhc-33.cube \u2014 the SAME AgX Medium High Contrast, consumed not re-derived",
+    "pixels": "bake/_scratch/*.exr is regenerable and git-ignored; bake/ring-bake.json IS the contract and stays in git",
+    "package": {
+      "file": "ring-bake.npz",
+      "why": "a contribution covers under 1% of the frame, so a full-frame layer is ~99% zeros. Each layer is cropped to its own bounding box and stored WITH that box, so a crop and its offset cannot be separated.",
+      "keys": {
+        "base": "(res, res, 4) float16, scene-linear Rec.709, RGBA",
+        "d<NNN>": "(h, w, 3) float16, scene-linear Rec.709, non-negative; segment NNN's contribution, cropped",
+        "b<NNN>": "(4,) int32 [x0, y0, x1, y1] into the full frame"
+      },
+      "apply": "L = base[..., :3].astype(float32); for i in lit: x0,y0,x1,y1 = b<i>; L[y0:y1, x0:x1] += d<i>   # PASTE, never resize",
+      "alpha": "from base alone \u2014 coverage does not accumulate, and the crops carry no alpha channel at all",
+      "round_trip": "cropped layers rebuild the full-frame layers to half-float quantisation and nothing worse; the bake asserts this every run"
+    },
+    "package_size": "ring-bake.npz 0.55 MB against 1.96 MB of full-frame ZIP EXR \u2014 3.6x, not the two orders of magnitude the 0.73% footprint suggests, because ZIP-compressed EXR already stores a mostly-zero frame cheaply."
+  },
+  "cut_in": {
+    "flag": "--housing none",
+    "why": "a ring that paints its OWN field can only be a washer lying on the panel: a matlib material is lit here by knob-boss's rig, not by the rig that lit the consumer's panel, and an object-space texture lands at the ring's scale rather than the panel's. MEASURED: --housing wood-walnut lands at the wrong grain scale and tone.",
+    "how": "the plate becomes a Cycles SHADOW CATCHER and the backing is hidden, so the render carries the lenses plus the occlusion the recess casts, and nothing else. The consumer's panel shows through every web, so the apertures read as cuts into THAT material. One render composites onto any panel.",
+    "correct_by_design": "the lenses stay lit by this component's rig \u2014 they are real parts with their own emission and must not change with the panel behind them. What the panel does change is the ghost's contrast against it."
+  }
+}

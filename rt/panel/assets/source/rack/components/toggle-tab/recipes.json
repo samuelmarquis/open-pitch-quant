@@ -1,0 +1,5 @@
+{"recipes": [
+  {"outputs": ["renders/tab_up.png"], "blender": "generator/tab_scene.py", "args": ["{out}", "--state", "up"]},
+  {"outputs": ["renders/tab_center.png"], "blender": "generator/tab_scene.py", "args": ["{out}", "--state", "center"]},
+  {"outputs": ["renders/tab_down.png"], "blender": "generator/tab_scene.py", "args": ["{out}", "--state", "down"]}
+]}

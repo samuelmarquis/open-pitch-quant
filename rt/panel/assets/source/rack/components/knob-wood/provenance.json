@@ -1,0 +1,35 @@
+{
+  "component": "knob-wood",
+  "class": "Control primitive (continuous)",
+  "status": "CANONIZED 2026-09-14",
+  "accepted": "2026-09-14",
+  "ratification_plate": "design-lab/plates/p95-knob-spree-r1.png",
+  "verdict": "Sam Marquis: \"The wooden ones go crazy ... canonize ... the wooden one (note that it should be called knob-wood and expose an option to change the material of the indicator from gold)\"",
+  "created": "2026-09-13",
+  "renderer": "Blender 5.2.0 LTS / Cycles",
+  "strip": "renders/f000.png..f100.png; value=i/100; scale 1.0; 640x640; 220 samples; straight RGBA with 8 px invisible RGB edge bleed; default variant wood=walnut inlay=brass  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "variants": [
+    "renders/variants/wood-maple.png",
+    "renders/variants/wood-cherry.png",
+    "renders/variants/wood-ebony.png",
+    "renders/variants/inlay-nickel.png",
+    "renders/variants/inlay-copper.png",
+    "renders/variants/inlay-black.png",
+    "renders/variants/inlay-bone.png"
+  ],
+  "construction": "A lathe-turned hardwood knob with a flush pointer pin, the boutique hi-fi / pedal idiom. The grain runs along the knob's axis: the top face is end grain (growth-ring arcs around an off-axis pith, pores as dots), the tapered flank is long grain (vertical stripes, pores as dashes). Both come from one 3D wood function in the knob's object space, so they meet at the shoulder, and the grain turns with the knob. The pointer pin's material is selectable independently of the wood species (`--inlay`: brass, nickel, copper, black-lacquered metal, or bone).",
+  "reference": {
+    "file": "design-lab/passes/30-knob-spree/turned/refs/",
+    "use": "Species colour, grain-pattern and lathe-turned proportion reference for hardwood knobs",
+    "redistributed_in_component": false
+  },
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "materials": "Procedural Blender node graphs authored in the generator; matlib helpers consumed, not modified",
+  "shadow": "none \u2014 transparent RGBA component render; composite-time responsibility",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/"
+}

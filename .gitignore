@@ -30,3 +30,6 @@ result-*
 Icon?
 
 wrac/target/
+
+# The farm plan and the frames it returns (bake_rack.py --plan/--pack).
+/rack-plan/

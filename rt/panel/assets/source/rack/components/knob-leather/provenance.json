@@ -1,0 +1,32 @@
+{
+  "component": "knob-leather",
+  "class": "Control primitive (continuous)",
+  "status": "CANONIZED 2026-09-14",
+  "accepted": "2026-09-14",
+  "ratification_plate": "design-lab/plates/p97-knob-spree-r2.png",
+  "verdict": "Sam Marquis: \"Easy round; canonize across the board. I think futura is the clear font-winner there.\"",
+  "created": "2026-09-14",
+  "renderer": "Blender 5.2.0 LTS / Cycles",
+  "strip": "renders/f000.png..f100.png; value=i/100; scale 1.0; 640x640; 220 samples; straight RGBA with 8 px invisible RGB edge bleed; default variant leather=tan thread=cream  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "variants": [
+    "renders/variants/leather-black.png",
+    "renders/variants/leather-oxblood.png",
+    "renders/variants/thread-orange.png",
+    "renders/variants/thread-black.png"
+  ],
+  "construction": "Saddle-stitched padded leather dome set in a turned brass cup. The leather (`--leather`: tan, black, oxblood), the stitch ring, the edge-painted rim and the polished brass indicator pin all face the dead-on panel camera; the stitches are real geometry (slanted, 3-ply twisted waxed thread in a selectable colour (`--thread`: cream, black, orange) diving into slits that dimple the leather).",
+  "reference": {
+    "file": "design-lab/passes/30-knob-spree/leather/refs/",
+    "use": "Proportion and stitch reference for saddle-stitched padded leather knobs set in a turned brass cup",
+    "redistributed_in_component": false
+  },
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "materials": "Procedural Blender node graphs authored in the generator; matlib helpers consumed, not modified",
+  "shadow": "none \u2014 transparent RGBA component render; composite-time responsibility",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/"
+}

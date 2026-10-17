@@ -1,0 +1,23 @@
+{"recipes": [
+  {"outputs": ["renders/variants/inlay-black.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--inlay", "black"]},
+  {"outputs": ["renders/variants/inlay-bone.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--inlay", "bone"]},
+  {"outputs": ["renders/variants/inlay-copper.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--inlay", "copper"]},
+  {"outputs": ["renders/variants/inlay-nickel.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--inlay", "nickel"]},
+  {"outputs": ["renders/variants/wood-cherry.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--wood", "cherry"]},
+  {"outputs": ["renders/variants/wood-ebony.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--wood", "ebony"]},
+  {"outputs": ["renders/variants/wood-maple.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--wood", "maple"]}
+]}

@@ -1,0 +1,250 @@
+{
+ "rail-cross/v000": {
+  "path": "components/rail-cross/renders/v000.png",
+  "flags": [
+   "--value",
+   "0.0"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/v000.png"
+ },
+ "rail-cross/v025": {
+  "path": "components/rail-cross/renders/v025.png",
+  "flags": [
+   "--value",
+   "0.25"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.25 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/v025.png"
+ },
+ "rail-cross/v050": {
+  "path": "components/rail-cross/renders/v050.png",
+  "flags": [
+   "--value",
+   "0.5"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.5 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/v050.png"
+ },
+ "rail-cross/v075": {
+  "path": "components/rail-cross/renders/v075.png",
+  "flags": [
+   "--value",
+   "0.75"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.75 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/v075.png"
+ },
+ "rail-cross/v100": {
+  "path": "components/rail-cross/renders/v100.png",
+  "flags": [
+   "--value",
+   "1.0"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=1 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/v100.png"
+ },
+ "rail-cross/wells-none": {
+  "path": "components/rail-cross/renders/wells-none.png",
+  "flags": [
+   "--wells",
+   "none"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.5 well=coating-cavity-dark wells=none witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/wells-none.png"
+ },
+ "rail-cross/cap-plain": {
+  "path": "components/rail-cross/renders/cap-plain.png",
+  "flags": [
+   "--cap-texture",
+   "plain"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=plain cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.5 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/cap-plain.png"
+ },
+ "rail-cross/witness-short": {
+  "path": "components/rail-cross/renders/witness-short.png",
+  "flags": [
+   "--witness",
+   "short"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.5 well=coating-cavity-dark wells=large witness=short [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/witness-short.png"
+ },
+ "rail-cross/cut-in": {
+  "path": "components/rail-cross/renders/cut-in.png",
+  "flags": [
+   "--panel",
+   "none",
+   "--tick-fill",
+   "white"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=none plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=white ticks=none value=0.5 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill-white(explicit)] [cut-in:on] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/cut-in.png"
+ },
+ "rail-cross/on-catalin": {
+  "path": "components/rail-cross/renders/on-catalin.png",
+  "flags": [
+   "--panel",
+   "catalin"
+  ],
+  "receipt": "rail-cross adaptive=on cap-index=off cap-texture=ribbed cursor=aluminium-bead-blast-anodized-silver cut-in=none denoise=on length=3.2 major=4 minor=5 panel=catalin plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=none value=0.5 well=coating-cavity-dark wells=large witness=none [frame:181x152,ppu:42] [tick:engraving-fill(auto-lum0.351-dark)] [cut-in:off] [mechanism:crossfader,travel:1.9840] -> /Users/sam/Developer/open-plugin-template/components/rail-cross/renders/on-catalin.png"
+ },
+ "rail-position/v000": {
+  "path": "components/rail-position/renders/v000.png",
+  "flags": [
+   "--value",
+   "0.0"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=0 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/v000.png"
+ },
+ "rail-position/v025": {
+  "path": "components/rail-position/renders/v025.png",
+  "flags": [
+   "--value",
+   "0.25"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=0.25 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/v025.png"
+ },
+ "rail-position/v050": {
+  "path": "components/rail-position/renders/v050.png",
+  "flags": [
+   "--value",
+   "0.5"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=0.5 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/v050.png"
+ },
+ "rail-position/v075": {
+  "path": "components/rail-position/renders/v075.png",
+  "flags": [
+   "--value",
+   "0.75"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=0.75 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/v075.png"
+ },
+ "rail-position/v100": {
+  "path": "components/rail-position/renders/v100.png",
+  "flags": [
+   "--value",
+   "1.0"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=1 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/v100.png"
+ },
+ "rail-position/bipolar": {
+  "path": "components/rail-position/renders/bipolar.png",
+  "flags": [
+   "--ticks",
+   "bipolar"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=bipolar value=0.5 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/bipolar.png"
+ },
+ "rail-position/landmark": {
+  "path": "components/rail-position/renders/landmark.png",
+  "flags": [
+   "--ticks",
+   "landmark",
+   "--major",
+   "4",
+   "--minor",
+   "1"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=1 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=landmark value=0.5 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/landmark.png"
+ },
+ "rail-position/coarse": {
+  "path": "components/rail-position/renders/coarse.png",
+  "flags": [
+   "--major",
+   "3",
+   "--minor",
+   "2"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=3 minor=2 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=0.5 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/coarse.png"
+ },
+ "rail-position/cut-in": {
+  "path": "components/rail-position/renders/cut-in.png",
+  "flags": [
+   "--panel",
+   "none",
+   "--tick-fill",
+   "white"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=none plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=white ticks=monotonic value=0.5 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill-white(explicit)] [cut-in:on] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/cut-in.png"
+ },
+ "rail-position/on-catalin": {
+  "path": "components/rail-position/renders/on-catalin.png",
+  "flags": [
+   "--panel",
+   "catalin"
+  ],
+  "receipt": "rail-position adaptive=on cursor=steel-milled cut-in=none denoise=on index=inlay-pin-nickel length=3.2 major=4 minor=5 panel=catalin plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic value=0.5 well=coating-cavity-dark window=paint-flat-darker [frame:181x152,ppu:42] [tick:engraving-fill(auto-lum0.351-dark)] [cut-in:off] [mechanism:position-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-position/renders/on-catalin.png"
+ },
+ "rail-range/wide": {
+  "path": "components/rail-range/renders/wide.png",
+  "flags": [
+   "--low",
+   "0.08",
+   "--high",
+   "0.92"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.92 index=inlay-pin-nickel length=3.2 low=0.08 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/wide.png"
+ },
+ "rail-range/mid": {
+  "path": "components/rail-range/renders/mid.png",
+  "flags": [
+   "--low",
+   "0.25",
+   "--high",
+   "0.75"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.75 index=inlay-pin-nickel length=3.2 low=0.25 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/mid.png"
+ },
+ "rail-range/narrow": {
+  "path": "components/rail-range/renders/narrow.png",
+  "flags": [
+   "--low",
+   "0.46",
+   "--high",
+   "0.56"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.56 index=inlay-pin-nickel length=3.2 low=0.46 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/narrow.png"
+ },
+ "rail-range/adjacent": {
+  "path": "components/rail-range/renders/adjacent.png",
+  "flags": [
+   "--low",
+   "0.48",
+   "--high",
+   "0.52"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.52 index=inlay-pin-nickel length=3.2 low=0.48 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/adjacent.png"
+ },
+ "rail-range/crossed": {
+  "path": "components/rail-range/renders/crossed.png",
+  "flags": [
+   "--low",
+   "0.62",
+   "--high",
+   "0.38"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.38 index=inlay-pin-nickel length=3.2 low=0.62 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/crossed.png"
+ },
+ "rail-range/edge-low": {
+  "path": "components/rail-range/renders/edge-low.png",
+  "flags": [
+   "--low",
+   "0.0",
+   "--high",
+   "0.30"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.3 index=inlay-pin-nickel length=3.2 low=0 major=4 minor=5 panel=gunmetal-brushed plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(auto-lum0.068-white)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/edge-low.png"
+ },
+ "rail-range/cut-in": {
+  "path": "components/rail-range/renders/cut-in.png",
+  "flags": [
+   "--panel",
+   "none",
+   "--tick-fill",
+   "white"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.75 index=inlay-pin-nickel length=3.2 low=0.25 major=4 minor=5 panel=none plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=white ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill-white(explicit)] [cut-in:on] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/cut-in.png"
+ },
+ "rail-range/on-catalin": {
+  "path": "components/rail-range/renders/on-catalin.png",
+  "flags": [
+   "--panel",
+   "catalin"
+  ],
+  "receipt": "rail-range adaptive=on bridge=steel-milled cursor=steel-milled cut-in=none denoise=on high=0.75 index=inlay-pin-nickel length=3.2 low=0.25 major=4 minor=5 panel=catalin plate=gunmetal-brushed preset=none px-per-unit=42 raw=off res=640 samples=220 scale=1 seed=0 tick=engraving-fill-white tick-color=none tick-fill=auto ticks=monotonic well=coating-cavity-dark [frame:181x152,ppu:42] [tick:engraving-fill(auto-lum0.351-dark)] [cut-in:off] [mechanism:range-rail,travel:3.2000] -> /Users/sam/Developer/open-plugin-template/components/rail-range/renders/on-catalin.png"
+ }
+}

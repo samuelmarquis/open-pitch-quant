@@ -1,0 +1,91 @@
+{
+ "component": "_studio",
+ "class": "SHARED studio floor — not a component: the family material library + the house HDRI world every hardware generator lights with (rigs.knob_studio; the rack light rigs.rack_studio builds on it)",
+ "status": "matlib.py CANONIZED 2026-07-28; roster expanded to 57 keys and re-canonized 2026-09-12 (pass 28, r4). SHARED AND LIVE — improving a material improves every consumer automatically; re-render the canon tiles a change moves.",
+ "canonized": "2026-07-28",
+ "canonized_verbatim": "I'd like to see the grandfathered elements under the new lighting discipline, certainly, just to keep everything consistent (and you can canonize matlib.py)",
+ "verdict_loop": "design-lab/passes/NOTES.md (the cross-pass log — canonization directive 2026-07-28) + design-lab/passes/16-panels-screens/NOTES.md (pass 16 — where the materials and the two-worlds split were ratified, plates p22-p45)",
+ "docs": "components/_studio/README.md",
+ "assets": {
+  "matlib.py": {
+   "what": "family material library: helpers (own_material, base_material, imperfect, _sock/_mix_rgba, _warp, _obj_vec, _weave/_nap/_wool/_fibres/_tone_mottle) + 57 materials in MATS + MATS_SCALAR + steel_hw() fastener metal",
+   "nature": "fully procedural Blender/Cycles node graphs — no photographic textures, no scanned or modelled assets, no image files of any kind",
+   "origin": "extracted 2026-07-23 from components/panel-board/generator/panel_scene.py once Sam wrapped the panel materials (pass 16 r7, verbatim: \"rusted steel good, CANONIZE; styrofoam there, CANONIZE. Panel materials wrapped.\"); grown since by the screen-monitor and pass-17 conduit work; expanded 2026-09-12 (pass 28, THE TACTILE SLATE) from 10 to 54 keys on Sam's directive \"we need to really expand the material slate for panels ... go fucking NUTS on this little big planet style\", canonized same day (\"Canonize all of this\")",
+   "roster": [
+    "black-paint — deep black dielectric rack paint, multi-scale deformation + orange peel",
+    "brushed — brushed aluminium, anisotropic grain on the 'brush' UV tangent",
+    "chrome — near-mirror chromed steel (reflects a real room; _wavy_scratches breaks the binary horizon)",
+    "white-plastic — injection-moulded white ABS, SSS + sink marks",
+    "styrofoam — expanded polystyrene by SPHERE PACKING (_bead_height: overlapping spherical caps, zero flat area; four attempts)",
+    "beige-plastic — 90s computer-case beige, satin, moulded pebble grain",
+    "sleek-black — piano black, near-zero base so the body reads truly black",
+    "worn-steel — mat_steel(rust=0.0), gunmetal: brushing + crisscross wear, tonal zones in ROUGHNESS not colour",
+    "painted-steel — mat_painted_steel(paint_col=...), chipping paint over rust, two BSDFs composited by a hard-edged chip mask"
+   ],
+   "family_law": "every material passes through imperfect() — roughness mottling + micro-bump ('no perfect surfaces'); steel_hw() is deliberately rougher than mirror chrome so fastener heads do not vanish into the dark void on black panels (panels r2)",
+   "license": "original work (Sam Marquis / design-lab), same terms as the repo",
+   "stability": "SHARED AND LIVE. Improving an existing material improves every consumer automatically, with no version to bump and nothing to opt in to — that propagation is the point of the library, not a hazard, and it is Sam's explicit ruling (2026-09-12): \"it is completely fine to update an existing texture and the consumers will get the updated version automatically without having to specify a version bump\". The only obligation is bookkeeping: re-render the canon tiles the change moves, so committed renders still match what the generators produce. Renaming or removing a MATS key is the one genuinely breaking change, since generators look materials up by string — add the new name alongside the old, or fix the callers in the same commit.",
+   "families": {
+    "machined (10, the originals)": "milled, moulded, plated, painted",
+    "tactile slate (47, pass 28)": "woven, pressed, grown, cast or upholstered — TEXTILE (felt x5, damask x2, corduroy, denim, burlap, knit x3, leather x3, tweed), PAPER (paper, cardboard, cork), WOOD (oak, walnut, birch, rosewood, ebony, greenheart), WARM METAL (copper, gold, verdigris x4, anodised x3, titanium x2), GLASS (x5 frosted cast), AUDIO-TACTILE (tolex x3, bakelite x2). Every builder is colour- or species-parameterised; the registered keys are curated colourways, and verdigris ships four points on a continuous ageing axis."
+   },
+   "mechanisms_worth_naming": [
+    "titanium's rainbow is REAL thin-film interference — Principled's Thin Film Thickness in nm — so the hue sequence is the one the physics gives, in the right order. It is a MIRROR: all three references are polished to near-chrome with broad smooth colour fields (the Zippo measures saturation 0.76 at value 220). Brushing scatters the very reflection the interference lives in, and roughness averages it over angles and washes the colour out.",
+    "verdigris is an AGEING AXIS, not a look: mat_verdigris(oxidization) sweeps 0 bare polished copper -> 0.3 exposed -> 0.65 weathered -> 0.95 the ratified plate -> 1 fully oxidised, one knob driving coverage, crust thickness, copper dulling and crust hue together. Measured off refs/verdigris.png: a granular crystalline crust in clumped masses, bright crowns to near-black pits, TURQUOISE (86% of the plate falls in hue 180-210deg, not green), copper torn through as the minority. The crust is DIELECTRIC, which is the whole difference between verdigris and a green metal.",
+    "damask's figure and ground are the SAME yarn woven on opposite faces (warp-satin vs weft-satin): two BSDFs differing in roughness, sheen and anisotropy ROTATION, with a deliberately tiny colour difference, because lustre is what carries a damask.",
+    "felt is MATTED WOOL — six layers of filaments at crossed angles, not a field of blobs. Isotropic noise octaves give rounded lumps and read as suede or styrofoam.",
+    "knit's yarn is a ROPE: each V-leg is a SIN band pushed through a power curve to crown it into a strand, with a gutter between courses, ply twist across the strands, and the stitch shadow in COLOUR — on a flat dead-on panel that shadow sells depth far harder than relief.",
+    "glass is tinted in TRANSMISSION with the frost in roughness and a bump whose wavelength is measured in whole panels; fast bump reads as etched or sandy.",
+    "wood species differ in GRAIN CHARACTER, not tint: wander, stretch, ring_sharp, pore_scale and figure. Oak coarse and open, birch tight and quiet, rosewood streaked, ebony nearly featureless, greenheart ribboned."
+   ],
+   "scale_law": "calibrated to PANEL size, not knob size. A 3x2 board under one big soft overhead viewed dead-on has no grazing angles, so relief finer than ~scale 250 or shallower than ~0.01 bump distance is invisible. Canon reference is styrofoam (scale 30/66, distance 0.16/0.05). Objective bar, measured on a centre patch: std >= ~12/255 reads, <= ~6 does not.",
+   "traps_paid_for": [
+    "_obj_vec's ROTATION NEEDS ITS OWN MAPPING NODE, before the scaling one. A single Mapping applies scale first and rotation second, so the visible stretch axis stays glued to X/Y whatever rotation is passed — every 'crossed' fibre layer combs the same way and wool renders as brushed metal. This looks exactly like a tuning failure and is not one.",
+    "Voronoi F1 Distance is ZERO at a feature point and grows toward the cell edge: position 0 on a ramp reading it is a crystal CROWN, the high end is the pit. Running it the other way lights the pits and shades the tops.",
+    "ramp stops must follow the driving signal's DISTRIBUTION — a Wave factor is arcsine-distributed and _weave's height is the MAX of two of them; and a coverage window placed below its driving noise's floor is simply 'all metal'.",
+    "_weave's distortion is a cliff: past ~0.5 the bands stop being bands and the MAX degenerates into speckle.",
+    "the weave mask is a SUBTRACTION, so it is one-directional: roughness/lustre, never pattern.",
+    "an undistorted Voronoi reads as 'Voronoi' — even cells, straight shared walls. _warp() bends the walls and varies the sizes; it is what turns the node into cork or crust.",
+    "pick the mechanism from the thing's actual construction — three rounds tried to get amp tweed's diagonal out of a plain warp/weft cross, which has no diagonal in it at all.",
+    "socket lookup by IDENTIFIER (_sock/_mix_rgba): the Mix node names four socket pairs A/B."
+   ],
+   "scalar_knobs": "MATS_SCALAR maps a key to a builder taking ONE 0..1 character knob, so a generator can expose it as a flag without special-casing the key (panel-board --oxidization is the first consumer). Registered MATS entries stay the curated presets."
+  },
+  "studio_kominka_03_4k.hdr": {
+   "role": "THE HOUSE WORLD — the fill environment the house rig (rigs.knob_studio) lights with, at yaw 0; the rack light (rigs.rack_studio) builds on it",
+   "identity": "Poly Haven studio_kominka_03, 4k (4096 x 2048 RGBE)",
+   "source": "https://polyhaven.com/a/studio_kominka_03",
+   "download": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/4k/studio_kominka_03_4k.hdr",
+   "author": "Poly Haven",
+   "license": "CC0 (public domain)",
+   "md5": "32043f4dc7ce29ba6cc4066f2792c8e0",
+   "sha1": "d8d291b08652f0c6873292b37de517df0878c1b0",
+   "bytes": 24297900,
+   "aim": "yaw 0, no pitch — used exactly as published",
+   "chosen_for": "it is AMORPHOUS in a mirror: a chrome dome under it reads as metal, with no room geometry in the highlight. The incumbent brown_photostudio_02 has black-ceiling fluorescent strip tubes a dome reads as hard chevrons.",
+   "ratified_by": "Sam, pass 32 (plates p100-p103): the HDRI, the world made visible to glossy rays in the knob studio, gradient mesh emitters in place of every authored area light, and the overhead fill moved off-axis",
+   "exposure": "solved per rig by a matte-grey probe so the world alone lights the subject exactly as the world it replaces did — the solved numbers are in the rigs.py docstring",
+   "added": "2026-09-15 (pass 32)"
+  }
+ },
+ "house_lighting": {
+  "world": "ONE world for every shared rig: studio_kominka_03_4k at yaw 0, exposure rigs.HOUSE_KNOB_STR in the house rig (rigs.knob_studio); the rack light (rigs.rack_studio) builds on it",
+  "sources": "every authored source in a shared rig is a GRADIENT MESH EMITTER (rigs.emitter): a plane 1.5x the area light's size on each axis, Add(Transparent, Emission), carrying a radial gradient that reaches zero before its border — so it lights like the area light it replaces and has no silhouette a mirror can read. Watts are still the area-light watts; each rig's solved emitter scale carries the difference.",
+  "glossy_rays": "rigs.knob_studio shows the world to glossy rays: a part's glossy faces take their reflections from the room and the emitters together. The rack light (rigs.rack_studio) hides the room from glossy rays (a dark room) and gives mirrors its reflection cards instead.",
+  "knob_fill": "the overhead fill sits OFF-AXIS at (0.15, 1.6, 2.0) aimed at the part: a near-overhead source images at the CENTRE of a dome, and raising it only tightens the splotch",
+  "rule": "matlib is world-agnostic (it builds materials, it does not hang lights); every Blender generator lights with the house rig (rigs.knob_studio) or, composed into a panel, the rack light (rigs.rack_studio) — no generator hangs its own lights"
+ },
+ "consumers": {
+  "components/panel-board/": "MATS (all nine) + steel_hw + own_material — CANONIZED 2026-07-28",
+  "components/screen-monitor/": "MATS (bezel roster) + steel_hw + own_material; authors its own mat_glass_dark locally — CANONIZED 2026-07-28",
+  "components/conduit-corrugated/": "base_material + imperfect (gummy body, emissive core and glands authored locally)",
+  "components/conduit-piping/": "base_material + imperfect + own_material (metals authored locally on matlib's steel doctrine)",
+  "components/conduit-ribbon/": "base_material + imperfect + own_material + steel_hw (clamp bolts)",
+  "components/conduit-smooth/": "own_material + imperfect",
+  "components/meter-vu/": "MATS + steel_hw + own_material + imperfect (component still DRAFT)"
+ },
+ "renderer": "Blender 5.2.0 LTS / Cycles, headless; AgX (Medium High Contrast) view transform family-wide",
+ "no_ai_generation": "nothing in this directory was produced by a diffusion or generative model — matlib.py is hand-authored procedural node graphs, and the three HDRIs are photographic CC0 captures from Poly Haven",
+ "licenses": "matlib.py original work; all three HDRIs Poly Haven CC0 — the only third-party assets on the studio floor",
+ "author": "Claude (design-lab, passes 15-18) under Sam Marquis's verdicts"
+}

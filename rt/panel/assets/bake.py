@@ -6,9 +6,8 @@ provenance record (assets/vendor/provenance.json).
 Sources, all read-only:
   - ../open-plugin-template/components (accepted component renders, the
     panel-board, knob and screen-monitor generators and the composer,
-    _studio/rack.py), the family's design system;
-  - ../open-cepstrum/rt/panel/assets/vendor (the knob-preview atlases and
-    Source Sans), the reference consumer's bakes.
+    _studio/rack.py), the family's design system. Nothing is read from
+    another product (DESIGN, 2026-10-17).
 
 Run from anywhere:
   python3 -I rt/panel/assets/bake.py            # everything
@@ -17,7 +16,7 @@ Run from anywhere:
 Needs Blender 5.2 (BLENDER, default ~/Applications/Blender.app) for the
 plates, components and housing, ffmpeg for resampling component renders to
 their 2x draw size, and PIL (the dev shell's) for the rack and key imports.
-Paths: TEMPLATE and CEPSTRUM override the sibling checkouts.
+Paths: TEMPLATE overrides the sibling checkout.
 """
 import argparse
 import hashlib
@@ -34,11 +33,9 @@ VENDOR = HERE / "vendor"
 ROOT = HERE.parents[2]  # the open-pitch-quant checkout
 DEV = ROOT.parent
 TEMPLATE = Path(os.environ.get("TEMPLATE", DEV / "open-plugin-template"))
-CEPSTRUM = Path(os.environ.get("CEPSTRUM", DEV / "open-cepstrum"))
 BLENDER = Path(os.environ.get(
     "BLENDER", Path.home() / "Applications/Blender.app/Contents/MacOS/Blender"))
 COMPONENTS = TEMPLATE / "components"
-CEP_VENDOR = CEPSTRUM / "rt/panel/assets/vendor"
 
 # Rack plates: name -> (logical w, h, panel-board flags). Logical px; the
 # plate renders orthographic at 200 px per world unit, so 1 world unit is
@@ -84,10 +81,8 @@ HOUSING_FLAGS = ["--style", "lcd", "--bezel", "beige-plastic", "--fasteners", "n
                  "--aperture", "48,48,2040,820", "--margin", "0", "--corner-r", "0",
                  "--overscan", "0", "--res", "2136x916"]
 
-COPIES = {
-    "SourceSansPro-Regular.otf": CEP_VENDOR / "SourceSansPro-Regular.otf",
-    "SourceSans-LICENSE.txt": CEP_VENDOR / "SourceSans-LICENSE.txt",
-}
+# Source Sans was copied from open-cepstrum's vendor until 0.9.9; it is
+# vendored here as it stands (DESIGN: nothing is read from another product).
 
 
 def digest(path):
@@ -629,16 +624,10 @@ def resample_sprites(record):
         }
 
 
-def copy_files(record):
-    for name, source in COPIES.items():
-        shutil.copyfile(source, VENDOR / name)
-        record[name] = {"kind": "copied", "source": str(source.relative_to(DEV))}
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=["rack", "housing",
-                                                      "keys", "glass", "sprites", "copies"])
+                                                      "keys", "glass", "sprites"])
     parser.add_argument("--renders",
                         help="the farm's renders (rack plates, housing, keys, glass): take them in, no Blender")
     parser.add_argument("--jobs", metavar="DIR",
@@ -655,8 +644,7 @@ def main():
              "housing": lambda record: bake_housing(record, args.renders),
              "keys": lambda record: pack_viewer_keys(record, args.renders),
              "glass": lambda record: bake_glass(record, args.renders),
-             "sprites": resample_sprites,
-             "copies": copy_files}
+             "sprites": resample_sprites}
     for step in args.only:
         steps[step](record)
     # A vendored file that is gone (dropped from the board) leaves no record.
@@ -671,8 +659,6 @@ def main():
     sources = manifest.setdefault("sources", {})
     if {"rack", "housing", "keys", "glass", "sprites"} & set(args.only):
         sources["open-plugin-template"] = git_head(TEMPLATE)
-    if {"copies"} & set(args.only):
-        sources["open-cepstrum"] = git_head(CEPSTRUM)
     manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
 
 

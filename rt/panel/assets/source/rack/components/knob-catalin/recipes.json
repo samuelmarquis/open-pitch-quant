@@ -1,0 +1,8 @@
+{"recipes": [
+  {"outputs": ["renders/variants/color-cherry.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--color", "cherry"]},
+  {"outputs": ["renders/variants/color-jade.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--color", "jade"]}
+]}

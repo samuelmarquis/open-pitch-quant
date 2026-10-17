@@ -816,3 +816,23 @@ and pink. That is fixed at template 263c15b. FINISH is re-run (farm
 20261016-165330-3022) and GRIT reads deep amber. `v27-rack-knobs.png` is
 re-rendered in place.
 
+## One pipeline for every plugin (2026-10-17)
+
+**Context:** a side note warned that each OPQ plate was its own rack scene,
+lit separately, to match the FINISH pilot Sam had passed.
+
+**Sam, verbatim:** "No no no no NO no no no. Don't do this. the WHOLE POINT
+is that EVERY plugin has the SAME lighting and scene idioms and rendering
+pipelines. Do not do this to match some thing I'd approved previously. Get
+with the program, switch to the modern convention"
+
+**Interpretation:**
+- The family's convention wins over any earlier per-product approval.
+- OPQ moves onto the template's rack_bake pipeline as open-spectrum and
+  open-comp use it: the board exports one whole-window layout, and each part
+  bakes over its plate as a matte.
+- DESIGN stopped the pass-54 re-farm, so none of it will be used.
+
+**Action:** the front half is 0.9.9 (see TODO). The farm plan follows
+DESIGN's next template revision.
+

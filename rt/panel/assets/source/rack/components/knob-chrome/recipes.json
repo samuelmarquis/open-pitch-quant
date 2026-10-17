@@ -1,0 +1,5 @@
+{"recipes": [
+  {"outputs": ["renders/heat-tint.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--preset", "heat-tint", "--value", "0.5", "--samples", "256"]}
+]}

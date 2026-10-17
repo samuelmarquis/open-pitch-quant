@@ -151,6 +151,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.9** — no visible change yet: the panel's rendered parts move to
+  the family's shared pipeline, where the whole board is one lit scene and
+  each part is rendered in it over its plate. This replaces three separate
+  plate scenes. The new renders arrive in a coming build.
 - **0.9.8** — no visible change yet: the rendered parts move to the
   family's shared lighting, one light over the whole window instead of
   one per plate. The new renders arrive in the next build.

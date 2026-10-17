@@ -1,0 +1,14 @@
+{"recipes": [
+  {"outputs": ["renders/variants/finish-black.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--finish", "black"]},
+  {"outputs": ["renders/variants/finish-blue.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--finish", "blue"]},
+  {"outputs": ["renders/variants/finish-champagne.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--finish", "champagne"]},
+  {"outputs": ["renders/variants/top-turned.png"],
+   "blender": "generator/knob_scene.py",
+   "args": ["{out}", "--value", "0.5", "--top", "turned"]}
+]}

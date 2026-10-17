@@ -22,6 +22,7 @@ mod board;
 mod fittings;
 pub mod layout;
 pub mod pack;
+pub mod rack_layout;
 
 pub use board::Board;
 pub use fittings::{Fittings, PointerCapture};

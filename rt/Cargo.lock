@@ -738,6 +738,7 @@ dependencies = [
  "opq-engine",
  "panelkit",
  "pluginkit",
+ "serde_json",
  "wgpu",
 ]
 

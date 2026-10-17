@@ -1,0 +1,5 @@
+{"recipes": [
+  {"outputs": ["renders/chickenhead_*_pos*.png"],
+   "python": "generator/render_states.py",
+   "args": []}
+]}

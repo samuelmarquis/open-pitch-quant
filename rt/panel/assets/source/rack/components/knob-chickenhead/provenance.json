@@ -1,0 +1,17 @@
+{
+ "component": "knob-chickenhead",
+ "status": "canon",
+ "class": "Control primitive (selector knob style)",
+ "accepted": "2026-07-22 (v7 proportions)",
+ "canon_states": "5 positions x 3 colorways (black/cream/red), angles [-60,-30,0,30,60], scale 1.0, 560x560, 220 samples",
+ "physical_scale": "--scale is a positive coherent geometry, rig, and framing multiplier; generator/render_states.py reproduces other scales",
+ "alpha": "straight RGBA; state driver preserves alpha and visible pixels while extending RGB 8 px underneath zero alpha",
+ "renderer": "Blender 5.2.0 LTS / Cycles \u2014 lathe drum + lofted fin, no photographic textures",
+ "environment": {
+  "file": "brown_photostudio_02_4k.hdr",
+  "source": "https://polyhaven.com/a/brown_photostudio_02",
+  "license": "CC0",
+  "note": "diffuse only on the flat drum top \u2014 lights-only gloss per family rule"
+ },
+ "shadow": "none \u2014 composite-time responsibility (family ruling)"
+}

@@ -13,4 +13,5 @@ path = "src/bin/panel_render.rs"
 opq-engine = { path = "../engine" }
 panelkit = { path = "../../../open-panelkit" }
 pluginkit = { path = "../../../open-pluginkit" }
+serde_json = "1"
 wgpu = "24"

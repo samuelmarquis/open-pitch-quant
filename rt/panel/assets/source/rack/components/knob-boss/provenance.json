@@ -1,0 +1,35 @@
+{
+  "component": "knob-boss",
+  "class": "Control primitive (continuous)",
+  "status": "CANONIZED 2026-08-03",
+  "accepted": "2026-08-03",
+  "ratification_plate": "design-lab/plates/p81-knob-pedal-r6.png",
+  "verdict": "Sam Marquis: \"Yep, I think I'm happy here. Canonize the knobs!\"",
+  "created": "2026-08-03",
+  "renderer": "Blender 5.2.0 LTS / Cycles",
+  "strip": "renders/f000.png..f100.png; value=i/100; scale 1.0; 640x640; 220 samples; straight RGBA with 8 px invisible RGB edge bleed  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "construction": "Procedural compact cylindrical base; fully planar chrome insert with a radial tangent field transformed Object->World before the Tangent socket (Cycles reads it in world space), dual-scale polar-space roughness and hairline relief, easing into a round-ended integrated pointer framed by mathematically matched half-ellipsoid C-ring caps; no separate pointer strip and no photographic surface textures",
+  "reference": {
+    "file": "design-lab/refs/knob-refs.jpg",
+    "use": "Proportion and visual-language reference for the BOSS-MID pedal knob",
+    "construction_mockup": "design-lab/refs/knob-heightmap.png",
+    "construction_use": "Height order only: fully flat inner chrome under a low elliptical outer C-ring",
+    "redistributed_in_component": false
+  },
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "materials": "Procedural Blender node graphs plus the frozen shared matlib helpers; no shared matlib behavior changed",
+  "shadow": "none \u2014 transparent RGBA component render; composite-time responsibility",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/",
+  "tangent_fix": {
+    "date": "2026-09-13",
+    "plate": "design-lab/plates/p96-knob-boss-tangent-fix.png",
+    "defect": "the insert's anisotropy tangent was an object-space radial vector fed straight to the world-space Tangent socket, so the axis in use was true radial rotated by minus the knob angle: diagonal at the throw's ends, fully circumferential at value 0.5, radial only at 1/6 and 5/6",
+    "measured": "insert low-frequency luminance vs f017 across every 4th frame: shipped mean 12.67 / max 21.33, fixed mean 0.45 / max 0.52 (render noise floor); f017 and f083, where the old axis happened to be right, are unchanged",
+    "strip": "all 101 frames re-rendered with the fix"
+  }
+}

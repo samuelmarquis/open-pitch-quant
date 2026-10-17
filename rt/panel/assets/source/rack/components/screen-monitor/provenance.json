@@ -1,0 +1,83 @@
+{
+  "component": "screen-monitor",
+  "class": "HOST furniture — the physical HOUSING of an in-vivo monitor (bezel + glass + reflection + vignette + manifest)",
+  "status": "CANONIZED 2026-07-28 (r8); RE-CANONIZED 2026-07-30 (r9, plate design-lab/plates/p79-screens-r9.png) — generator gained the --aperture inverse solve (+ --margin/--corner-r in pixels) and the overscan style fork; the legacy solve is unmoved, so the ratified layer PNGs are KEPT and only screen-lcd-sleek.json was re-emitted (overscan 0.02 -> 0.0)",
+  "accepted": "2026-07-28",
+  "ratification_plate": "design-lab/plates/p45-screens-r8.png",
+  "ratified_verbatim": "Yep, we're done here. Canonize screens!",
+  "verdict_loop": "design-lab/passes/16-panels-screens/NOTES.md (pass 16 — panels & screens, screens r1-r8, 2026-07-23 .. 2026-07-28; pass CLOSED with this ratification)",
+  "generator": "components/screen-monitor/generator/screen_scene.py",
+  "plate_driver": "design-lab/passes/16-panels-screens/render_screens.py (bakes the three housings, then composes each through a shader-team treatment over live display-christmas-tree content at t = 6.0 s)",
+  "renderer": "Blender 5.2.0 LTS / Cycles (Metal GPU), headless; 1024×768, 220 samples, ORTHOGRAPHIC camera (dead-on, linear world↔pixel mapping); bezel pass film_transparent (RGBA)",
+  "geometry": "fully procedural (bmesh superellipse prisms for the frame, a 96×96 domed/flat glass grid, EXACT-solver booleans for the aperture window and the screw slots, bevel + auto-smooth); authored in generator/screen_scene.py — no photographic textures, no scanned or modelled assets",
+  "view_transform": "AgX (AgX - Medium High Contrast)",
+  "contract": {
+    "doc": "design-lab/shader-demo/SCREEN-TREATMENT.md — THE LAW for this seam; the housing side is implemented verbatim by screen_scene.py",
+    "drop_in_for": "design-lab/lib/make_housing_stub.py — the synthetic numpy stubs these bakes replace FILE-FOR-FILE (same names, same schema, same registration); a treatment built against the stubs runs on these with no change beyond the path",
+    "layers": {
+      "<sid>_bezel.png": "RGBA straight alpha — opaque frame, alpha 0 inside the aperture; composited LAST, over everything",
+      "<sid>_refl.png": "RGB on black — ADDITIVE; the real reflection the glass catches, every corner exactly 0",
+      "<sid>_vig.png": "greyscale 0–1 — MULTIPLY; 1 at the clear centre, darker toward the bezel lip",
+      "<sid>.json": "manifest — aperture rect (px), corner radius + superellipse n, barrel warp k1/k2, overscan, glare radius/strength, palette_default"
+    },
+    "ownership_seam": "housing canonized HERE; treatment + content canonized by the shader team (components/screen-treatments/, components/display-*/). Sam ruled the split 2026-07-22, verbatim: \"housing baked, look at runtime.\" Composed plates (p29-p34, p43, p45) and renders/*/compose.png are JOINT demos, not canon artifacts of this component."
+  },
+  "screens": {
+    "screen-crt-beige": "crt · beige-plastic bezel · green-mono · aperture 116,110 792×549 · corner r104 n4 · barrel k1 0.06 k2 0.015",
+    "screen-lcd-sleek": "lcd · sleek-black bezel · lcd-color · aperture 76,70 872×628 · corner r37 n3 · no warp, overscan 0.0 (r9 bugfix — 0.02 was emitted unconditionally for every style)",
+    "screen-crt-painted": "crt · painted-steel bezel · amber-mono · aperture 116,110 792×549 · corner r104 n4 · barrel k1 0.06 k2 0.015"
+  },
+  "materials": {
+    "library": "components/_studio/matlib.py (MATS)",
+    "shared_with": "components/panel-board/ — matlib is a SHARED family library; a change there moves both components",
+    "bezel_roster": [
+      "black-paint",
+      "brushed",
+      "chrome",
+      "worn-steel (gunmetal)",
+      "painted-steel (chipping paint over rust)",
+      "white-plastic",
+      "beige-plastic",
+      "sleek-black",
+      "styrofoam"
+    ],
+    "glass": "authored here (mat_glass_dark): near-black dielectric, roughness 0.12, full clearcoat at --coat-rough 0.05"
+  },
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0",
+    "vignette_pass": "PASS 3 — the same glass, white-diffuse, under a white world with the bezel as a pure-black occluder"
+  },
+  "authored_lights": {
+    "bezel_pass": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "reflection_pass": "the family `overhead` rig RATIFIED off p42 (Sam, verbatim: \"Overhead is my favorite here, let's run with that one! Curious to see how it renders on the curved CRT screen.\") — one big centred softbox, wide in x, shallow in y, tipped -8°",
+    "softbox_fit": "RE-HUNG for this component (r8): --softbox-y 0.46 (height; hard ceiling — past Y_low ≈ GHH the glass edges stop seeing the box and the band collapses to a blob), --softbox-depth 0.45 (thickness), --softbox-z 0.96 (throw; the ∪ spans 68 px at 1.9 and 151 px at 0.96), 16 W. The panel's fit does not transfer: that is a perspective rig where a fixture images at half size, this is ORTHO where it images ~1:1. The ortho camera re-parks itself 1.0 behind the softbox so it can never appear in frame."
+  },
+  "ratified_physics": {
+    "fastener_placement": "corner screws sit at the midpoint of the rim along the diagonal; the 45° point of a superellipse-n corner is r·2^(-1/n) from the arc centre, so the midpoint constant is k = 1 - 2^(-1/n). The circle constant dragged it inland ~23 px on the n=4 CRT and ~4 px on the n=3 LCD (exactly Sam's \"majorly CRT, minorly LCD\"). Second contributor: OUTER_R = GLASS_CR + BW·0.4 — a big outer radius widens the rim at the corner and drags the true midpoint inward on its own. Four rounds (r2, r4, r5) before the superellipse was the answer (r6); the same fix landed in panel_scene.py.",
+    "glass_profile": "z = b·(1 - t^roll)^peak, t = (u²+v²)/2. Under the ortho camera the glass point (x,y) mirrors the source-plane point Y = y·m(t), m = 1 + 2·b·L·(-f')/GHH² ≥ 1 — wherever the glass is steeper the band is pushed DOWN. A plain paraboloid does nothing (a quadric mirror is an AFFINE position→direction map, so a straight source stays a straight band at every depth); only curvature VARIATION bends it. RATIFIED: CRT roll 1 / peak 4 — curvature in the CENTRE, flat rim, so the band's ends ride at m ≈ 1 and arc INTO the top corners (Sam's ∪ ruling). LCD flat, roll 1 / peak 1.",
+    "band_rows": "measured on the raw _refl.png (where the composed image puts them — the treatments composite refl at the raw uv), lower edge at 12/50/88 % of aperture width, rows growing downward on the 549-row aperture: CRT r7 184/142/185 (∩) → r8 113/205/115 (∪, ends 91 px ABOVE centre; 54/53 at 4 %/96 %, symmetric to 2 px). LCD 206/206/206, straight and unmoved.",
+    "coat_roughness": "0.05 — 0.17 smears the reflection into a shapeless shaft, 0.10 keeps it, 0.05 reads crisp; it cannot go razor-CG because the source is a big softbox whose penumbra is geometric, not coat-borne. Judged on the COMPOSED screen; on the raw layer every value looks fine.",
+    "glare_strength": "1.0 — refl is baked at final intensity and the treatments composite it as a straight `col += refl`, so 1.0 is both the identity for that composite and the value the reflection tuning was judged at.",
+    "glare_history": "the AUTHORED glare disc (r1-r4) was cut, re-textured (a rectangular softbox bar 'reads CGI' → a round disc), halved twice, aperture-fraction repositioned and finally nixed to zero on Sam's r4 verdict; the layer came back at r7 as a REAL aimed env reflection, which is what ratified."
+  },
+  "renders": {
+    "provenance": "renders/<sid>/ are the EXACT contract bakes behind the canonization plate p45-screens-r8.png, copied (not re-baked) at packaging time and verified md5-identical to the plate's bake directory. r9 exception: screen-lcd-sleek.json is the FRESH generator-emitted manifest (the overscan fork), the only re-canonized file — all nine layer PNGs are still the p43/p45 pixels, held after an r9 re-bake measured at the noise floor (premultiplied blurred-8px max 0.01-0.19 luma, alpha mismatch <= 0.006 %, and every straight-RGB outlier sitting under an alpha-0 pixel)",
+    "manifest": {
+      "screen-crt-beige/": "screen-crt-beige_{bezel,refl,vig}.png + screen-crt-beige.json + compose.png — p45 tile 1, caption \"CRT · beige housing · green phosphor\" (treatment crt.wgsl)",
+      "screen-lcd-sleek/": "screen-lcd-sleek_{bezel,refl,vig}.png + screen-lcd-sleek.json + compose.png — p45 tile 2, caption \"LCD · sleek-black housing · full colour\" (treatment lcd-color.wgsl)",
+      "screen-crt-painted/": "screen-crt-painted_{bezel,refl,vig}.png + screen-crt-painted.json + compose.png — p45 tile 3, caption \"CRT · chipped-paint housing · amber\" (treatment crt.wgsl)"
+    },
+    "lcd_is_the_r7_bake": "DELIBERATE, per Sam's freeze. r8 was a CRT-only round: the LCD's straight high band was RATIFIED at r7 and must not move. A fresh LCD bake through the r8 generator was verified against the cached r7 one — _refl max 1 luma on 42 px of 786 k, _vig max 2, manifest byte-identical — against a renderer noise floor of 134 luma measured on the UNTOUCHED bezel pass (GPU/denoiser nondeterminism). The plate then composed the LCD from the r7 cache, so its p45 tile IS its p43 tile. These are the ratified pixels.",
+    "compose_png": "the REFERENCE COMPOSITE only — this housing driven through the shader team's treatment over live display-christmas-tree content at t = 6.0 s (design-lab/audio/boardwarp_clip0.wav). A joint demo shipped so a cloner can see what the four contract files assemble into; the treatment is NOT canonized here."
+  },
+  "known_issues": {
+    "vignette_rim_seam": "a 1-3 px seam at the aperture rim, introduced by the r8 glass reshape (PASS 3 builds the same glass). Aperture-wide abs-mean 2.78 (signed -1.35) crosses the 2-luma bar, but that is entirely the rim: inset 6 px it is 1.82, inset 24 px 1.52 abs-mean / signed -0.15 / p99 5 / max 17 — the vignette INTERIOR is unchanged to well under a luma, and only the outermost rim, which the bezel and the treatment's corner mask cover, actually moved. FLAGGED to Sam in the r8 write-up and ACCEPTED in the ratification; nothing in the composed plate shows it."
+  },
+  "shadow": "none — composite-time responsibility (family ruling)",
+  "author": "Claude (design-lab pass 16, screen-monitor direction, r1-r8) under Sam Marquis's verdicts",
+  "no_ai_generation": "this component is fully procedural + PBR — no diffusion/generative model produced any geometry, texture, or pixel in renders/",
+  "licenses": "original work (generator + procedural materials); the one HDRI is Poly Haven CC0 (studio_kominka_03) and is the only third-party assets involved. renders/*/compose.png additionally contains shader-team treatment + display-christmas-tree output, both in-repo original work."
+}

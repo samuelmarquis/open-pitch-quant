@@ -1,0 +1,32 @@
+{
+  "component": "knob-hifi",
+  "class": "Control primitive (continuous)",
+  "status": "CANONIZED 2026-09-14",
+  "accepted": "2026-09-14",
+  "ratification_plate": "design-lab/plates/p97-knob-spree-r2.png",
+  "verdict": "Sam Marquis: \"Easy round; canonize across the board. I think futura is the clear font-winner there.\"",
+  "created": "2026-09-14",
+  "renderer": "Blender 5.2.0 LTS / Cycles",
+  "strip": "renders/f000.png..f100.png; value=i/100; scale 1.0; 640x640; 220 samples; straight RGBA with 8 px invisible RGB edge bleed; default variant finish=silver top=blasted  [NOT SHIPPED as of 2026-09-17: generated on demand; no consumer read it]",
+  "variants": [
+    "renders/variants/finish-black.png",
+    "renders/variants/finish-champagne.png",
+    "renders/variants/finish-blue.png",
+    "renders/variants/top-turned.png"
+  ],
+  "construction": "Solid machined-aluminium hi-fi volume knob: one billet with an anodised top face, ledge and skirt, a real-geometry diamond knurl band, a bright diamond-cut chamfer at the top edge, and an engraved paint-filled indicator line. Anodise colour (`--finish`: silver, black, champagne, blue) and top-face treatment (`--top`: bead-blasted or fine concentric turning) are independently selectable; the chamfer stays bare aluminium. Proportions and knurl are measured from Kilo International OED-series knobs.",
+  "reference": {
+    "file": "design-lab/passes/30-knob-spree/hifi/refs/",
+    "use": "Proportion and knurl reference for machined-aluminium hi-fi knobs, measured from Kilo International OED-series knobs",
+    "redistributed_in_component": false
+  },
+  "environment": {
+    "rig": "house rig rigs.knob_studio (studio_kominka_03 HDRI, Poly Haven, CC0 + generated zenith scrim and rake)",
+    "file": "components/_studio/studio_kominka_03_4k.hdr",
+    "source": "https://polyhaven.com/a/studio_kominka_03",
+    "license": "CC0"
+  },
+  "materials": "Procedural Blender node graphs authored in the generator; matlib helpers consumed, not modified",
+  "shadow": "none \u2014 transparent RGBA component render; composite-time responsibility",
+  "no_ai_generation": "No diffusion or generative image model produced geometry, texture, text, or pixels in renders/"
+}

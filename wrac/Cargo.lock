@@ -1021,12 +1021,13 @@ dependencies = [
  "opq-engine",
  "panelkit",
  "pluginkit",
+ "serde_json",
  "wgpu",
 ]
 
 [[package]]
 name = "opq_plugin_wrac"
-version = "0.9.8"
+version = "0.9.9"
 dependencies = [
  "block2",
  "log",
