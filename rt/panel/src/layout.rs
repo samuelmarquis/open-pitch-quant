@@ -10,8 +10,8 @@ use panelkit::canvas::Rect;
 pub const WIDTH: u32 = 1100;
 pub const HEIGHT: u32 = 768;
 
-/// The monitor housing and its screen. The housing's bake (bake.py
-/// HOUSING_RECT) is drawn whole at HOUSING, the monitor padded 8 px.
+/// The monitor housing and its screen. The monitor's rack bake
+/// (rack_layout.rs) is drawn whole at HOUSING, the monitor padded 8 px.
 pub const MONITOR: Rect = Rect::new(16.0, 10.0, 1068.0, 458.0);
 pub const HOUSING: Rect = Rect::new(8.0, 2.0, 1084.0, 474.0);
 pub const SCREEN: Rect = Rect::new(40.0, 34.0, 1020.0, 410.0);
@@ -79,8 +79,8 @@ pub fn viewer_key(viewer: Viewer) -> Rect {
 pub const INFO: Rect = Rect::new(22.0, 473.0, 1056.0, 16.0);
 
 /// The rack plates, filling the rack in signal order (no output plate:
-/// Sam, 2026-10-10, "nix the output panel"). Their bakes are exactly these
-/// sizes at 2x (assets/bake.py's PLATES).
+/// Sam, 2026-10-10, "nix the output panel"). Their rack bakes cover each one
+/// grown by PLATE_PAD, at 2x.
 pub const CAPTURE: Rect = Rect::new(16.0, 494.0, 336.0, 250.0);
 pub const LAW: Rect = Rect::new(360.0, 494.0, 380.0, 250.0);
 pub const FINISH: Rect = Rect::new(748.0, 494.0, 336.0, 250.0);
@@ -127,23 +127,9 @@ pub const TOGGLE: (f32, f32) = (30.0, 62.0);
 pub const SELECTOR: f32 = 96.0;
 /// The chickenhead's drawn box, which its legends clear.
 pub const SELECTOR_DRAW: f32 = 88.0;
-/// The rack-baked parts' windows (bake.py TAB_WINDOW, SELECTOR_WINDOW):
-/// dx, dy, w, h from the part's centre. A part's change between its states
-/// runs well past it under the rack light (its shadow streaks down and
-/// right); inside its window it keeps only what its states change, as
-/// alpha, so windows may overlap. The import checks nothing spills out.
-pub const TAB_WINDOW: (f32, f32, f32, f32) = (-64.0, -56.0, 144.0, 136.0);
-pub const SELECTOR_WINDOW: (f32, f32, f32, f32) = (-70.0, -70.0, 160.0, 160.0);
-/// Voices' window: its boss and lens ring, stepping together (bake.py
-/// VOICES_WINDOW).
-pub const VOICES_WINDOW: (f32, f32, f32, f32) = (-72.0, -68.0, 160.0, 150.0);
-/// A continuous knob's window, through its 101 positions (bake.py
-/// KNOB_WINDOW).
-pub const KNOB_WINDOW: (f32, f32, f32, f32) = (-60.0, -60.0, 140.0, 140.0);
 /// The rack bakes (rack_layout.rs, the template's rack_bake.py): a bake
 /// region is its rect grown by a pad; a part's fades out over its outer
-/// BAKE_FEATHER px (open-conv's and open-spectrum's values). A part's region
-/// is its window above.
+/// BAKE_FEATHER px (open-conv's and open-spectrum's values).
 pub const fn bake_region(r: Rect, pad: f32) -> Rect {
     Rect::new(r.x - pad, r.y - pad, r.w + 2.0 * pad, r.h + 2.0 * pad)
 }
@@ -205,15 +191,14 @@ pub fn part_region(widget: &Widget) -> Rect {
 pub const PART_PAD: f32 = 32.0;
 pub const LEVER_PAD: f32 = 40.0;
 
-/// The parts baked into the plates through their states, in pack::RACK_PARTS
+/// The plate controls baked through their states, in pack::RACK_PARTS
 /// order.
 pub const RACK_PARTS: [usize; 19] = [
     p::GATE_MODE, p::UNOWNED, p::TRANSIENT, p::SOURCE, p::SCOPE, p::ROUNDING, p::TRANSITIONS, p::ALGORITHM,
     p::VOICES, p::GATE, p::FMAX, p::FEEL, p::GLIDE, p::THRESHOLD, p::PURIFY, p::GRIT, p::FORMANT,
     p::CARRY, p::COHERENCE,
 ];
-/// A stepped knob's drawn cell: its knob at the knobs' scale, its ring
-/// round it (bake.py STEPPED: 144 px at 2x).
+/// A stepped knob's hit cell: the boss and its ring round it.
 pub const STEPPED: f32 = 72.0;
 
 /// A knob's typed value, over its caption.
@@ -349,7 +334,7 @@ pub enum Control {
     HouseFeel,
 }
 
-/// A knob's skin, as bake.py's KNOB_PARTS bakes it (the record of which
+/// A knob's skin, as rack_layout.rs bakes it (the record of which
 /// knob is which). Hifi, the plain black knob, is for continuous controls.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Skin {
@@ -502,17 +487,9 @@ pub const WIDGETS: [Widget; p::PARAM_COUNT - 1] = {
     ]
 };
 
-/// A rack-baked part's index in RACK_PARTS and its window.
-pub fn rack_cell(widget: &Widget) -> Option<(usize, Rect)> {
-    let index = RACK_PARTS.iter().position(|&id| id == widget.id())?;
-    let (dx, dy, w, h) = match widget.kind {
-        Kind::Selector => SELECTOR_WINDOW,
-        Kind::Stepped => VOICES_WINDOW,
-        Kind::Knob(_) => KNOB_WINDOW,
-        _ => TAB_WINDOW,
-    };
-    let (cx, cy) = widget.at;
-    Some((index, Rect::new(cx + dx, cy + dy, w, h)))
+/// A plate control's index in RACK_PARTS, if it is rack-baked.
+pub fn rack_index(widget: &Widget) -> Option<usize> {
+    RACK_PARTS.iter().position(|&id| id == widget.id())
 }
 
 pub fn widget(control: Control) -> Option<&'static Widget> {

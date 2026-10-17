@@ -1,3 +1,3024 @@
 {
- "template_revision": "327f743"
+ "template_revision": "327f743",
+ "products": {
+  "assets/vendor/rack-algorithm.png": {
+   "element": "algorithm",
+   "component": "knob-chickenhead",
+   "region": [
+    353.0,
+    493.0,
+    166.0,
+    166.0
+   ],
+   "page": null,
+   "states": "algorithm:--value=0.25,0.75",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    332,
+    332
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-chickenhead",
+      "fit": "diameter",
+      "flags": [
+       "--color",
+       "black",
+       "--value",
+       "0.25"
+      ],
+      "id": "algorithm",
+      "rect": [
+       385.0,
+       525.0,
+       102.0,
+       102.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "353.0,493.0,166.0,166.0",
+    "--states",
+    "algorithm:--value=0.25,0.75"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "20a8acda49f57b4148b1d6fd6eb7d99dc5ba5f2c4298e9941c39ef962c50f74b",
+   "bytes": 72116
+  },
+  "assets/vendor/rack-carry.png": {
+   "element": "carry",
+   "component": "knob-wood",
+   "region": [
+    749.0,
+    611.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "carry:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-finish"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-wood",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "ebony",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "carry",
+      "rect": [
+       781.0,
+       643.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "749.0,611.0,122.0,122.0",
+    "--states",
+    "carry:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "22a5b00ed06cfa11e395855a8babc1fbc3457d738669f240e3779aef868c4f8b",
+   "bytes": 2269657
+  },
+  "assets/vendor/rack-ceiling.png": {
+   "element": "ceiling",
+   "component": "knob-hifi",
+   "region": [
+    229.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "ceiling:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-capture"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-hifi",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "black",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "ceiling",
+      "rect": [
+       261.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "229.0,499.0,122.0,122.0",
+    "--states",
+    "ceiling:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "2a16fac0fc87278749c5d8a8e97d6b9d89fb9b987961215302f9998d5998660d",
+   "bytes": 2661079
+  },
+  "assets/vendor/rack-coherence.png": {
+   "element": "coherence",
+   "component": "knob-chrome",
+   "region": [
+    855.0,
+    611.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "coherence:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-finish"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-chrome",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "heat-tint",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "coherence",
+      "rect": [
+       887.0,
+       643.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "855.0,611.0,122.0,122.0",
+    "--states",
+    "coherence:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "ff8f4d982839b30b03bfc3c2100f37bc5e38c44d95e6bd02bddf7454589b16b0",
+   "bytes": 2917798
+  },
+  "assets/vendor/rack-feel.png": {
+   "element": "feel",
+   "component": "knob-hifi",
+   "region": [
+    519.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "feel:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-hifi",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "black",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "feel",
+      "rect": [
+       551.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "519.0,499.0,122.0,122.0",
+    "--states",
+    "feel:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "97c6f20d87787388a2f4229febe15c7f8e333bcb60c95d8a299e622dd10de04a",
+   "bytes": 3070674
+  },
+  "assets/vendor/rack-formant.png": {
+   "element": "formant",
+   "component": "knob-leather",
+   "region": [
+    961.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "formant:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-finish"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-leather",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "oxblood",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "formant",
+      "rect": [
+       993.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "961.0,499.0,122.0,122.0",
+    "--states",
+    "formant:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "b7ee9f324b249b1ea307d807cdcf427f9b34eb5fa6b44ea54fea5634a2b19bd1",
+   "bytes": 3406188
+  },
+  "assets/vendor/rack-gate-mode.png": {
+   "element": "gate-mode",
+   "component": "toggle-tab",
+   "region": [
+    23.0,
+    617.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "gate-mode:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-capture"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "gate-mode",
+      "rect": [
+       63.0,
+       657.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "23.0,617.0,110.0,110.0",
+    "--states",
+    "gate-mode:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "86ca68d0cebf97284dd3ab2076eb81e996c0147cc73b2a17ad3d67b1b6cfb015",
+   "bytes": 35462
+  },
+  "assets/vendor/rack-glide.png": {
+   "element": "glide",
+   "component": "knob-hifi",
+   "region": [
+    611.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "glide:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-hifi",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "black",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "glide",
+      "rect": [
+       643.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "611.0,499.0,122.0,122.0",
+    "--states",
+    "glide:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "165b1f0b96d407c25c29c49584b2f86a9ca8a9509eb531429117f31fd3744657",
+   "bytes": 2891454
+  },
+  "assets/vendor/rack-grit.png": {
+   "element": "grit",
+   "component": "knob-catalin",
+   "region": [
+    855.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "grit:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-finish"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-catalin",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "butterscotch",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "grit",
+      "rect": [
+       887.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "855.0,499.0,122.0,122.0",
+    "--states",
+    "grit:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "3c9cfd993723ac2944dda9eaf422238e7b8cfe4de021e89f4ce5158e97970c27",
+   "bytes": 3824116
+  },
+  "assets/vendor/rack-key-ladders.png": {
+   "element": "key-ladders",
+   "component": "button-bezel",
+   "region": [
+    920.0,
+    6.0,
+    80.0,
+    32.0
+   ],
+   "page": null,
+   "states": "key-ladders:--state=inactive,active",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    160,
+    64
+   ],
+   "encoding": "straight sRGB RGBA, drawn as art",
+   "mattes": [
+    "monitor",
+    "key-transect",
+    "key-scope"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "screen-monitor",
+      "fit": "width",
+      "flags": [
+       "--style",
+       "lcd",
+       "--bezel",
+       "beige-plastic",
+       "--fasteners",
+       "none",
+       "--aperture",
+       "48,48,2040,820",
+       "--margin",
+       "0",
+       "--corner-r",
+       "0",
+       "--overscan",
+       "0",
+       "--res",
+       "2136x916"
+      ],
+      "id": "monitor",
+      "orthographic": true,
+      "rect": [
+       16.0,
+       10.0,
+       1068.0,
+       458.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "TRANSECT",
+       "--led-end",
+       "left",
+       "--hue",
+       "1f388c",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-transect",
+      "key": [
+       "monitor",
+       -1,
+       64.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "SCOPE",
+       "--led-end",
+       "left",
+       "--hue",
+       "2a7f62",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-scope",
+      "key": [
+       "monitor",
+       -3,
+       64.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "LADDERS",
+       "--led-end",
+       "left",
+       "--hue",
+       "cc341a",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-ladders",
+      "key": [
+       "monitor",
+       -2,
+       64.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "920.0,6.0,80.0,32.0",
+    "--states",
+    "key-ladders:--state=inactive,active"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "ae7206a86d92904bdedd36500793e8d1d431977e11a9b5c351b1312a8ad410ac",
+   "bytes": 15493
+  },
+  "assets/vendor/rack-key-scope.png": {
+   "element": "key-scope",
+   "component": "button-bezel",
+   "region": [
+    852.0,
+    6.0,
+    80.0,
+    32.0
+   ],
+   "page": null,
+   "states": "key-scope:--state=inactive,active",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    160,
+    64
+   ],
+   "encoding": "straight sRGB RGBA, drawn as art",
+   "mattes": [
+    "monitor",
+    "key-transect",
+    "key-ladders"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "screen-monitor",
+      "fit": "width",
+      "flags": [
+       "--style",
+       "lcd",
+       "--bezel",
+       "beige-plastic",
+       "--fasteners",
+       "none",
+       "--aperture",
+       "48,48,2040,820",
+       "--margin",
+       "0",
+       "--corner-r",
+       "0",
+       "--overscan",
+       "0",
+       "--res",
+       "2136x916"
+      ],
+      "id": "monitor",
+      "orthographic": true,
+      "rect": [
+       16.0,
+       10.0,
+       1068.0,
+       458.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "TRANSECT",
+       "--led-end",
+       "left",
+       "--hue",
+       "1f388c",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-transect",
+      "key": [
+       "monitor",
+       -1,
+       64.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "LADDERS",
+       "--led-end",
+       "left",
+       "--hue",
+       "cc341a",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-ladders",
+      "key": [
+       "monitor",
+       -2,
+       64.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "SCOPE",
+       "--led-end",
+       "left",
+       "--hue",
+       "2a7f62",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-scope",
+      "key": [
+       "monitor",
+       -3,
+       64.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "852.0,6.0,80.0,32.0",
+    "--states",
+    "key-scope:--state=inactive,active"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "32971cec43dd21deb71143821996a9ab26eed914e89e88f837589b088239acc1",
+   "bytes": 13886
+  },
+  "assets/vendor/rack-key-transect.png": {
+   "element": "key-transect",
+   "component": "button-bezel",
+   "region": [
+    988.0,
+    6.0,
+    80.0,
+    32.0
+   ],
+   "page": null,
+   "states": "key-transect:--state=inactive,active",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    160,
+    64
+   ],
+   "encoding": "straight sRGB RGBA, drawn as art",
+   "mattes": [
+    "monitor",
+    "key-ladders",
+    "key-scope"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "screen-monitor",
+      "fit": "width",
+      "flags": [
+       "--style",
+       "lcd",
+       "--bezel",
+       "beige-plastic",
+       "--fasteners",
+       "none",
+       "--aperture",
+       "48,48,2040,820",
+       "--margin",
+       "0",
+       "--corner-r",
+       "0",
+       "--overscan",
+       "0",
+       "--res",
+       "2136x916"
+      ],
+      "id": "monitor",
+      "orthographic": true,
+      "rect": [
+       16.0,
+       10.0,
+       1068.0,
+       458.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "LADDERS",
+       "--led-end",
+       "left",
+       "--hue",
+       "cc341a",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-ladders",
+      "key": [
+       "monitor",
+       -2,
+       64.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "SCOPE",
+       "--led-end",
+       "left",
+       "--hue",
+       "2a7f62",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-scope",
+      "key": [
+       "monitor",
+       -3,
+       64.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "button-bezel",
+      "flags": [
+       "--variant",
+       "wide",
+       "--body",
+       "beige-plastic",
+       "--text-color",
+       "1b1b1b",
+       "--text",
+       "TRANSECT",
+       "--led-end",
+       "left",
+       "--hue",
+       "1f388c",
+       "--bloom",
+       "off",
+       "--font",
+       "mono",
+       "--font-weight",
+       "bold",
+       "--width",
+       "56",
+       "--height",
+       "14",
+       "--cap-height",
+       "5.75",
+       "--travel",
+       "0.65",
+       "--state",
+       "inactive"
+      ],
+      "id": "key-transect",
+      "key": [
+       "monitor",
+       -1,
+       64.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "988.0,6.0,80.0,32.0",
+    "--states",
+    "key-transect:--state=inactive,active"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "5891fad0500b7d1428c1c87cc1e4c2709a8809aa3a04db61e8b7dcb5d7e9e0f8",
+   "bytes": 15986
+  },
+  "assets/vendor/rack-monitor.png": {
+   "element": "monitor",
+   "component": "screen-monitor",
+   "region": [
+    8.0,
+    2.0,
+    1084.0,
+    474.0
+   ],
+   "page": null,
+   "states": null,
+   "grid": [
+    1,
+    1
+   ],
+   "cell_pixels": [
+    2168,
+    948
+   ],
+   "encoding": "straight sRGB RGBA, drawn as art",
+   "mattes": [],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "screen-monitor",
+      "fit": "width",
+      "flags": [
+       "--style",
+       "lcd",
+       "--bezel",
+       "beige-plastic",
+       "--fasteners",
+       "none",
+       "--aperture",
+       "48,48,2040,820",
+       "--margin",
+       "0",
+       "--corner-r",
+       "0",
+       "--overscan",
+       "0",
+       "--res",
+       "2136x916"
+      ],
+      "id": "monitor",
+      "orthographic": true,
+      "rect": [
+       16.0,
+       10.0,
+       1068.0,
+       458.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/frame.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "8.0,2.0,1084.0,474.0"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "1d53a7311367cf39ef6061722c45e7880c839a03fd85e18a0edfedadbd189f0e",
+   "bytes": 558386
+  },
+  "assets/vendor/rack-plate-capture.png": {
+   "element": "plate-capture",
+   "component": "panel-board",
+   "region": [
+    10.0,
+    488.0,
+    348.0,
+    262.0
+   ],
+   "page": null,
+   "states": null,
+   "grid": [
+    1,
+    1
+   ],
+   "cell_pixels": [
+    696,
+    524
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/frame.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "10.0,488.0,348.0,262.0"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "40fc76884ce40910cf48c85ef815f90a0c1ecba9de6aec8860e6e9eedd50d2a9",
+   "bytes": 406185
+  },
+  "assets/vendor/rack-plate-finish.png": {
+   "element": "plate-finish",
+   "component": "panel-board",
+   "region": [
+    742.0,
+    488.0,
+    348.0,
+    262.0
+   ],
+   "page": null,
+   "states": null,
+   "grid": [
+    1,
+    1
+   ],
+   "cell_pixels": [
+    696,
+    524
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/frame.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "742.0,488.0,348.0,262.0"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "6ee0bae6c63b938f29cfdb3d3ef3bf86cde53fa56225ec75da7054f765cc4da9",
+   "bytes": 419971
+  },
+  "assets/vendor/rack-plate-law.png": {
+   "element": "plate-law",
+   "component": "panel-board",
+   "region": [
+    354.0,
+    488.0,
+    392.0,
+    262.0
+   ],
+   "page": null,
+   "states": null,
+   "grid": [
+    1,
+    1
+   ],
+   "cell_pixels": [
+    784,
+    524
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ]
+     }
+    ]
+   },
+   "feather_pixels": 0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/frame.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "354.0,488.0,392.0,262.0"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "552ad0037f6efeb210f26a444ed16c6a53e9ea4c3172bfd5580911df765ee8dd",
+   "bytes": 421818
+  },
+  "assets/vendor/rack-purify.png": {
+   "element": "purify",
+   "component": "knob-heady",
+   "region": [
+    749.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "purify:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-finish"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-heady",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "implosion",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "purify",
+      "rect": [
+       781.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "749.0,499.0,122.0,122.0",
+    "--states",
+    "purify:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "8d2e2a3576edb79890801a8db04ab52398c979a9b85c71e1e0985de56f16522b",
+   "bytes": 3065176
+  },
+  "assets/vendor/rack-rounding.png": {
+   "element": "rounding",
+   "component": "toggle-tab",
+   "region": [
+    617.0,
+    617.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "rounding:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "rounding",
+      "rect": [
+       657.0,
+       657.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "617.0,617.0,110.0,110.0",
+    "--states",
+    "rounding:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "647e63de805ccd00622f943a49a52a94f16133e5f60effcc4be59040321b52bb",
+   "bytes": 42201
+  },
+  "assets/vendor/rack-scope.png": {
+   "element": "scope",
+   "component": "toggle-tab",
+   "region": [
+    437.0,
+    621.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "scope:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "scope",
+      "rect": [
+       477.0,
+       661.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "437.0,621.0,110.0,110.0",
+    "--states",
+    "scope:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "9f8f6022f5c10e373bb5d1b184787d9eabd3b47cf14de50193777683e56d7bbf",
+   "bytes": 39607
+  },
+  "assets/vendor/rack-source.png": {
+   "element": "source",
+   "component": "toggle-tab",
+   "region": [
+    357.0,
+    621.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "source:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "source",
+      "rect": [
+       397.0,
+       661.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "357.0,621.0,110.0,110.0",
+    "--states",
+    "source:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "0d52848a9916346032471ce60032c6b81ab4a275317fe25476c07abfc06f2bc0",
+   "bytes": 34438
+  },
+  "assets/vendor/rack-threshold.png": {
+   "element": "threshold",
+   "component": "knob-hifi",
+   "region": [
+    519.0,
+    611.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "threshold:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-law"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.8",
+       "--h",
+       "2.5",
+       "--face",
+       "brass",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-law",
+      "rect": [
+       360.0,
+       494.0,
+       380.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-hifi",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "black",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "threshold",
+      "rect": [
+       551.0,
+       643.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "519.0,611.0,122.0,122.0",
+    "--states",
+    "threshold:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "8b5e21dcc9445ab3ad7952c9b24bec964496ecde0c26dbe1951ac521df90c953",
+   "bytes": 3050844
+  },
+  "assets/vendor/rack-tonality.png": {
+   "element": "tonality",
+   "component": "knob-hifi",
+   "region": [
+    123.0,
+    499.0,
+    122.0,
+    122.0
+   ],
+   "page": null,
+   "states": "tonality:--value=0..1/101",
+   "grid": [
+    11,
+    10
+   ],
+   "cell_pixels": [
+    244,
+    244
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-capture"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-hifi",
+      "fit": "diameter",
+      "flags": [
+       "--preset",
+       "black",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "tonality",
+      "rect": [
+       155.0,
+       531.0,
+       58.0,
+       58.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "123.0,499.0,122.0,122.0",
+    "--states",
+    "tonality:--value=0..1/101"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "36322dae578f1f2dfbb0c2c0b41cdbfc5396d17b9659900cf7fe3b2969c258b4",
+   "bytes": 2596436
+  },
+  "assets/vendor/rack-transients.png": {
+   "element": "transients",
+   "component": "toggle-tab",
+   "region": [
+    235.0,
+    617.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "transients:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-capture"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "transients",
+      "rect": [
+       275.0,
+       657.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "235.0,617.0,110.0,110.0",
+    "--states",
+    "transients:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "0c012fe3fca1dd034ae52a05773fbc2c39b5d00c0c61e310b3a1f96d71e93a65",
+   "bytes": 37109
+  },
+  "assets/vendor/rack-transitions.png": {
+   "element": "transitions",
+   "component": "toggle-tab",
+   "region": [
+    967.0,
+    617.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "transitions:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-finish"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "catalin-jade-polished",
+       "--fasteners",
+       "rivets",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-finish",
+      "rect": [
+       748.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "transitions",
+      "rect": [
+       1007.0,
+       657.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "967.0,617.0,110.0,110.0",
+    "--states",
+    "transitions:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "a0049057dfed9bb7309083a9e1f14f13d45943d2008adc01b7f584f5779e31bc",
+   "bytes": 41810
+  },
+  "assets/vendor/rack-unowned.png": {
+   "element": "unowned",
+   "component": "toggle-tab",
+   "region": [
+    129.0,
+    617.0,
+    110.0,
+    110.0
+   ],
+   "page": null,
+   "states": "unowned:--state=down,up",
+   "grid": [
+    2,
+    1
+   ],
+   "cell_pixels": [
+    220,
+    220
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-capture"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "toggle-tab",
+      "fit": "width",
+      "flags": [
+       "--state",
+       "down"
+      ],
+      "id": "unowned",
+      "rect": [
+       169.0,
+       657.0,
+       30.0,
+       30.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "129.0,617.0,110.0,110.0",
+    "--states",
+    "unowned:--state=down,up"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "c93fa37355019c9c202259b624ab0bc06c682743970a0ca31d40bf1127a6b823",
+   "bytes": 35109
+  },
+  "assets/vendor/rack-voices.png": {
+   "element": "voices",
+   "component": "knob-boss",
+   "region": [
+    18.5,
+    500.5,
+    119.0,
+    119.0
+   ],
+   "page": null,
+   "states": "voices,voices-ring:--value=0..1/12",
+   "grid": [
+    12,
+    1
+   ],
+   "cell_pixels": [
+    238,
+    238
+   ],
+   "encoding": "sRGB-encoded linear-premultiplied RGB; linear alpha",
+   "mattes": [
+    "plate-capture"
+   ],
+   "layout": {
+    "px_per_unit": 100.0,
+    "window": [
+     0.0,
+     0.0,
+     1100.0,
+     768.0
+    ],
+    "light": "rack",
+    "view": 12.0,
+    "elements": [
+     {
+      "component": "panel-board",
+      "flags": [
+       "--w",
+       "3.36",
+       "--h",
+       "2.5",
+       "--face",
+       "anodized-blue",
+       "--fasteners",
+       "screws",
+       "--edge",
+       "flat",
+       "--corner",
+       ".015",
+       "--bevel",
+       ".04",
+       "--bevel-segments",
+       "4"
+      ],
+      "id": "plate-capture",
+      "rect": [
+       16.0,
+       494.0,
+       336.0,
+       250.0
+      ],
+      "matte": true
+     },
+     {
+      "component": "knob-ring",
+      "fit": "diameter",
+      "flags": [
+       "--segments",
+       "12",
+       "--from",
+       "0",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--hue",
+       "amber",
+       "--value",
+       "0"
+      ],
+      "id": "voices-ring",
+      "rect": [
+       43.0,
+       525.0,
+       70.0,
+       70.0
+      ],
+      "z": "seat"
+     },
+     {
+      "component": "knob-boss",
+      "fit": "diameter",
+      "flags": [
+       "--body",
+       "pom-white",
+       "--cap",
+       "aluminium-spun",
+       "--detents",
+       "12",
+       "--start-deg",
+       "-135",
+       "--end-deg",
+       "-45",
+       "--value",
+       "0"
+      ],
+      "id": "voices",
+      "rect": [
+       50.5,
+       532.5,
+       55.0,
+       55.0
+      ],
+      "z": "seat"
+     }
+    ]
+   },
+   "feather_pixels": 12.0,
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{RACK}",
+    "--",
+    "_check/layout.json",
+    "_check/{i:03}.png",
+    "--density",
+    "2",
+    "--samples",
+    "128",
+    "--region",
+    "18.5,500.5,119.0,119.0",
+    "--states",
+    "voices,voices-ring:--value=0..1/12"
+   ],
+   "body_touches_region_edge": {},
+   "sha256": "1e753ba2cd0e8f4d096ed6de726dffc501dbf444b448838c0e4ce07c5b95917f",
+   "bytes": 333932
+  }
+ },
+ "contract": "rack bake/1",
+ "product": "open-pitch-quant",
+ "density": 2,
+ "samples": 128,
+ "driver": "components/_studio/rack_bake.py"
 }

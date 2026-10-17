@@ -1,82 +1,33 @@
 #!/usr/bin/env python3
-"""The panel's asset bake: vendors accepted family artwork and bakes the
-rack plates, writing everything the board embeds to assets/vendor/ with a
-provenance record (assets/vendor/provenance.json).
+"""The panel's remaining asset step: the screen glass, taken in from DESIGN's
+farm, with a provenance record (assets/vendor/provenance.json, which also
+keeps Source Sans's record).
 
-Sources, all read-only:
-  - ../open-plugin-template/components (accepted component renders, the
-    panel-board, knob and screen-monitor generators and the composer,
-    _studio/rack.py), the family's design system. Nothing is read from
-    another product (DESIGN, 2026-10-17).
+Everything Blender-made on the board is the family's one rack pipeline now
+(assets/bake_rack.py over src/rack_layout.rs, recorded in
+assets/vendor/rack-bake.json; Sam, 2026-10-17: "EVERY plugin has the SAME
+lighting and scene idioms and rendering pipelines"). The glass moves onto it
+next (the template's glass bake kind, drawn by panelkit::glass), and this
+file goes with it.
 
-Run from anywhere:
-  python3 -I rt/panel/assets/bake.py            # everything
-  python3 -I rt/panel/assets/bake.py --only rack --renders DIR
-
-Needs Blender 5.2 (BLENDER, default ~/Applications/Blender.app) for the
-plates, components and housing, ffmpeg for resampling component renders to
-their 2x draw size, and PIL (the dev shell's) for the rack and key imports.
-Paths: TEMPLATE overrides the sibling checkout.
+Run from the repo root, in `nix develop`:
+  python3 -I rt/panel/assets/bake.py --renders DIR   # the farm's glass layers
 """
 import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 VENDOR = HERE / "vendor"
 ROOT = HERE.parents[2]  # the open-pitch-quant checkout
-DEV = ROOT.parent
-TEMPLATE = Path(os.environ.get("TEMPLATE", DEV / "open-plugin-template"))
-BLENDER = Path(os.environ.get(
-    "BLENDER", Path.home() / "Applications/Blender.app/Contents/MacOS/Blender"))
-COMPONENTS = TEMPLATE / "components"
+TEMPLATE = Path(os.environ.get("TEMPLATE", ROOT.parent / "open-plugin-template"))
 
-# Rack plates: name -> (logical w, h, panel-board flags). Logical px; the
-# plate renders orthographic at 200 px per world unit, so 1 world unit is
-# 100 logical px and the bake is exactly 2x. Must match layout.rs.
-PLATES = {
-    # Sam, 2026-10-10: "switch the capture panel to anodized-blue".
-    # Three plates fill the rack (Sam: "nix the output panel").
-    "plate-capture": (336, 250, ["--face", "anodized-blue", "--fasteners", "screws"]),
-    # The mirror brass reads cream with a room band under the rack light;
-    # DESIGN's call was brass-bare (p217), and Sam overruled it (a61c9df): "217
-    # I actually kind of prefer the as-shipped/mirror to satin".
-    "plate-law": (380, 250, ["--face", "brass", "--fasteners", "screws"]),
-    # Sam on DESIGN's p181: "let's go catalin jade" (the polished plate key).
-    "plate-finish": (336, 250, ["--face", "catalin-jade-polished", "--fasteners", "rivets"]),
-}
-PLATE_COMMON = ["--edge", "flat", "--corner", ".015", "--bevel", ".04",
-                "--bevel-segments", "4", "--ortho-px", "200", "--samples", "160"]
-
-# The knobs were open-cepstrum's knob-preview atlases, copied as baked,
-# until 0.9.6; they are rack-baked with their plates now (KNOB_PARTS).
-
-# Component renders resampled to their 2x draw size: name -> (source, w, h,
-# crop).
-SPRITES = {}
-
-# The toggles and the chickenhead (until 0.9.0) and Voices' stepped knob
-# (until 0.9.1) were footprint-contract renders here; they are rack-baked
-# with their plates now (RACK_PLATES).
-
-# The monitor housing, baked through the template's composer (rack.py) at
-# this board's monitor (layout.rs MONITOR, SCREEN), DESIGN's recipe for
-# Sam's p179 pick: "beige plastic is best". Rendered at density 2 over the
-# housing padded by HOUSING_PAD logical px; the board draws the whole
-# image at that padded rect.
-# The rack rig is the product window's (template 229a80c, Sam's ruling):
-# light, camera and cards centred on the whole board, so every layout gives
-# this window and nothing else for the rig, and frames its own cut with
-# --region (rack.py lens-shifts it).
-WINDOW = [0, 0, 1100, 768]
-HOUSING_RECT = (16, 10, 1068, 458)
-HOUSING_PAD = 8
+# The monitor's screen-monitor flags (rack_layout.rs HOUSING_FLAGS), which
+# the glass layers were baked at.
 HOUSING_FLAGS = ["--style", "lcd", "--bezel", "beige-plastic", "--fasteners", "none",
                  "--aperture", "48,48,2040,820", "--margin", "0", "--corner-r", "0",
                  "--overscan", "0", "--res", "2136x916"]
@@ -97,132 +48,6 @@ def git_head(repo):
         return None
 
 
-def no_local_blender():
-    """Sam, 2026-10-10 (via DESIGN): no local Blender on the workstation;
-    every Blender render goes through the template's design-lab session and
-    its farm, one process per machine. A farm runner sets OPQ_BLENDER_FARM=1."""
-    if os.environ.get("OPQ_BLENDER_FARM") != "1":
-        sys.exit("bake.py: this step runs Blender; send it to DESIGN's farm "
-                 "(set OPQ_BLENDER_FARM=1 only on a farm host)")
-
-
-def blender_render(generator, out, flags):
-    """One component render; the file and its receipt line are the proof
-    (Blender exits 0 after a script exception)."""
-    args = [str(BLENDER), "-b", "-P", str(COMPONENTS / generator), "--", str(out), *flags]
-    # One retry: a long run of renders has seen Blender die without a word.
-    for _ in range(2):
-        run = subprocess.run(args, capture_output=True, text=True)
-        receipt = [line for line in run.stdout.splitlines() if "->" in line and str(out) in line]
-        if Path(out).exists() and receipt:
-            return args[5:], receipt[-1]
-    sys.exit(f"{generator}: render failed (exit {run.returncode})\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
-
-
-def bake_housing(record, renders=None):
-    """With `renders` (the farm's monitor-housing.png, housing.json and
-    receipts.txt), only takes the farm's housing in, checking its layout is
-    this one and its receipt names the file; no Blender."""
-    x, y, w, h = HOUSING_RECT
-    pad = HOUSING_PAD
-    frame = [x - pad, y - pad, w + 2 * pad, h + 2 * pad]
-    layout = {
-        "px_per_unit": 100,
-        "window": WINDOW,
-        "elements": [{"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
-                      "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS}],
-    }
-    if renders:
-        farm = Path(renders)
-        out = farm / "monitor-housing.png"
-        lines = (farm / "receipts.txt").read_text().splitlines()
-        receipt = [r for r in lines if r.startswith("rack ") and r.endswith(out.name)]
-        template = [r.split()[1] for r in lines if r.startswith("template ")]
-        if not out.exists() or not receipt:
-            sys.exit("housing: the farm's housing or its receipt is missing")
-        if json.loads((farm / "housing.json").read_text()) != layout:
-            sys.exit("housing: the farm baked a different layout from this one")
-        shutil.copyfile(out, VENDOR / out.name)
-        record[out.name] = {
-            "kind": "monitor housing, composer bake (rack.py), on DESIGN's farm",
-            "generator": "open-plugin-template/components/_studio/rack.py",
-            "template": template[-1] if template else None,
-            "layout": layout,
-            "args": ["LAYOUT.json", "OUT.png", "--density", "2", "--region", region(frame)],
-            "drawn_at": frame,
-            "receipt": receipt[-1:],
-        }
-        print("housing (farm)", flush=True)
-        return
-    no_local_blender()
-    with tempfile.TemporaryDirectory() as temp:
-        layout_path = Path(temp) / "housing.json"
-        layout_path.write_text(json.dumps(layout, indent=1))
-        out = Path(temp) / "monitor-housing.png"
-        args = [str(BLENDER), "-b", "-P", str(COMPONENTS / "_studio/rack.py"), "--",
-                str(layout_path), str(out), "--density", "2", "--region", region(frame)]
-        run = subprocess.run(args, capture_output=True, text=True)
-        if not out.exists():
-            sys.exit(f"housing: bake failed\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
-        shutil.copyfile(out, VENDOR / out.name)
-        record[out.name] = {
-            "kind": "monitor housing, composer bake (rack.py)",
-            "generator": "open-plugin-template/components/_studio/rack.py",
-            "layout": layout,
-            "args": args[5:6] + args[7:],
-            "drawn_at": frame,
-            "receipt": [line for line in run.stdout.splitlines() if line.startswith("rack")][-1:],
-        }
-        print("housing", flush=True)
-
-
-# The viewer keys (layout.rs Viewer::ALL order, rightmost first): button-bezel
-# keys baked on DESIGN's farm through rack.py with the housing as their
-# matte, one 128x32 cell per state (each key's 64x16 rect at 2x).
-VIEWER_KEYS = ["transect", "ladders", "scope"]
-VIEWER_KEY_STATES = ["inactive", "active"]
-VIEWER_KEY_CELL = (128, 32)
-# Each key's label and LED hue, rightmost first.
-VIEWER_KEY_FACES = {"transect": ("TRANSECT", "1f388c"), "ladders": ("LADDERS", "cc341a"),
-                    "scope": ("SCOPE", "2a7f62")}
-VIEWER_KEY_W = 64
-
-
-def viewer_keys_layout():
-    """The farm's keys job (rack.py), on the family's panel key row (DESIGN
-    p197, Sam): each key named by its place on the monitor's right inner
-    edge, "key": ["monitor", -1|-2|-3, 64], never a rect. rack.py writes
-    the rects, which are layout.rs's viewer_key rects (right inner edge
-    1060, 4 px apart, y 14); the housing is the keys' matte. A bake's
-    --state flag is the farm's per cell."""
-    x, y, w, h = HOUSING_RECT
-    frame = [x - HOUSING_PAD, y - HOUSING_PAD, w + 2 * HOUSING_PAD, h + 2 * HOUSING_PAD]
-    keys = [{"id": key, "component": "button-bezel", "key": ["monitor", -(i + 1), VIEWER_KEY_W],
-             # The housing's own plastic, key and escutcheon, under a dark
-             # legend (Sam, 2026-10-11: "baked keys are black, they should
-             # be white/match the panel's material"; DESIGN's p200 B).
-             "flags": ["--variant", "wide", "--body", "beige-plastic", "--text-color", "1b1b1b",
-                       "--text", VIEWER_KEY_FACES[key][0], "--led-end", "left",
-                       "--hue", VIEWER_KEY_FACES[key][1], "--bloom", "off", "--font", "mono",
-                       "--font-weight", "bold", "--width", "56", "--height", "14",
-                       "--cap-height", "5.75", "--travel", "0.65", "--state", "inactive"]}
-            for i, key in enumerate(VIEWER_KEYS)]
-    monitor = {"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
-               "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS, "matte": True}
-    return {"px_per_unit": 100, "window": WINDOW, "elements": [monitor] + keys}
-
-
-def region(rect):
-    """rack.py's --region argument: the cut a job frames within WINDOW."""
-    return ",".join(f"{v:g}" for v in rect)
-
-
-def keys_region():
-    """The keys job's cut: the housing's padded frame, as before 229a80c."""
-    x, y, w, h = HOUSING_RECT
-    return region([x - HOUSING_PAD, y - HOUSING_PAD, w + 2 * HOUSING_PAD, h + 2 * HOUSING_PAD])
-
-
 # The family's screen glass (Sam, p211 C, 2026-10-16): screen-monitor's
 # _vig and _refl, a standalone screen_scene.py bake at HOUSING_FLAGS so its
 # layers cover MONITOR at density 2 and its aperture is SCREEN. Farm only.
@@ -238,8 +63,6 @@ def bake_glass(record, renders=None):
     reflection with alpha 0 (so drawing it adds). No Blender."""
     from PIL import Image
 
-    if renders is None:
-        no_local_blender()
     farm = Path(renders)
     manifest = json.loads((farm / f"{GLASS_SID}.json").read_text())
     names = [f"{GLASS_SID}_vig.png", f"{GLASS_SID}_refl.png", f"{GLASS_SID}.json"]
@@ -272,393 +95,21 @@ def bake_glass(record, renders=None):
     print("glass (farm)", flush=True)
 
 
-# The plates as rack scenes (Sam, p210 B and p213 B: the open-comp style;
-# p214 D: every two-way switch is toggle-tab). Each plate is its own rack
-# scene, as the FINISH pilot Sam passed: the plate, its switches and LAW's
-# chickenhead, dead-on under the rack light. The knobs stay per-part sprites
-# for now (steps b and c). Each stateful part renders the whole plate through
-# its states (--states), so every frame shares the plate's noise; the import
-# keeps one frame as the plate and crops each part's window (layout.rs
-# TAB_WINDOW, SELECTOR_WINDOW) from its frames. Centres are layout.rs's widgets.
-RACK_PLATES = {"capture": (16, 494, 336, 250), "law": (360, 494, 380, 250),
-               "finish": (748, 494, 336, 250)}
-TAB = 30          # the tab's fitted width, logical px (pass 51 D)
-TABS = {          # id -> (plate, centre)
-    "gate-mode": ("capture", (78, 672)), "unowned": ("capture", (184, 672)),
-    "transients": ("capture", (290, 672)),
-    "source": ("law", (412, 676)), "scope": ("law", (492, 676)),
-    "rounding": ("law", (672, 672)),
-    "transitions": ("finish", (1022, 672)),
-}
-TAB_STATES = ["down", "up"]
-# The ALGORITHM chickenhead at (436, 576) since the tabs (0.8.23), fitted by
-# diameter at 102 px so its drum is the 43 px the sprite board drew
-# (DESIGN's refit, pass 54: 88 gave 37); its 5-detent throw puts HOUSE at
-# 0.25 and ORACLE at 0.75.
-SELECTOR = ("law", (436, 576), 102)
-SELECTOR_VALUES = ["0.25", "0.75"]
-# The windows the import crops round each part (layout.rs TAB_WINDOW,
-# SELECTOR_WINDOW): dx, dy, w, h from its centre, logical px. Under the rack
-# light a part's change between states runs well past it: a long shadow
-# streak down and right, soft shade to the left (pass 51 D). Inside its
-# window, a part keeps only what its states change (alpha, feathered), so
-# neighbours' windows may overlap.
-TAB_WINDOW = (-64, -56, 144, 136)
-SELECTOR_WINDOW = (-70, -70, 160, 160)
-
-
-RACK_BASE = "design-lab/passes/54-opq-rack"
-
-
-# Voices (step b): knob-boss over knob-ring, stepping together through its
-# 12 detents (rack drives both from one state list, template e82dedd). Fits
-# are DESIGN's, measured against v25: boss 55 px, ring 70, both seated.
-VOICES = ("capture", (78, 560))
-VOICES_STEPS = 12
-VOICES_ELEMENTS = [
-    {"id": "voices-ring", "component": "knob-ring", "rect": [43, 525, 70, 70], "fit": "diameter",
-     "z": "seat", "flags": ["--segments", "12", "--from", "0", "--start-deg", "-135",
-                            "--end-deg", "-45", "--hue", "amber", "--value", "0"]},
-    {"id": "voices", "component": "knob-boss", "rect": [50.5, 532.5, 55, 55], "fit": "diameter",
-     "z": "seat", "flags": ["--body", "pom-white", "--cap", "aluminium-spun", "--detents", "12",
-                            "--start-deg", "-135", "--end-deg", "-45", "--value", "0"]},
-]
-VOICES_WINDOW = (-72, -68, 160, 150)
-
-# The continuous knobs (step c), each in its plate's scene through 101
-# positions (value i/100), as open-cepstrum's knob-preview atlases were
-# rendered (their receipts give the presets). Centres are layout.rs's; the
-# rect is the knob's 58 px draw, fitted by diameter (DESIGN refits each to
-# today's drawn size, as for the chickenhead).
-KNOB_FRAMES = 101
-KNOB_WINDOW = (-60, -60, 140, 140)
-KNOB_PARTS = {   # key -> (plate, centre, component, preset)
-    "tonality": ("capture", (184, 560), "knob-hifi", "black"),
-    "ceiling": ("capture", (290, 560), "knob-hifi", "black"),
-    "feel": ("law", (580, 560), "knob-hifi", "black"),
-    "glide": ("law", (672, 560), "knob-hifi", "black"),
-    "threshold": ("law", (580, 672), "knob-hifi", "black"),
-    "purify": ("finish", (810, 560), "knob-heady", "implosion"),
-    "grit": ("finish", (916, 560), "knob-catalin", "butterscotch"),
-    "formant": ("finish", (1022, 560), "knob-leather", "oxblood"),
-    "carry": ("finish", (810, 672), "knob-wood", "ebony"),
-    "coherence": ("finish", (916, 672), "knob-chrome", "heat-tint"),
-}
-KNOB_RECT = 58
-# Strips longer than this many cells wrap into rows (a texture's width).
-ATLAS_COLUMNS = 11
-
-
-def rack_plate_layout(plate):
-    x, y, w, h = RACK_PLATES[plate]
-    face = PLATES[f"plate-{plate}"][2]
-    common = list(PLATE_COMMON)
-    for flag in ("--ortho-px", "--samples"):  # the rack's camera and samples own these
-        i = common.index(flag)
-        del common[i:i + 2]
-    elements = [{"id": f"plate-{plate}", "component": "panel-board", "rect": [x, y, w, h],
-                 "flags": ["--w", w / 100, "--h", h / 100, *face, *common]}]
-    for key, (home, (cx, cy)) in TABS.items():
-        if home == plate:
-            elements.append({"id": key, "component": "toggle-tab",
-                             "rect": [cx - TAB / 2, cy - TAB / 2, TAB, TAB],
-                             "fit": "width", "z": "seat", "flags": ["--state", TAB_STATES[0]]})
-    if VOICES[0] == plate:
-        elements.extend(json.loads(json.dumps(VOICES_ELEMENTS)))
-    for key, (home, (cx, cy), component, preset) in KNOB_PARTS.items():
-        if home == plate:
-            elements.append({"id": key, "component": component,
-                             "rect": [cx - KNOB_RECT / 2, cy - KNOB_RECT / 2, KNOB_RECT, KNOB_RECT],
-                             "fit": "diameter", "z": "seat",
-                             "flags": ["--preset", preset, "--start-deg", "-135", "--end-deg", "-45",
-                                       "--value", "0"]})
-    home, (cx, cy), d = SELECTOR
-    if home == plate:
-        elements.append({"id": "algorithm", "component": "knob-chickenhead",
-                         "rect": [cx - d / 2, cy - d / 2, d, d], "fit": "diameter",
-                         "flags": ["--color", "black", "--value", SELECTOR_VALUES[0]]})
-    return {"px_per_unit": 100, "window": WINDOW, "elements": elements}
-
-
-def rack_parts(plate):
-    """A plate's stateful parts: (id, flag, values, the --states argument)."""
-    parts = [(key, "--state", TAB_STATES, f"{key}:--state={','.join(TAB_STATES)}")
-             for key, (home, _) in TABS.items() if home == plate]
-    if VOICES[0] == plate:
-        n = VOICES_STEPS
-        parts.append(("voices", "--value", [f"{k / (n - 1):.6f}" for k in range(n)],
-                      f"voices,voices-ring:--value=0..1/{n}"))
-    if SELECTOR[0] == plate:
-        parts.append(("algorithm", "--value", SELECTOR_VALUES,
-                      f"algorithm:--value={','.join(SELECTOR_VALUES)}"))
-    n = KNOB_FRAMES
-    for key, (home, *_) in KNOB_PARTS.items():
-        if home == plate:
-            parts.append((key, "--value", [f"{k / (n - 1):.6f}" for k in range(n)],
-                          f"{key}:--value=0..1/{n}"))
-    return parts
-
-
-def rack_window(key):
-    """A part's centre and window (dx, dy, w, h), logical px."""
-    if key == "algorithm":
-        return SELECTOR[1], SELECTOR_WINDOW
-    if key == "voices":
-        return VOICES[1], VOICES_WINDOW
-    if key in KNOB_PARTS:
-        return KNOB_PARTS[key][1], KNOB_WINDOW
-    return TABS[key][1], TAB_WINDOW
-
-
-def rack_jobs(base):
-    """The farm's jobs for every plate, in the farm's jobs format, paths
-    under `base` (relative to the template root)."""
-    jobs = []
-    for plate in RACK_PLATES:
-        for key, flag, values, states in rack_parts(plate):
-            outs = [f"{base}/out/{plate}/{key}-{i}.png" for i in range(len(values))]
-            jobs.append({"argv": ["BLENDER", "-b", "-P", "components/_studio/rack.py", "--",
-                                  f"{base}/layouts/{plate}.json",
-                                  f"{base}/out/{plate}/{key}-{{i}}.png", "--density", "2",
-                                  "--states", states, "--region", region(RACK_PLATES[plate])],
-                         "outputs": outs})
-    return {"root": str(TEMPLATE), "sync": ["components", f"{base}/layouts"], "jobs": jobs}
-
-
-def bake_rack(record, renders=None):
-    """Takes the farm's plate frames in (RACK_BASE's out/<plate>/<part>-<i>.png
-    and receipts.txt). Each plate's first frame becomes plate-<plate>.png.
-    Each part's window is cropped from its frames into rack-<part>.png, one
-    cell per state, ATLAS_COLUMNS to a row, its alpha the feathered region
-    its states change most. Refuses a plate whose first-state frames
-    disagree beyond a few stray pixels, or a part whose change outside its
-    window is more than a few stray pixels (a far rivet catching the part's
-    reflection). Streams frames: a plate with knobs holds hundreds. No
-    Blender."""
-    import numpy as np
-    from PIL import Image, ImageFilter
-    from scipy import ndimage
-
-    if renders is None:
-        no_local_blender()
-    farm = Path(renders)
-    receipts = (farm / "receipts.txt").read_text().splitlines()
-    noise = 3     # frames of one plate share the seed: max difference far off
-    stray = 40    # changed pixels allowed outside a window (2x px)
-
-    def load(path):
-        return np.asarray(Image.open(path).convert("RGBA"), dtype=np.int16)
-
-    for plate, (px, py, pw, ph) in RACK_PLATES.items():
-        parts = rack_parts(plate)
-        paths = {}
-        for key, _, values, _ in parts:
-            paths[key] = [farm / "out" / plate / f"{key}-{i}.png" for i in range(len(values))]
-            for i, path in enumerate(paths[key]):
-                if not path.exists() or not any(r.endswith(f"{plate}/{key}-{i}.png") for r in receipts):
-                    sys.exit(f"rack: {plate}/{key}-{i}.png or its receipt is missing")
-        base = load(paths[parts[0][0]][0])
-        if base.shape[:2] != (ph * 2, pw * 2):
-            sys.exit(f"rack: {plate} frames are {base.shape[1::-1]}, not {(pw * 2, ph * 2)}")
-        # Each changed pixel belongs to the part that changes it most: a
-        # glossy neighbour mirrors a part's state (the chickenhead shows the
-        # tabs), and a part must never repaint its neighbour.
-        change = np.zeros((len(parts),) + base.shape[:2], np.int16)
-        for n, (key, *_) in enumerate(parts):
-            # A few speckled pixels may differ between runs (sampling at an
-            # edge: 4 px by 9 in CAPTURE's pass-54 re-run); a scene does not.
-            off = int((np.abs(load(paths[key][0]) - base).max(axis=2) > noise).sum())
-            if off > stray:
-                sys.exit(f"rack: {plate}'s first-state frames disagree ({key}, {off} px)")
-            for path in paths[key][1:]:
-                np.maximum(change[n], np.abs(load(path) - base).max(axis=2), out=change[n])
-        Image.fromarray(base.astype(np.uint8)).save(VENDOR / f"plate-{plate}.png")
-        record[f"plate-{plate}.png"] = {
-            "kind": "rack plate, rack.py on DESIGN's farm, its parts in their first state",
-            "generator": "open-plugin-template/components/_studio/rack.py",
-            "layout": rack_plate_layout(plate),
-            "logical": [pw, ph],
-            "receipt": [r for r in receipts if f"{plate}/{parts[0][0]}-0.png" in r][-1:],
-        }
-        owner = np.where(change.max(axis=0) > noise, change.argmax(axis=0), -1)
-        del change
-        boxes = []
-        for key, *_ in parts:
-            (cx, cy), (dx, dy, w, h) = rack_window(key)
-            x0, y0 = round((cx + dx - px) * 2), round((cy + dy - py) * 2)
-            boxes.append((x0, y0, x0 + w * 2, y0 + h * 2))
-        for n, (key, flag, values, _) in enumerate(parts):
-            (_, _), (_, _, w, h) = rack_window(key)
-            x0, y0, x1, y1 = boxes[n]
-            changed = owner == n
-            outside = changed.copy()
-            outside[max(y0, 0):y1, max(x0, 0):x1] = False
-            # A part mirrored in a neighbour's rim (TRANSITIONS in FORMANT's
-            # leather skirt and COHERENCE's chrome) lies in that neighbour's
-            # window, whose cells keep it in this part's first state; only
-            # spill onto bare plate would be lost.
-            mirrored = outside.copy()
-            for m, (a0, b0, a1, b1) in enumerate(boxes):
-                if m != n:
-                    outside[max(b0, 0):b1, max(a0, 0):a1] = False
-            mirrored &= ~outside
-            if outside.sum() > stray:
-                sys.exit(f"rack: {key} changes {outside.sum()} px outside its window")
-            # The window, padded where it runs off the plate (transparent).
-            pad = ((max(-y0, 0), max(y1 - base.shape[0], 0)), (max(-x0, 0), max(x1 - base.shape[1], 0)))
-            window = (slice(max(y0, 0), y1), slice(max(x0, 0), x1))
-            theirs = ((owner >= 0) & ~changed)[window]
-            # Fill what the part's change encloses (a knob's unswept wedge and
-            # hub): feathered at a hole's edge, the plate's first-state
-            # indicator would ghost through every other state.
-            mine = ndimage.binary_fill_holes(changed[window]) & ~theirs
-            grown = Image.fromarray(np.pad(mine, pad).astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(9))
-            grown = np.asarray(grown) * ~np.pad(theirs, pad)
-            alpha = np.asarray(Image.fromarray(grown.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2)),
-                               dtype=np.int16)
-            # The region the part changes is opaque, the feather only its
-            # margin.
-            alpha = np.where(np.pad(mine, pad), 255, alpha)
-            columns = min(len(values), ATLAS_COLUMNS)
-            rows = -(-len(values) // columns)
-            atlas = np.zeros((h * 2 * rows, w * 2 * columns, 4), np.uint8)
-            for i, path in enumerate(paths[key]):
-                cell = np.pad(load(path)[window], pad + ((0, 0),))
-                # In int32: 255 * 255 wraps int16 to 253 after the uint8 cast,
-                # and linear-light compositing makes that 1% of the plate's
-                # white indicator a visible ghost on a black knob.
-                cell[..., 3] = (cell[..., 3].astype(np.int32) * alpha // 255).astype(np.int16)
-                r, c = divmod(i, columns)
-                atlas[r * h * 2:(r + 1) * h * 2, c * w * 2:(c + 1) * w * 2] = cell.astype(np.uint8)
-            Image.fromarray(atlas).save(VENDOR / f"rack-{key}.png")
-            record[f"rack-{key}.png"] = {
-                "kind": "rack part's window per state, cropped from its plate's frames, "
-                        "alpha the feathered region its states change most",
-                "plate": plate, "states": [f"{flag}={v}" for v in values], "columns": columns,
-                "window_2x": [x0, y0, x1, y1], "stray_px": int(outside.sum()),
-                "mirrored_px": int(mirrored.sum()),
-                "receipt": [r for r in receipts if f"{plate}/{key}-" in r][:2],
-            }
-        print("rack", plate, flush=True)
-
-
-def write_jobs(out):
-    """Writes the farm's job files into `out`: keys.json, and the plates'
-    rack layouts (layouts/<plate>.json) with their jobs.json (paths under
-    RACK_BASE in the template), which the import steps check the farm baked."""
-    out = Path(out)
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "keys.json").write_text(json.dumps(viewer_keys_layout(), indent=1) + "\n")
-    print(out / "keys.json", flush=True)
-    (out / "layouts").mkdir(exist_ok=True)
-    for plate in RACK_PLATES:
-        path = out / "layouts" / f"{plate}.json"
-        path.write_text(json.dumps(rack_plate_layout(plate), indent=1) + "\n")
-        print(path, flush=True)
-    (out / "jobs.json").write_text(json.dumps(rack_jobs(RACK_BASE), indent=1) + "\n")
-    print(out / "jobs.json", flush=True)
-
-
-def pack_viewer_keys(record, renders=None):
-    """Packs the farm's keys/<key>-<state>.png into one straight-alpha row:
-    each key's inactive then active cell (panelkit widgets::Keys, 2 states).
-    Farm renders only: a key bake is Blender's."""
-    from PIL import Image
-
-    if not renders:
-        sys.exit("keys: pass --renders (the farm's directory); keys are baked on the farm")
-    farm = Path(renders)
-    layout = json.loads((farm / "keys.json").read_text())
-    if layout != viewer_keys_layout():
-        sys.exit("keys: the farm baked a different layout from this one (bake.py --jobs DIR writes it)")
-    lines = (farm / "receipts.txt").read_text().splitlines()
-    template = [r.split()[2] for r in lines if r.startswith("keys: template ")]
-    w, h = VIEWER_KEY_CELL
-    atlas = Image.new("RGBA", (w * len(VIEWER_KEYS) * len(VIEWER_KEY_STATES), h))
-    receipts = []
-    for k, key in enumerate(VIEWER_KEYS):
-        for s, state in enumerate(VIEWER_KEY_STATES):
-            name = f"{key}-{state}.png"
-            receipt = [r for r in lines if r.startswith("rack ") and r.endswith(f"keys/{name}")]
-            path = farm / "keys" / name
-            if not path.exists() or not receipt:
-                sys.exit(f"keys: the farm's {name} or its receipt is missing")
-            with Image.open(path) as cell:
-                if cell.size != VIEWER_KEY_CELL or cell.mode != "RGBA":
-                    sys.exit(f"keys: {name} is {cell.size} {cell.mode}, not {VIEWER_KEY_CELL} RGBA")
-                atlas.paste(cell, ((k * len(VIEWER_KEY_STATES) + s) * w, 0))
-            receipts += receipt
-    out = VENDOR / "viewer-keys.png"
-    atlas.save(out)
-    record[out.name] = {
-        "kind": "viewer key row, button-bezel composer bakes (rack.py) on DESIGN's farm, housing as matte",
-        "generator": "open-plugin-template/components/_studio/rack.py",
-        "template": template[-1] if template else None,
-        "layout": layout,
-        "cells": [f"{key} {state}" for key in VIEWER_KEYS for state in VIEWER_KEY_STATES],
-        "cell": list(VIEWER_KEY_CELL),
-        "packing": "PIL paste, straight alpha (panelkit Keys draws with paint::ART)",
-        "receipts": receipts,
-    }
-    print("viewer keys (farm)", flush=True)
-
-
-def resample_sprites(record):
-    for name, (source, w, h, crop) in SPRITES.items():
-        target = VENDOR / f"{name}.png"
-        # Straight alpha, lanczos: a component render (cropped round its
-        # pivot) down to its 2x size.
-        filters = f"scale={w}:{h}:flags=lanczos"
-        if crop:
-            cx, cy, cw, ch = crop
-            filters = f"crop={cw}:{ch}:{cx}:{cy}," + filters
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(COMPONENTS / source),
-                        "-vf", filters, "-pix_fmt", "rgba", str(target)],
-                       check=True)
-        record[target.name] = {
-            "kind": "component render, resampled",
-            "source": f"open-plugin-template/components/{source}",
-            "crop": list(crop) if crop else None,
-            "size": [w, h],
-            "resample": "ffmpeg lanczos, straight alpha",
-        }
-
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", nargs="*", default=["rack", "housing",
-                                                      "keys", "glass", "sprites"])
-    parser.add_argument("--renders",
-                        help="the farm's renders (rack plates, housing, keys, glass): take them in, no Blender")
-    parser.add_argument("--jobs", metavar="DIR",
-                        help="write the farm's job files (keys.json) into DIR and stop")
+    parser.add_argument("--renders", required=True,
+                        help="the farm's glass layers: take them in, no Blender")
     args = parser.parse_args()
-    if args.jobs:
-        write_jobs(args.jobs)
-        return
-    VENDOR.mkdir(exist_ok=True)
     manifest_path = VENDOR / "provenance.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     record = manifest.setdefault("files", {})
-    steps = {"rack": lambda record: bake_rack(record, args.renders),
-             "housing": lambda record: bake_housing(record, args.renders),
-             "keys": lambda record: pack_viewer_keys(record, args.renders),
-             "glass": lambda record: bake_glass(record, args.renders),
-             "sprites": resample_sprites}
-    for step in args.only:
-        steps[step](record)
+    bake_glass(record, args.renders)
     # A vendored file that is gone (dropped from the board) leaves no record.
     for name in [name for name in record if not (VENDOR / name).exists()]:
         del record[name]
     for name, entry in record.items():
-        path = VENDOR / name
-        if path.exists():
-            entry["sha256"] = digest(path)
-    # A source's commit is the one this run drew from: only a step that took
-    # files from it moves it (a housing import leaves cep's knobs dated).
-    sources = manifest.setdefault("sources", {})
-    if {"rack", "housing", "keys", "glass", "sprites"} & set(args.only):
-        sources["open-plugin-template"] = git_head(TEMPLATE)
+        entry["sha256"] = digest(VENDOR / name)
+    manifest.setdefault("sources", {})["open-plugin-template"] = git_head(TEMPLATE)
     manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
 
 

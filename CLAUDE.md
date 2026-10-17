@@ -131,7 +131,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.9.7 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.10.0 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -160,6 +160,9 @@ convention existed.
   family menu. 0.9.0 (v25-rack-plates) bakes the plates as rack scenes
   (bake.py RACK_PLATES, `--only rack`): toggle-tab switches and the
   chickenhead in them (Voices since 0.9.2, v26; the ten knobs since 0.9.6,
-  v27), drawn as masked per-state windows. The Live
+  v27), drawn as masked per-state windows; since 0.10.0 (v28-family-rack)
+  the whole board is the family's one rack pipeline (src/rack_layout.rs,
+  assets/bake_rack.py, the template's rack_bake.py) and the per-plate
+  scenes are gone. The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

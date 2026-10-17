@@ -219,10 +219,15 @@ messages, and behavior belongs in the README; neither is kept here.
          Next:
          - [x] retained at template 327f743 (seating along each part's camera
            ray), planned (26 bakes, 1048 frames) and sent to DESIGN's farm, 0.9.10;
-         - `--pack`, then switch board.rs to the packed atlases (premultiplied
-           parts and plates, straight housing and keys);
-         - retire bake.py's rack, housing and keys steps and provenance.json's
-           records for them.
+         - [x] packed and drawn, 0.10.0 (catalogue/v28-family-rack): the
+           monitor and keys straight, the plates and parts premultiplied over
+           their regions; bake.py's rack, housing and keys steps, the old
+           windows/rack_cell and their vendor files and records are gone.
+         - [ ] the glass: the template's glass bake kind on the monitor
+           (retain fc349a7 first), farmed, drawn by panelkit::glass; then
+           bake.py and GLASS_VIG/REFL go.
+         - [ ] FINISH's plate bake has a pale fleck at its lower-right edge
+           (in the farm frame); ask DESIGN.
          bake.py no longer copies anything from open-cepstrum (DESIGN).
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).

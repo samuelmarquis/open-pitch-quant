@@ -151,6 +151,11 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.10.0** — the panel is rendered the family's way: one lit scene for
+  the whole window, the same light as the other plugins. The monitor, the
+  viewer keys, the three plates and every knob and switch were rendered
+  fresh in it, so the shadows now fall the same way across the board.
+  The LAW plate's brass reads darker under this light.
 - **0.9.10** — no visible change yet: the panel's parts are being
   rendered in the shared scene, with a template fix for how parts sit on
   their plates.

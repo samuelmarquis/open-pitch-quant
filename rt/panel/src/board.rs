@@ -91,12 +91,12 @@ const BYPASS_CLICK: &str = if cfg!(target_os = "macos") { "Option-click" } else 
 /// Texture slots, in upload order after the canvas's white texture and
 /// the font.
 struct Textures {
-    bezel: usize,
+    monitor: usize,
     plates: [usize; 3],
-    /// The rack-baked parts' cell strips, in layout::RACK_PARTS order.
+    /// The plate controls' state grids, in layout::RACK_PARTS order.
     parts: [usize; 19],
-    /// The viewer keys' row: each key up, then lit.
-    viewer_keys: usize,
+    /// Each viewer key, inactive then active, in Viewer::ALL order.
+    keys: [usize; 3],
     /// The screen's glass: the vignette's mask, then the reflection.
     glass: [usize; 2],
 }
@@ -150,8 +150,8 @@ impl Board {
         let vig = canvas.upload_png(pack::GLASS_VIG, &pack.bytes(pack::GLASS_VIG)?, false)?;
         let mut up = |key: &str| canvas.upload_png(key, &pack.bytes(key)?, true);
         let t = Textures {
-            bezel: up(pack::BEZEL)?,
-            plates: [up(pack::PLATE_CAPTURE)?, up(pack::PLATE_LAW)?, up(pack::PLATE_FINISH)?],
+            monitor: up(pack::RACK_MONITOR)?,
+            plates: [up(pack::RACK_PLATE_CAPTURE)?, up(pack::RACK_PLATE_LAW)?, up(pack::RACK_PLATE_FINISH)?],
             parts: {
                 let mut parts = [0; 19];
                 for (slot, key) in parts.iter_mut().zip(pack::RACK_PARTS) {
@@ -159,7 +159,7 @@ impl Board {
                 }
                 parts
             },
-            viewer_keys: up(pack::VIEWER_KEYS)?,
+            keys: [up(pack::RACK_KEYS[0])?, up(pack::RACK_KEYS[1])?, up(pack::RACK_KEYS[2])?],
             glass: [vig, up(pack::GLASS_REFL)?],
         };
         Ok(Self { canvas, t })
@@ -185,10 +185,11 @@ impl Board {
     pub fn render(&mut self, state: &PanelState) -> Result<(), String> {
         self.begin();
         self.solid(Rect::new(0.0, 0.0, layout::WIDTH as f32, layout::HEIGHT as f32), BLACK);
-        // The housing is baked at exactly this monitor, drawn whole.
-        let bezel = self.t.bezel;
-        let source = Rect::new(0.0, 0.0, self.textures[bezel].width, self.textures[bezel].height);
-        self.sprite(bezel, layout::HOUSING, source, WHITE, paint::ART, 0);
+        // The housing (straight alpha) is the monitor's bake over its
+        // region, drawn whole.
+        let monitor = self.t.monitor;
+        let source = Rect::new(0.0, 0.0, self.textures[monitor].width, self.textures[monitor].height);
+        self.sprite(monitor, layout::HOUSING, source, WHITE, paint::ART, 0);
         self.solid(SCREEN, PAPER);
         self.transect(state);
         self.key_transform(state);
@@ -197,7 +198,7 @@ impl Board {
         self.glass();
         self.info(state);
         self.plates();
-        // Every rack-baked part before any ink: a part's window may run
+        // Every rack-baked part before any ink: a part's region may run
         // under a neighbour's caption.
         for widget in &WIDGETS {
             self.rack_part(state, widget);
@@ -590,16 +591,15 @@ impl Board {
     }
 
     /// The viewer keys on the top bezel, stacked left from the screen's
-    /// top-right edge: DESIGN's baked row (panelkit's Keys), the shown
-    /// viewer's key lit.
+    /// top-right edge: each key's rack bake over its region (panelkit's
+    /// Keys, one key per sheet), the shown viewer's key lit.
     fn viewer_keys(&mut self, state: &PanelState) {
-        let keys = widgets::Keys {
-            sheet: widgets::Sheet { columns: 2 * Viewer::ALL.len() as u32, cell: (128.0, 32.0) },
-            states: 2,
-        };
         for viewer in Viewer::ALL {
+            let region = layout::viewer_key_region(viewer);
+            let cell = (region.w * RACK_DENSITY, region.h * RACK_DENSITY);
+            let keys = widgets::Keys { sheet: widgets::Sheet { columns: 2, cell }, states: 2 };
             let lit = u32::from(state.viewer == viewer);
-            keys.draw(&mut self.canvas, self.t.viewer_keys, layout::viewer_key(viewer), viewer.index() as u32, lit);
+            keys.draw(&mut self.canvas, self.t.keys[viewer.index()], region, 0, lit);
         }
     }
 
@@ -665,9 +665,11 @@ impl Board {
             (layout::FINISH, "FINISH", Plate::Finish),
         ];
         for (index, (rect, title, plate)) in plates.into_iter().enumerate() {
+            // The plate's bake (premultiplied) over its region.
             let texture = self.t.plates[index];
             let (w, h) = (self.textures[texture].width, self.textures[texture].height);
-            self.sprite(texture, rect, Rect::new(0.0, 0.0, w, h), WHITE, paint::ART, 0);
+            let region = layout::bake_region(rect, layout::PLATE_PAD);
+            self.sprite(texture, region, Rect::new(0.0, 0.0, w, h), WHITE, paint::PREMULTIPLIED, 0);
             let ink = plate_ink(plate);
             // Between the top screws.
             self.text(rect.x + 30.0, rect.y + 8.0, title, TITLE, opacity(ink, 0.9), false);
@@ -677,10 +679,11 @@ impl Board {
         }
     }
 
-    /// A rack-baked part at its state: its window, cut from its plate's
-    /// frame at that state, laid over the plate (which holds the first).
+    /// A rack-baked part at its state: that state's cell of its bake
+    /// (premultiplied), over its region.
     fn rack_part(&mut self, panel: &PanelState, widget: &Widget) {
-        let Some((index, rect)) = layout::rack_cell(widget) else { return };
+        let Some(index) = layout::rack_index(widget) else { return };
+        let rect = layout::part_region(widget);
         let value = panel.params.get(widget.id());
         let state = match widget.kind {
             Kind::Stepped => {
@@ -688,17 +691,20 @@ impl Board {
                 let steps = (spec.max - spec.min).round() as usize + 1;
                 ((value - spec.min).round().max(0.0) as usize).min(steps - 1)
             }
-            Kind::Knob(_) => widgets::frame(SPECS[widget.id()].normalized(value), 101) as usize,
+            Kind::Knob(_) => widgets::frame(SPECS[widget.id()].normalized(value), layout::KNOB_FRAMES as u32) as usize,
             _ => usize::from(value >= 0.5),
         };
         let texture = self.t.parts[index];
-        // The atlas is at the bake's density, its cells in rows of up to
-        // bake.py's ATLAS_COLUMNS.
+        // The grid's columns, as rack_layout.rs bakes them.
+        let columns = match widget.kind {
+            Kind::Knob(_) => layout::KNOB_GRID.0,
+            Kind::Stepped => layout::VOICES_STEPS,
+            _ => 2,
+        };
         let (cw, ch) = (rect.w * RACK_DENSITY, rect.h * RACK_DENSITY);
-        let columns = (self.textures[texture].width / cw).round().max(1.0) as usize;
         let (row, column) = (state / columns, state % columns);
         let source = Rect::new(column as f32 * cw, row as f32 * ch, cw, ch);
-        self.sprite(texture, rect, source, WHITE, paint::ART, 0);
+        self.sprite(texture, rect, source, WHITE, paint::PREMULTIPLIED, 0);
     }
 
     fn widget(&mut self, state: &PanelState, widget: &Widget) {

@@ -836,3 +836,22 @@ with the program, switch to the modern convention"
 **Action:** the front half is 0.9.9 (see TODO). The farm plan follows
 DESIGN's next template revision.
 
+## The board on the family pipeline (0.10.0, 2026-10-17)
+
+**Config:** rack_layout.rs at template 327f743, 26 bakes on DESIGN's farm,
+packed by bake_rack.py; catalogue/v28-family-rack.png (HOUSE, 1x).
+
+**Question:** does the board hold together drawn wholly from the shared
+pipeline: parts registered on their plates, states (switches, ALGORITHM,
+the knobs' 101 positions, Voices' 12) correct, the keys and housing intact?
+
+**Observed (Claude):** everything registers; the long down-right shadows
+are the window's light, the same as open-spectrum's. LAW's mirror brass is
+darker under it, and its dark legends (HOUSE/ORACLE, FEEL, GLIDE,
+THRESHOLD, the switch legends) lose contrast further. A pale fleck sits
+at FINISH's lower-right edge, in the plate's own bake.
+
+**Sam, verbatim:** (pending)
+
+**Action:** shipped as 0.10.0; the LAW legend colour waits on Sam.
+
