@@ -152,6 +152,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.10.3** — the screen's corners are rounded by the monitor's
+  opening: the housing is now drawn over the screen and its glass, so the
+  screen's square corners no longer show.
 - **0.10.2** — no visible change: the screen glass now comes from the
   shared pipeline and is drawn by the family's shared glass code.
 - **0.10.1** — no visible change: the screen glass is queued to be

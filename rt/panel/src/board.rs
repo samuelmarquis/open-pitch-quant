@@ -185,17 +185,20 @@ impl Board {
     pub fn render(&mut self, state: &PanelState) -> Result<(), String> {
         self.begin();
         self.solid(Rect::new(0.0, 0.0, layout::WIDTH as f32, layout::HEIGHT as f32), BLACK);
+        // The family's screen order: field, content, glass, then the
+        // housing on top (its opening covers the field's square corners),
+        // then the keys on its bezel.
+        self.solid(SCREEN, PAPER);
+        self.transect(state);
+        self.key_transform(state);
+        self.scroll_bar(state);
+        self.t.glass.draw(&mut self.canvas, SCREEN);
         // The housing (straight alpha) is the monitor's bake over its
         // region, drawn whole.
         let monitor = self.t.monitor;
         let source = Rect::new(0.0, 0.0, self.textures[monitor].width, self.textures[monitor].height);
         self.sprite(monitor, layout::HOUSING, source, WHITE, paint::ART, 0);
-        self.solid(SCREEN, PAPER);
-        self.transect(state);
-        self.key_transform(state);
         self.viewer_keys(state);
-        self.scroll_bar(state);
-        self.t.glass.draw(&mut self.canvas, SCREEN);
         self.info(state);
         self.plates();
         // Every rack-baked part before any ink: a part's region may run
