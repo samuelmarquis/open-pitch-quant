@@ -207,7 +207,7 @@ messages, and behavior belongs in the README; neither is kept here.
          0.9.7: FINISH re-run at template 263c15b (rack's fit now scales a knob's
          material distances, so the fitted catalin GRIT no longer renders pale);
          farm 20261016-165330-3022, receipts bf75684.
-       - [ ] The family's one pipeline (Sam, 2026-10-17: "EVERY plugin has the
+       - [x] The family's one pipeline (Sam, 2026-10-17: "EVERY plugin has the
          SAME lighting and scene idioms and rendering pipelines... switch to the
          modern convention"). The per-plate scenes, window crops and owner map
          are retired. The front half is in 0.9.9:
@@ -223,12 +223,14 @@ messages, and behavior belongs in the README; neither is kept here.
            monitor and keys straight, the plates and parts premultiplied over
            their regions; bake.py's rack, housing and keys steps, the old
            windows/rack_cell and their vendor files and records are gone.
-         - [ ] the glass: the template's glass bake kind on the monitor,
-           retained at 9c7b401 (components as fc349a7) and planned
-           (`--only screen-glass`, 1 job) for DESIGN's farm, 0.10.1; then
-           pack, draw by panelkit::glass, and bake.py and GLASS_VIG/REFL go.
-         - [ ] FINISH's plate bake has a pale fleck at its lower-right edge
-           (in the farm frame); ask DESIGN.
+         - [x] the glass: the template's glass bake kind on the monitor,
+           retained at 9c7b401 (components as fc349a7), farmed (0.10.1),
+           packed and drawn by panelkit::glass (0.10.2, within 1 LSB of
+           the old glass); bake.py and the old glass layers are gone.
+         - FINISH's pale fleck at its lower-right edge is the material:
+           catalin's crazing glinting under the window light (DESIGN
+           re-rendered it at 1024 samples, identical). A change would be
+           DESIGN's matlib, only if Sam asks.
          bake.py no longer copies anything from open-cepstrum (DESIGN).
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).

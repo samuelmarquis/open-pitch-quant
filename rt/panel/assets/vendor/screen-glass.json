@@ -1,0 +1,30 @@
+{
+ "id": "screen-glass",
+ "style": "lcd",
+ "res": [
+  2136,
+  916
+ ],
+ "aperture": {
+  "x": 48,
+  "y": 48,
+  "w": 2040,
+  "h": 820
+ },
+ "corner": {
+  "r": 0,
+  "n": 3.0
+ },
+ "warp": {
+  "type": "barrel",
+  "k1": 0.0,
+  "k2": 0.0
+ },
+ "overscan": 0.0,
+ "glare": {
+  "radius": 64,
+  "strength": 1.0
+ },
+ "palette_default": "lcd-color",
+ "notes": "Blender housing bake (screen_scene.py, beige-plastic bezel). Edge-to-edge glass; subtle CRT bulge; drop-in for the stub."
+}

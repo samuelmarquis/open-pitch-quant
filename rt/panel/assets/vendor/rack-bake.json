@@ -3014,6 +3014,43 @@
    "body_touches_region_edge": {},
    "sha256": "1e753ba2cd0e8f4d096ed6de726dffc501dbf444b448838c0e4ce07c5b95917f",
    "bytes": 333932
+  },
+  "assets/vendor/screen-glass.json": {
+   "contract": "screen glass/1 (p211/p212 C), panelkit housing treatment",
+   "element": "monitor",
+   "command": [
+    "blender",
+    "-b",
+    "-P",
+    "{SCREEN}",
+    "--",
+    "--style",
+    "lcd",
+    "--bezel",
+    "beige-plastic",
+    "--fasteners",
+    "none",
+    "--aperture",
+    "48,48,2040,820",
+    "--margin",
+    "0",
+    "--corner-r",
+    "0",
+    "--overscan",
+    "0",
+    "--res",
+    "2136x916",
+    "--outdir",
+    "screen-glass",
+    "--sid",
+    "screen-glass"
+   ],
+   "vig_peak": 1.0,
+   "outputs": {
+    "screen-glass.json": "9b6c12aac8fbd0670a290f026d731bdd8b02f69be229ea76d8755ec863482eb2",
+    "screen-glass_refl.png": "8f3c1be6b15a159e3e85bdc36b1e5ac4e95959324f9d5ed60469c9b981418dfd",
+    "screen-glass_vig.png": "d38364cca4a6284513ef0482c5ddc1e37cac1f72de3196846b99d17f147fad48"
+   }
   }
  },
  "contract": "rack bake/1",

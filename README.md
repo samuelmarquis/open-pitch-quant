@@ -109,8 +109,9 @@ stem separation, ~93 ms latency, live.
   0.7.x opens with none.
   `cargo run --release -p opq-panel --bin
   panel-render -- --out DIR` renders it offline from the real engine;
-  `rt/panel/assets/bake.py` bakes the plates and vendors the family
-  artwork, with provenance. The old panel's design is
+  `rt/panel/assets/bake_rack.py` plans the board's rendered art for the
+  family's shared rack pipeline and packs what comes back, with
+  provenance. The old panel's design is
   [`docs/design/03-the-panel.md`](docs/design/03-the-panel.md) (history).
 - **`opq/`** — the frozen Python prototype lab (nine listened iterations;
   the Rust engine is canonical).
@@ -151,6 +152,8 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.10.2** — no visible change: the screen glass now comes from the
+  shared pipeline and is drawn by the family's shared glass code.
 - **0.10.1** — no visible change: the screen glass is queued to be
   rendered in the shared pipeline too.
 - **0.10.0** — the panel is rendered the family's way: one lit scene for

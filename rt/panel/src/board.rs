@@ -19,6 +19,7 @@ use crate::{fittings, pack, PanelState, HISTORY};
 use opq_engine::params::{self as p, KeyState, SPECS};
 use opq_engine::{scope_db, scope_note, VizFrame, SCOPE_BINS, SCOPE_PER_NOTE};
 use panelkit::canvas::{opacity, paint, Canvas, Rect};
+use panelkit::glass::Glass;
 use panelkit::gpu::Gpu;
 use panelkit::hover::HoverInfo;
 use panelkit::pack::Pack;
@@ -97,8 +98,8 @@ struct Textures {
     parts: [usize; 19],
     /// Each viewer key, inactive then active, in Viewer::ALL order.
     keys: [usize; 3],
-    /// The screen's glass: the vignette's mask, then the reflection.
-    glass: [usize; 2],
+    /// The screen's glass (panelkit's, p211 C).
+    glass: Glass,
 }
 
 pub struct Board {
@@ -146,8 +147,7 @@ impl Board {
         canvas.add_face("Source Sans", &pack.bytes(pack::FONT)?, &FONT_SIZES, &[false, false, true, false])?;
         let serif = canvas.add_face("Tinos", panelkit::menu::SERIF, &FONT_SIZES, &[false; 4])?;
         debug_assert_eq!(serif, SERIF_FACE);
-        // The vignette is mask data: its alpha is read as is.
-        let vig = canvas.upload_png(pack::GLASS_VIG, &pack.bytes(pack::GLASS_VIG)?, false)?;
+        let glass = Glass::load(&mut canvas, pack, pack::GLASS)?;
         let mut up = |key: &str| canvas.upload_png(key, &pack.bytes(key)?, true);
         let t = Textures {
             monitor: up(pack::RACK_MONITOR)?,
@@ -160,7 +160,7 @@ impl Board {
                 parts
             },
             keys: [up(pack::RACK_KEYS[0])?, up(pack::RACK_KEYS[1])?, up(pack::RACK_KEYS[2])?],
-            glass: [vig, up(pack::GLASS_REFL)?],
+            glass,
         };
         Ok(Self { canvas, t })
     }
@@ -195,7 +195,7 @@ impl Board {
         self.key_transform(state);
         self.viewer_keys(state);
         self.scroll_bar(state);
-        self.glass();
+        self.t.glass.draw(&mut self.canvas, SCREEN);
         self.info(state);
         self.plates();
         // Every rack-baked part before any ink: a part's region may run
@@ -210,19 +210,6 @@ impl Board {
         self.menu(state);
         self.list(state);
         self.submit()
-    }
-
-    /// The family's screen glass over the screen's content, in linear
-    /// light: col *= vig, then col += refl (screen-monitor's contract). The
-    /// premultiplied blend does both: black at alpha 1 - vig leaves col *
-    /// vig, and the reflection at alpha 0 adds.
-    fn glass(&mut self) {
-        let [vig, refl] = self.t.glass;
-        for (slot, mode) in [(vig, paint::COVERAGE), (refl, paint::PREMULTIPLIED)] {
-            let source = Rect::new(0.0, 0.0, self.textures[slot].width, self.textures[slot].height);
-            let ink = if mode == paint::COVERAGE { BLACK } else { WHITE };
-            self.sprite(slot, SCREEN, source, ink, mode, 0);
-        }
     }
 
     /// A value control's right-click menu, over everything: the family's

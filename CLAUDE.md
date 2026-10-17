@@ -59,8 +59,8 @@ convention existed.
   host-free: `rt/panel` (layout, fittings, board, pack) with its offline
   harness `panel-render`; the plugin crate only mounts it (`gui.rs`,
   `gui_win32.rs`, `gui_shared.rs`, open-eq's mounts). Panel art comes
-  from `rt/panel/assets/bake.py` (needs Blender 5.2 and ffmpeg), never
-  hand-placed; review stills go to `catalogue/` at 1x.
+  from the family's rack pipeline (`rt/panel/assets/bake_rack.py` plans
+  for DESIGN's farm and packs), never hand-placed; review stills go to `catalogue/` at 1x.
 - **Host-free product logic:** the engine owns DSP and its parameters
   (`EngineParams`, `Algorithm::{House, Oracle}`); the panel owns layout,
   drawing and fittings; the shell owns host translation, native
@@ -131,7 +131,7 @@ convention existed.
 
 ## Current state
 
-- Installed: 0.10.0 (release) as CLAP, VST3 and AU; 21 host parameters,
+- Installed: 0.10.2 (release) as CLAP, VST3 and AU; 21 host parameters,
   id == index, from the engine's pluginkit schema (`rt/engine/src/
   params.rs`); saved state is pluginkit's document, version 3, with the
   Keys source's key states as its product section. Entry,
@@ -163,6 +163,7 @@ convention existed.
   v27), drawn as masked per-state windows; since 0.10.0 (v28-family-rack)
   the whole board is the family's one rack pipeline (src/rack_layout.rs,
   assets/bake_rack.py, the template's rack_bake.py) and the per-plate
-  scenes are gone. The Live
+  scenes are gone; the screen glass is its glass bake, drawn by
+  panelkit::glass (0.10.2). The Live
   device-off edit loss is fixed (open-wrac P27) and checked on sam-pc
   with 0.4.1.

@@ -1,7 +1,7 @@
 //! The board's mounted inventory: offline and native boards use the same
-//! bytes. The rack-* files are packed by assets/bake_rack.py (recorded in
-//! assets/vendor/rack-bake.json); the font and the glass come from
-//! assets/bake.py (recorded in assets/vendor/provenance.json).
+//! bytes. The rack-* and screen-glass* files are packed by
+//! assets/bake_rack.py (recorded in assets/vendor/rack-bake.json); the font
+//! is vendored as it stands (assets/vendor/provenance.json).
 panelkit::pack! {
     FONT = "assets/vendor/SourceSansPro-Regular.otf";
     FONT_LICENSE = "assets/vendor/SourceSans-LICENSE.txt";
@@ -41,11 +41,13 @@ panelkit::pack! {
     RACK_FORMANT = "assets/vendor/rack-formant.png";
     RACK_CARRY = "assets/vendor/rack-carry.png";
     RACK_COHERENCE = "assets/vendor/rack-coherence.png";
-    /// The family's screen glass (screen-monitor's _vig and _refl, bake.py),
-    /// cropped to the screen and recast for the canvas's blend: the
-    /// vignette as black with alpha 1 - vig, the reflection with alpha 0.
-    GLASS_VIG = "assets/vendor/glass-vig.png";
-    GLASS_REFL = "assets/vendor/glass-refl.png";
+    /// The screen glass (p211 C): the monitor's glass bake, screen-monitor's
+    /// reflection and vignette (recorded in rack-bake.json with the rack),
+    /// the layers named from the manifest's id (panelkit::pack::
+    /// housing_layer) and drawn by panelkit::glass.
+    GLASS = "assets/vendor/screen-glass.json";
+    GLASS_REFL = "assets/vendor/screen-glass_refl.png";
+    GLASS_VIG = "assets/vendor/screen-glass_vig.png";
 }
 
 
