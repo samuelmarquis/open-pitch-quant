@@ -207,6 +207,13 @@ messages, and behavior belongs in the README; neither is kept here.
          0.9.7: FINISH re-run at template 263c15b (rack's fit now scales a knob's
          material distances, so the fitted catalin GRIT no longer renders pale);
          farm 20261016-165330-3022, receipts bf75684.
+       - [ ] The window rig (template 229a80c, Sam's ruling): rack.py's rig is
+         the product window's, so every layout gives "window": [0, 0, 1100, 768]
+         and nothing else, and each job frames its old cut with --region.
+         bake.py has WINDOW and region(). DESIGN is re-farming pass 54's 19 jobs.
+         The keys job (--region 8,2,1084,474) went to DESIGN to farm. The housing
+         layout is converted too, but it hasn't been re-farmed. On delivery,
+         re-import the rack and the keys, and check the light.
      - [ ] Still known: plate titles are drawn text, not the
        panel-board's backlit cut titles (title-bake/1).
      - [ ] Ideas for later rounds: `docs/design/04-panel-ideas.md`

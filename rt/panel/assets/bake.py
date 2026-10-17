@@ -73,6 +73,11 @@ SPRITES = {}
 # Sam's p179 pick: "beige plastic is best". Rendered at density 2 over the
 # housing padded by HOUSING_PAD logical px; the board draws the whole
 # image at that padded rect.
+# The rack rig is the product window's (template 229a80c, Sam's ruling):
+# light, camera and cards centred on the whole board, so every layout gives
+# this window and nothing else for the rig, and frames its own cut with
+# --region (rack.py lens-shifts it).
+WINDOW = [0, 0, 1100, 768]
 HOUSING_RECT = (16, 10, 1068, 458)
 HOUSING_PAD = 8
 HOUSING_FLAGS = ["--style", "lcd", "--bezel", "beige-plastic", "--fasteners", "none",
@@ -128,7 +133,7 @@ def bake_housing(record, renders=None):
     frame = [x - pad, y - pad, w + 2 * pad, h + 2 * pad]
     layout = {
         "px_per_unit": 100,
-        "frame": frame,
+        "window": WINDOW,
         "elements": [{"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
                       "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS}],
     }
@@ -148,7 +153,7 @@ def bake_housing(record, renders=None):
             "generator": "open-plugin-template/components/_studio/rack.py",
             "template": template[-1] if template else None,
             "layout": layout,
-            "args": ["LAYOUT.json", "OUT.png", "--density", "2"],
+            "args": ["LAYOUT.json", "OUT.png", "--density", "2", "--region", region(frame)],
             "drawn_at": frame,
             "receipt": receipt[-1:],
         }
@@ -160,7 +165,7 @@ def bake_housing(record, renders=None):
         layout_path.write_text(json.dumps(layout, indent=1))
         out = Path(temp) / "monitor-housing.png"
         args = [str(BLENDER), "-b", "-P", str(COMPONENTS / "_studio/rack.py"), "--",
-                str(layout_path), str(out), "--density", "2"]
+                str(layout_path), str(out), "--density", "2", "--region", region(frame)]
         run = subprocess.run(args, capture_output=True, text=True)
         if not out.exists():
             sys.exit(f"housing: bake failed\n{run.stdout[-2000:]}\n{run.stderr[-2000:]}")
@@ -209,7 +214,18 @@ def viewer_keys_layout():
             for i, key in enumerate(VIEWER_KEYS)]
     monitor = {"id": "monitor", "component": "screen-monitor", "rect": [x, y, w, h],
                "fit": "width", "orthographic": True, "flags": HOUSING_FLAGS, "matte": True}
-    return {"px_per_unit": 100, "frame": frame, "lit": frame, "elements": [monitor] + keys}
+    return {"px_per_unit": 100, "window": WINDOW, "elements": [monitor] + keys}
+
+
+def region(rect):
+    """rack.py's --region argument: the cut a job frames within WINDOW."""
+    return ",".join(f"{v:g}" for v in rect)
+
+
+def keys_region():
+    """The keys job's cut: the housing's padded frame, as before 229a80c."""
+    x, y, w, h = HOUSING_RECT
+    return region([x - HOUSING_PAD, y - HOUSING_PAD, w + 2 * HOUSING_PAD, h + 2 * HOUSING_PAD])
 
 
 # The family's screen glass (Sam, p211 C, 2026-10-16): screen-monitor's
@@ -366,7 +382,7 @@ def rack_plate_layout(plate):
         elements.append({"id": "algorithm", "component": "knob-chickenhead",
                          "rect": [cx - d / 2, cy - d / 2, d, d], "fit": "diameter",
                          "flags": ["--color", "black", "--value", SELECTOR_VALUES[0]]})
-    return {"px_per_unit": 100, "frame": [x, y, w, h], "elements": elements}
+    return {"px_per_unit": 100, "window": WINDOW, "elements": elements}
 
 
 def rack_parts(plate):
@@ -409,7 +425,7 @@ def rack_jobs(base):
             jobs.append({"argv": ["BLENDER", "-b", "-P", "components/_studio/rack.py", "--",
                                   f"{base}/layouts/{plate}.json",
                                   f"{base}/out/{plate}/{key}-{{i}}.png", "--density", "2",
-                                  "--states", states],
+                                  "--states", states, "--region", region(RACK_PLATES[plate])],
                          "outputs": outs})
     return {"root": str(TEMPLATE), "sync": ["components", f"{base}/layouts"], "jobs": jobs}
 

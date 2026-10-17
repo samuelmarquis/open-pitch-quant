@@ -151,6 +151,9 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.9.8** — no visible change yet: the rendered parts move to the
+  family's shared lighting, one light over the whole window instead of
+  one per plate. The new renders arrive in the next build.
 - **0.9.7** — GRIT's catalin knob renders as its true deep amber, not
   pale peach; the rest of FINISH is re-rendered with it
   (catalogue/v27-rack-knobs.png, updated).
