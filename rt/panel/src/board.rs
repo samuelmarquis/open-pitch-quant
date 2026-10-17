@@ -404,7 +404,9 @@ impl Board {
             }
         }
         // Each object's path: source (pencil) and sung (ink; sepia if
-        // spared, vermilion while newborn).
+        // spared, vermilion while newborn). Each segment has its own alpha,
+        // so they are open-ended faded lines (panelkit), abutting cleanly,
+        // not one polyline.
         for i in 1..n {
             let (prev, cur) = (frames[i - 1], frames[i]);
             let (x0, x1) = (x_of(i - 1), x_of(i));
@@ -415,7 +417,8 @@ impl Board {
                 };
                 let weight = (t.amp / loudest).sqrt().clamp(0.0, 1.0);
                 let (s0, s1) = (y_of(layout::hz_note(q.f0)), y_of(layout::hz_note(t.f0)));
-                self.line(x0, s0, x1, s1, 1.0, opacity(PENCIL, 0.15 + 0.35 * weight));
+                let pencil = opacity(PENCIL, 0.15 + 0.35 * weight);
+                self.faded_line(x0, s0, x1, s1, 1.0, pencil, pencil);
                 let (o0, o1) = (y_of(layout::hz_note(q.out)), y_of(layout::hz_note(t.out)));
                 let color = if t.spared {
                     SEPIA
@@ -424,7 +427,8 @@ impl Board {
                 } else {
                     SUMI
                 };
-                self.line(x0, o0, x1, o1, 1.6, opacity(color, 0.35 + 0.65 * weight));
+                let ink = opacity(color, 0.35 + 0.65 * weight);
+                self.faded_line(x0, o0, x1, o1, 1.6, ink, ink);
             }
         }
         // Now: each object's bend, source to sung, at the left edge: the

@@ -152,6 +152,10 @@ use this for something, open an issue.
 
 ## Changes
 
+- **0.10.4** — no visible change to the pitch traces: they are drawn as
+  open-ended line pieces that join cleanly, keeping the panel's drawing
+  load where it was after a shared-library update rounded every line's
+  ends. The dropdown arrows' tips are slightly softer.
 - **0.10.3** — the screen's corners are rounded by the monitor's
   opening: the housing is now drawn over the screen and its glass, so the
   screen's square corners no longer show.
